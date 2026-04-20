@@ -9,7 +9,7 @@ Conversation with the user is conducted in **Polish**.
 
 ## Project Overview
 
-Unity 6 (6000.3.10f1) port of a browser-based turn-based card combat game. The game logic is fully documented in [`../docs/unity-migration.md`](../docs/unity-migration.md) — read it before implementing any game feature. The original HTML/JS prototype lives in the parent directory.
+Unity 6 (6000.3.10f1) port of a browser-based turn-based card combat game. The game logic is fully documented in [`docs/unity-migration.md`](docs/unity-migration.md) — read it before implementing any game feature. The original HTML/JS prototype lives in the parent directory.
 
 ## Key Dependencies
 
@@ -63,9 +63,50 @@ Map all tuning values to ScriptableObjects (not hardcoded):
 - `AnimConfig` — DOTween durations from `unity-migration.md §8`
 - `CardVisualConfig` — card dimensions and corner radius
 
+## Source Layout
+
+Runtime code lives under `Assets/Scripts/`:
+
+- `Data` — plain game state, runtime card instances, immutable definitions, and shared enums.
+- `Config` — ScriptableObject tuning objects.
+- `Runtime` — bootstrap helpers and shared runtime services.
+- `Combat` — pure combat resolver code, result objects, and previews.
+- `Controllers` — MonoBehaviour game-flow coordinators.
+- `UI` — UGUI views and pointer interaction components.
+- `Tests` — Unity Test Framework tests.
+
+Assemblies:
+
+- `CardsUnity.Runtime` — runtime code under `Assets/Scripts/`.
+- `CardsUnity.Tests` — EditMode tests under `Assets/Scripts/Tests/`.
+
+## First-Playable Stack
+
+- UI: UGUI (`com.unity.ugui`) with UGUI `Text` as the baseline text component.
+- TextMeshPro: not currently present in `Packages/manifest.json` or `Packages/packages-lock.json`; add it intentionally before depending on TMP in gameplay UI.
+- Input: Unity EventSystem drag/drop first; Rewired is optional later controller support.
+- Animation: DOTween for view animation, configured through `AnimConfig`.
+- Polish layers: MMFeedbacks, NiceVibrations, TrueShadow, and Quibli remain optional presentation layers.
+
+## Verification Commands
+
+Use the Unity 6000.3.10f1 batchmode runner from the repository root.
+
+EditMode tests:
+
+```bash
+/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -quit -projectPath . -runTests -testPlatform EditMode -testResults TestResults/EditMode.xml
+```
+
+PlayMode tests:
+
+```bash
+/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -quit -projectPath . -runTests -testPlatform PlayMode -testResults TestResults/PlayMode.xml
+```
+
 ## Codex Workflow
 
-- Read the relevant sections of `../docs/unity-migration.md` before implementing game behavior.
+- Read the relevant sections of `docs/unity-migration.md` before implementing game behavior.
 - Keep runtime data and resolver logic free of Unity scene dependencies unless the architecture explicitly calls for a `MonoBehaviour`.
 - Prefer focused, incremental changes that preserve existing Unity asset references and serialized fields.
 - Do not rewrite or regenerate Unity `.meta` files unless the asset operation genuinely requires it.

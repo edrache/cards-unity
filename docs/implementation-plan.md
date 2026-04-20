@@ -106,17 +106,17 @@ Future implementation work still needs to create:
 
 ## Phase 0 - Project Setup and Conventions
 
-- [ ] Create the main runtime folder structure under `Assets/Scripts/`.
+- [x] Create the main runtime folder structure under `Assets/Scripts/`.
   - Suggested folders: `Data`, `Config`, `Runtime`, `Combat`, `Controllers`, `UI`, `Tests`.
-- [ ] Add assembly definitions if the project starts using Unity test assemblies.
-- [ ] Confirm whether TextMeshPro is available and document the chosen UI text stack.
-- [ ] Define scene bootstrap strategy for the first playable scene.
-- [ ] Document the first-playable technology choices.
+- [x] Add assembly definitions if the project starts using Unity test assemblies.
+- [x] Confirm whether TextMeshPro is available and document the chosen UI text stack.
+- [x] Define scene bootstrap strategy for the first playable scene.
+- [x] Document the first-playable technology choices.
   - Use UGUI for UI.
   - Use Unity EventSystem drag/drop before optional Rewired controller support.
   - Use DOTween for view animation.
   - Keep MMFeedbacks, NiceVibrations, TrueShadow, and Quibli as presentation/polish layers.
-- [ ] Update `AGENTS.md` with build, test, and verification commands once they exist.
+- [x] Update `AGENTS.md` with build, test, and verification commands once they exist.
 
 Acceptance criteria:
 
@@ -434,6 +434,13 @@ Use this template when claiming or finishing a task:
 ## Agent Work Log
 
 Add entries newest first.
+
+### 2026-04-20 - Codex - Phase 0 Project Setup
+
+- Plan item: Phase 0 - Project Setup and Conventions.
+- Files changed: `Assets/Scripts/`, `docs/phase-0-project-setup.md`, `docs/implementation-plan.md`, `AGENTS.md`.
+- Verification: Confirmed UGUI and Unity Test Framework in `Packages/manifest.json`; confirmed TextMeshPro is not present in `Packages/manifest.json` or `Packages/packages-lock.json`; verified Unity 6000.3.10f1 executable path exists; validated new asmdef JSON files. Attempted EditMode batchmode test run, but Unity stopped during licensing initialization before project tests could run.
+- Notes / follow-ups: Phase 1 should add config ScriptableObjects and default config assets without hardcoding tuning values.
 
 ### 2026-04-20 - Codex - Implementation Plan
 
