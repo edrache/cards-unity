@@ -127,14 +127,14 @@ Acceptance criteria:
 
 ## Phase 1 - Configuration Assets
 
-- [ ] Implement `GameConfig` ScriptableObject.
+- [x] Implement `GameConfig` ScriptableObject.
   - Include `SlotCount`, default `3`.
-- [ ] Implement `AnimConfig` ScriptableObject.
+- [x] Implement `AnimConfig` ScriptableObject.
   - Include lift scale, tilt max, snap duration, lift duration, slot snap radius, resolve flash duration, resolve pause duration, resolve tilt angle, and cleanup duration.
-- [ ] Implement `CardVisualConfig` ScriptableObject.
+- [x] Implement `CardVisualConfig` ScriptableObject.
   - Include card width, height, and corner radius from the migration guide.
-- [ ] Create default config assets under `Assets/Resources/Config/` or another documented config path.
-- [ ] Document how runtime systems obtain config references.
+- [x] Create default config assets under `Assets/Resources/Config/` or another documented config path.
+- [x] Document how runtime systems obtain config references.
 
 Acceptance criteria:
 
@@ -434,6 +434,13 @@ Use this template when claiming or finishing a task:
 ## Agent Work Log
 
 Add entries newest first.
+
+### 2026-04-20 - Codex - Phase 1 Configuration Assets
+
+- Plan item: Phase 1 - Configuration Assets.
+- Files changed: `Assets/Scripts/Config/`, `Assets/Resources/Config/`, `docs/implementation-plan.md`.
+- Verification: Created config ScriptableObject classes with defaults from `docs/unity-migration.md` section 8; created default Resources config assets; validated scripts in Unity and checked console after compilation.
+- Notes / follow-ups: Runtime systems should use serialized config references where possible, with `Resources.Load<T>("Config/Default...")` as a first-playable fallback.
 
 ### 2026-04-20 - Codex - Phase 0 Project Setup
 

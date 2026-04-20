@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c982f9ed47bdc4f688246934909a9468, type: 3}
+  m_Name: DefaultAnimConfig
+  m_EditorClassIdentifier: CardsUnity.Runtime::CardsUnity.Config.AnimConfig
+  liftScale: 1.15
+  tiltMax: 40
+  snapDuration: 0.05
+  liftDuration: 0.55
+  slotSnapRadius: 100
+  resolveFlashDuration: 0.45
+  resolvePauseDuration: 0.22
+  resolveTiltAngle: 30
+  cleanupDuration: 0.55
