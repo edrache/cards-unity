@@ -8,6 +8,9 @@ namespace CardsUnity.UI
         [SerializeField] private SlotView[] playerSlots;
         [SerializeField] private SlotView[] enemySlots;
 
+        public SlotView[] PlayerSlots => playerSlots;
+        public SlotView[] EnemySlots => enemySlots;
+
         public void Initialize(SlotView[] players, SlotView[] enemies)
         {
             playerSlots = players;

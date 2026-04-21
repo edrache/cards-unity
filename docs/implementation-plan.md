@@ -315,15 +315,16 @@ Acceptance criteria:
 
 ## Phase 9 - Input and Interaction
 
-- [ ] Use Unity EventSystem drag/drop interfaces for first playable card interaction.
-- [ ] Implement drag begin, drag, and drag end on `CardView`.
-- [ ] Implement valid player slot drop handling.
-- [ ] Implement unplace interaction.
-- [ ] Implement resolve button behavior.
-- [ ] Implement continue button behavior during staged combat.
-- [ ] Add slot hover highlights and invalid-drop feedback.
-- [ ] Confirm keyboard/mouse/touch expectations and document the supported baseline.
-- [ ] Defer Rewired integration unless controller navigation/remapping is explicitly required.
+- [x] Use Unity EventSystem drag/drop interfaces for first playable card interaction.
+- [x] Implement drag begin, drag, and drag end on `CardView`.
+- [x] Implement valid player slot drop handling.
+- [x] Implement unplace interaction.
+- [x] Implement resolve button behavior.
+- [x] Implement continue button behavior during staged combat.
+- [x] Add slot hover highlights and invalid-drop feedback.
+- [x] Confirm keyboard/mouse/touch expectations and document the supported baseline.
+  - Baseline: mouse and touch pointer events through Unity `EventSystem` + UGUI drag/drop. Keyboard/gamepad navigation is deferred.
+- [x] Defer Rewired integration unless controller navigation/remapping is explicitly required.
 
 Acceptance criteria:
 
@@ -436,6 +437,13 @@ Use this template when claiming or finishing a task:
 ## Agent Work Log
 
 Add entries newest first.
+
+### 2026-04-21 - Codex - Phase 9 Input and Interaction
+
+- Plan item: Phase 9 - Input and Interaction.
+- Files changed: `Assets/Scripts/UI/CardView.cs`, `Assets/Scripts/UI/SlotView.cs`, `Assets/Scripts/UI/BoardView.cs`, `Assets/Scripts/UI/HandView.cs`, `Assets/Scripts/UI/GameplayUIView.cs`, `Assets/Scripts/UI/HUDView.cs`, `docs/implementation-plan.md`.
+- Verification: Compiled through Unity MCP; Play Mode opened `Assets/Scenes/Gameplay.unity` with a clean console; runtime smoke verified place/unplace state transitions through the scene's UI/controller wiring; all 94 EditMode tests passed.
+- Notes / follow-ups: Card dragging uses UGUI `IBeginDragHandler`, `IDragHandler`, and `IEndDragHandler`; slots use `IDropHandler` and click-to-unplace. Invalid targets highlight red, valid player slots highlight green. Mouse/touch pointer input is the supported baseline; keyboard/gamepad/Rewired remain deferred.
 
 ### 2026-04-21 - Codex - Phase 8 UI Foundation
 

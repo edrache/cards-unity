@@ -1,4 +1,5 @@
 using CardsUnity.Controllers;
+using CardsUnity.Data;
 using UnityEngine;
 
 namespace CardsUnity.UI
@@ -36,8 +37,9 @@ namespace CardsUnity.UI
             deckPanelView = deckPanel;
             rewardView = rewards;
 
-            hudView?.Bind(gameManager, roundController, combatController);
+            hudView?.Bind(gameManager, roundController, combatController, rewardController);
             rewardView?.BindController(rewardController);
+            BindInteractionEvents();
             Subscribe();
             Refresh();
         }
@@ -74,6 +76,118 @@ namespace CardsUnity.UI
             hudView?.Refresh(gameManager.State);
             deckPanelView?.Bind(gameManager.State);
             rewardView?.Bind(gameManager.State);
+        }
+
+        private void BindInteractionEvents()
+        {
+            if (handView != null)
+            {
+                handView.OnCardDragStarted -= HandleCardDragStarted;
+                handView.OnCardDragEnded -= HandleCardDragEnded;
+                handView.OnCardDragStarted += HandleCardDragStarted;
+                handView.OnCardDragEnded += HandleCardDragEnded;
+            }
+
+            if (boardView?.PlayerSlots == null) return;
+            foreach (SlotView slot in boardView.PlayerSlots)
+            {
+                if (slot == null) continue;
+                slot.OnCardDropped -= HandleCardDropped;
+                slot.OnUnplaceRequested -= HandleUnplaceRequested;
+                slot.OnCardDropped += HandleCardDropped;
+                slot.OnUnplaceRequested += HandleUnplaceRequested;
+            }
+
+            if (boardView.EnemySlots == null) return;
+            foreach (SlotView slot in boardView.EnemySlots)
+            {
+                if (slot == null) continue;
+                slot.OnCardDropped -= HandleCardDropped;
+                slot.OnCardDropped += HandleCardDropped;
+            }
+        }
+
+        private void HandleCardDragStarted(CardView cardView)
+        {
+            SetPlayerSlotDropHints(true, cardView);
+        }
+
+        private void HandleCardDragEnded(CardView cardView)
+        {
+            SetPlayerSlotDropHints(false, cardView);
+        }
+
+        private void HandleCardDropped(SlotView slot, CardView cardView)
+        {
+            if (gameManager == null || roundController == null || slot == null || cardView?.Card == null)
+                return;
+
+            if (!CanPlaceInSlot(slot, cardView))
+            {
+                slot.SetDropHint(true, false);
+                return;
+            }
+
+            roundController.PlaceCard(cardView.Card, slot.SlotIndex);
+            ClearPlayerSlotDropHints();
+        }
+
+        private void HandleUnplaceRequested(SlotView slot)
+        {
+            if (gameManager == null || roundController == null || slot == null) return;
+            if (gameManager.State.Phase != GamePhase.Placement) return;
+
+            roundController.UnplaceCard(slot.SlotIndex);
+        }
+
+        private void SetPlayerSlotDropHints(bool active, CardView draggedCard)
+        {
+            if (boardView?.PlayerSlots == null) return;
+
+            foreach (SlotView slot in boardView.PlayerSlots)
+            {
+                if (slot != null)
+                    slot.SetDropHint(active, CanPlaceInSlot(slot, draggedCard));
+            }
+
+            if (boardView.EnemySlots == null) return;
+            foreach (SlotView slot in boardView.EnemySlots)
+            {
+                if (slot != null)
+                    slot.SetDropHint(active, false);
+            }
+        }
+
+        private void ClearPlayerSlotDropHints()
+        {
+            if (boardView?.PlayerSlots == null) return;
+
+            foreach (SlotView slot in boardView.PlayerSlots)
+            {
+                if (slot != null)
+                    slot.SetDropHint(false, false);
+            }
+
+            if (boardView.EnemySlots == null) return;
+            foreach (SlotView slot in boardView.EnemySlots)
+            {
+                if (slot != null)
+                    slot.SetDropHint(false, false);
+            }
+        }
+
+        private bool CanPlaceInSlot(SlotView slot, CardView cardView)
+        {
+            if (gameManager == null || slot == null || cardView?.Card == null)
+                return false;
+            if (gameManager.State.Phase != GamePhase.Placement)
+                return false;
+            if (slot.Owner != CardOwner.Player)
+                return false;
+            if (slot.Card != null)
+                return false;
+
+            return gameManager.State.PlayerHand.Contains(cardView.Card);
         }
     }
 }

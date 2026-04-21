@@ -17,6 +17,7 @@ namespace CardsUnity.UI
         private GameManager _gameManager;
         private RoundController _roundController;
         private CombatController _combatController;
+        private RewardController _rewardController;
 
         public void Initialize(Text phase, Text round, Text outcome, Button draw, Button resolve, Button continueCombat)
         {
@@ -28,18 +29,28 @@ namespace CardsUnity.UI
             continueButton = continueCombat;
         }
 
-        public void Bind(GameManager gameManager, RoundController roundController, CombatController combatController)
+        public void Bind(GameManager gameManager, RoundController roundController, CombatController combatController, RewardController rewardController)
         {
             _gameManager = gameManager;
             _roundController = roundController;
             _combatController = combatController;
+            _rewardController = rewardController;
 
             if (drawButton != null)
+            {
+                drawButton.onClick.RemoveListener(DrawCards);
                 drawButton.onClick.AddListener(DrawCards);
+            }
             if (resolveButton != null)
+            {
+                resolveButton.onClick.RemoveListener(BeginCombat);
                 resolveButton.onClick.AddListener(BeginCombat);
+            }
             if (continueButton != null)
+            {
+                continueButton.onClick.RemoveListener(ContinueCombat);
                 continueButton.onClick.AddListener(ContinueCombat);
+            }
         }
 
         public void Refresh(GameState state)
@@ -78,9 +89,15 @@ namespace CardsUnity.UI
             if (_gameManager == null || _gameManager.State.Phase != GamePhase.Combat || _combatController == null) return;
 
             if (_combatController.HasPendingSteps)
+            {
                 _combatController.ResolveCombatStep();
+            }
             else
+            {
                 _combatController.FinalizeResolveRound();
+                if (_gameManager.State.Phase == GamePhase.Reward && _gameManager.State.RewardChoices.Count == 0)
+                    _rewardController?.GenerateRewardChoices();
+            }
         }
 
         private static string GetOutcomeText(GameState state)

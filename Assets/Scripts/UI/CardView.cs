@@ -1,10 +1,12 @@
+using System;
 using CardsUnity.Data;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CardsUnity.UI
 {
-    public sealed class CardView : MonoBehaviour
+    public sealed class CardView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         [SerializeField] private Image background;
         [SerializeField] private Text iconText;
@@ -15,7 +17,17 @@ namespace CardsUnity.UI
         [SerializeField] private Text ownerText;
         [SerializeField] private Text flavorText;
 
+        private RectTransform _rectTransform;
+        private CanvasGroup _canvasGroup;
+        private Transform _originalParent;
+        private int _originalSiblingIndex;
+        private Canvas _rootCanvas;
+
         public CardInstance Card { get; private set; }
+        public bool CanDrag { get; private set; }
+
+        public event Action<CardView> OnDragStarted;
+        public event Action<CardView> OnDragEnded;
 
         public void Initialize(
             Image cardBackground,
@@ -35,10 +47,12 @@ namespace CardsUnity.UI
             roleText = role;
             ownerText = owner;
             flavorText = flavor;
+            CacheComponents();
         }
 
         public void Bind(CardInstance card)
         {
+            CacheComponents();
             Card = card;
 
             if (card == null)
@@ -60,9 +74,81 @@ namespace CardsUnity.UI
                 background.color = GetCardColor(card);
         }
 
+        public void SetCanDrag(bool canDrag)
+        {
+            CanDrag = canDrag;
+        }
+
         public void Clear()
         {
             Bind(null);
+        }
+
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            if (!CanDrag || Card == null) return;
+            CacheComponents();
+
+            _rootCanvas = GetComponentInParent<Canvas>();
+            _originalParent = transform.parent;
+            _originalSiblingIndex = transform.GetSiblingIndex();
+
+            if (_rootCanvas != null)
+                transform.SetParent(_rootCanvas.transform, true);
+
+            transform.SetAsLastSibling();
+            if (_canvasGroup != null)
+            {
+                _canvasGroup.blocksRaycasts = false;
+                _canvasGroup.alpha = 0.82f;
+            }
+
+            OnDragStarted?.Invoke(this);
+        }
+
+        public void OnDrag(PointerEventData eventData)
+        {
+            if (!CanDrag || Card == null || _rectTransform == null) return;
+
+            if (_rootCanvas != null && _rootCanvas.renderMode != RenderMode.WorldSpace)
+                _rectTransform.anchoredPosition += eventData.delta / _rootCanvas.scaleFactor;
+            else
+                _rectTransform.position = eventData.position;
+        }
+
+        public void OnEndDrag(PointerEventData eventData)
+        {
+            if (!CanDrag || Card == null) return;
+
+            RestoreAfterDrag();
+            OnDragEnded?.Invoke(this);
+        }
+
+        public void RestoreAfterDrag()
+        {
+            if (_originalParent != null)
+            {
+                transform.SetParent(_originalParent, false);
+                transform.SetSiblingIndex(_originalSiblingIndex);
+            }
+
+            if (_canvasGroup != null)
+            {
+                _canvasGroup.blocksRaycasts = true;
+                _canvasGroup.alpha = 1f;
+            }
+        }
+
+        private void CacheComponents()
+        {
+            if (_rectTransform == null)
+                _rectTransform = GetComponent<RectTransform>();
+            if (_canvasGroup == null)
+            {
+                _canvasGroup = GetComponent<CanvasGroup>();
+                if (_canvasGroup == null)
+                    _canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            }
         }
 
         private static void SetText(Text target, string value)

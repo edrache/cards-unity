@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System;
 using CardsUnity.Data;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,6 +13,9 @@ namespace CardsUnity.UI
         [SerializeField] private Text emptyText;
 
         private readonly List<CardView> _views = new List<CardView>();
+
+        public event Action<CardView> OnCardDragStarted;
+        public event Action<CardView> OnCardDragEnded;
 
         public void Initialize(RectTransform root, CardView prefab, Text emptyLabel)
         {
@@ -30,7 +34,10 @@ namespace CardsUnity.UI
                 bool active = i < count;
                 _views[i].gameObject.SetActive(active);
                 if (active)
+                {
                     _views[i].Bind(cards[i]);
+                    _views[i].SetCanDrag(true);
+                }
             }
 
             if (emptyText != null)
@@ -45,8 +52,20 @@ namespace CardsUnity.UI
             {
                 CardView view = Instantiate(cardPrefab, contentRoot);
                 view.gameObject.SetActive(true);
+                view.OnDragStarted += HandleCardDragStarted;
+                view.OnDragEnded += HandleCardDragEnded;
                 _views.Add(view);
             }
+        }
+
+        private void HandleCardDragStarted(CardView cardView)
+        {
+            OnCardDragStarted?.Invoke(cardView);
+        }
+
+        private void HandleCardDragEnded(CardView cardView)
+        {
+            OnCardDragEnded?.Invoke(cardView);
         }
     }
 }
