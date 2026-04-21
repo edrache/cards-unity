@@ -24,6 +24,11 @@ namespace CardsUnity.Controllers
             _rng = new Random();
         }
 
+        public void Initialize(GameManager manager)
+        {
+            gameManager = manager;
+        }
+
         // Transitions to Combat phase and builds the ordered resolution queue.
         public void PrepareResolveRound()
         {

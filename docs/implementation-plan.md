@@ -286,24 +286,25 @@ Acceptance criteria:
 
 ## Phase 8 - UI Foundation
 
-- [ ] Build UI with UGUI as the default first-playable UI stack.
-- [ ] Create the main gameplay scene layout.
-- [ ] Implement `CardView`.
+- [x] Build UI with UGUI as the default first-playable UI stack.
+- [x] Create the main gameplay scene layout.
+- [x] Implement `CardView`.
   - Render name, RPS type, value, role, owner, icon or sprite, and flavor.
   - Bind to `CardInstance`.
-- [ ] Implement `SlotView`.
+- [x] Implement `SlotView`.
   - Represent player and enemy slots.
   - Expose hover/drop state.
-- [ ] Implement `BoardView`.
+- [x] Implement `BoardView`.
   - Manage three player slots and three enemy slots.
-- [ ] Implement `HandView`.
+- [x] Implement `HandView`.
   - Render `playerHand`.
-- [ ] Implement `HUDView`.
+- [x] Implement `HUDView`.
   - Show phase, round, resolve/continue action, and game outcome.
-- [ ] Implement `DeckPanelView`.
+- [x] Implement `DeckPanelView`.
   - Show player/enemy deck counts and cemetery counts.
-- [ ] Connect views to `GameManager` events.
-- [ ] Create production gameplay prefabs instead of copying demo prefabs from imported packages.
+- [x] Connect views to `GameManager` events.
+- [x] Create production gameplay prefabs instead of copying demo prefabs from imported packages.
+  - First-playable decision: `GameplaySceneBootstrap` builds the UGUI hierarchy and reusable card templates at runtime in `Assets/Scenes/Gameplay.unity`; no imported demo prefabs are copied.
 
 Acceptance criteria:
 
@@ -435,6 +436,13 @@ Use this template when claiming or finishing a task:
 ## Agent Work Log
 
 Add entries newest first.
+
+### 2026-04-21 - Codex - Phase 8 UI Foundation
+
+- Plan item: Phase 8 - UI Foundation.
+- Files changed: `Assets/Scripts/UI/`, `Assets/Scripts/Controllers/CombatController.cs`, `Assets/Scripts/Controllers/RewardController.cs`, `Assets/Scripts/Controllers/RoundController.cs`, `Assets/Scenes/Gameplay.unity`, `docs/implementation-plan.md`.
+- Verification: Compiled through Unity MCP; opened `Assets/Scenes/Gameplay.unity` in Play Mode with a clean console after fixing Unity 6 built-in font usage; all 94 EditMode tests passed.
+- Notes / follow-ups: UGUI views now render game state and subscribe through `GameplayUIView`. `GameplaySceneBootstrap` creates the first-playable layout and auto-draws the opening hand for inspection. Phase 9 should add real drag/drop placement, unplace behavior, and invalid-drop feedback. The MCP camera screenshot captured only the Main Camera background because the UI canvas is Screen Space Overlay.
 
 ### 2026-04-21 - Claude - Phase 7 Reward and Encounter Loop
 

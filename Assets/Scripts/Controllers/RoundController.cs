@@ -11,6 +11,11 @@ namespace CardsUnity.Controllers
 
         private GameState State => gameManager.State;
 
+        public void Initialize(GameManager manager)
+        {
+            gameManager = manager;
+        }
+
         public void DrawCards()
         {
             RoundFlow.DrawCards(State);

@@ -19,6 +19,11 @@ namespace CardsUnity.Controllers
             _rng = new Random();
         }
 
+        public void Initialize(GameManager manager)
+        {
+            gameManager = manager;
+        }
+
         // Generates 3 reward choices and transitions to Reward phase.
         public void GenerateRewardChoices()
         {
