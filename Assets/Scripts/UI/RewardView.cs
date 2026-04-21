@@ -65,9 +65,20 @@ namespace CardsUnity.UI
             {
                 GameObject buttonObject = new GameObject("RewardChoice", typeof(RectTransform), typeof(Image), typeof(Button));
                 buttonObject.transform.SetParent(contentRoot, false);
+                Image image = buttonObject.GetComponent<Image>();
+                image.color = new Color32(255, 255, 255, 0);
                 Button button = buttonObject.GetComponent<Button>();
                 CardView view = Instantiate(cardPrefab, buttonObject.transform);
                 view.gameObject.SetActive(true);
+                LayoutElement viewLayout = view.GetComponent<LayoutElement>();
+                LayoutElement buttonLayout = buttonObject.AddComponent<LayoutElement>();
+                if (viewLayout != null)
+                {
+                    buttonLayout.minWidth = viewLayout.minWidth;
+                    buttonLayout.preferredWidth = viewLayout.preferredWidth;
+                    buttonLayout.minHeight = viewLayout.minHeight;
+                    buttonLayout.preferredHeight = viewLayout.preferredHeight;
+                }
                 _buttons.Add(button);
             }
         }

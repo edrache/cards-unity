@@ -20,6 +20,7 @@ namespace CardsUnity.UI
         [SerializeField] private Text flavorText;
         [SerializeField] private Text previewBadgeText;
         [SerializeField] private AnimConfig animConfig;
+        [SerializeField] private CardVisualConfig visualConfig;
 
         private RectTransform _rectTransform;
         private CanvasGroup _canvasGroup;
@@ -46,7 +47,8 @@ namespace CardsUnity.UI
             Text owner,
             Text flavor,
             Text previewBadge = null,
-            AnimConfig animationConfig = null)
+            AnimConfig animationConfig = null,
+            CardVisualConfig cardVisualConfig = null)
         {
             background = cardBackground;
             iconText = icon;
@@ -58,7 +60,9 @@ namespace CardsUnity.UI
             flavorText = flavor;
             previewBadgeText = previewBadge;
             animConfig = animationConfig;
+            visualConfig = cardVisualConfig;
             CacheComponents();
+            ApplyVisualConfig(visualConfig);
         }
 
         public void Bind(CardInstance card)
@@ -91,6 +95,31 @@ namespace CardsUnity.UI
         public void SetAnimConfig(AnimConfig animationConfig)
         {
             animConfig = animationConfig;
+        }
+
+        public void ApplyVisualConfig(CardVisualConfig cardVisualConfig)
+        {
+            visualConfig = cardVisualConfig;
+            if (visualConfig == null) return;
+
+            CacheComponents();
+            if (_rectTransform != null)
+                _rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, visualConfig.Width);
+            if (_rectTransform != null)
+                _rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, visualConfig.Height);
+
+            LayoutElement layout = GetComponent<LayoutElement>();
+            if (layout == null)
+                layout = gameObject.AddComponent<LayoutElement>();
+            layout.minWidth = visualConfig.Width;
+            layout.preferredWidth = visualConfig.Width;
+            layout.minHeight = visualConfig.Height;
+            layout.preferredHeight = visualConfig.Height;
+            layout.flexibleWidth = 0f;
+            layout.flexibleHeight = 0f;
+
+            if (background != null)
+                RoundedImageUtility.ApplyRoundedSprite(background, visualConfig.CornerRadius);
         }
 
         public void SetCanDrag(bool canDrag)

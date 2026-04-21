@@ -372,13 +372,16 @@ Acceptance criteria:
 
 ## Phase 12 - Visual Polish and Responsiveness
 
-- [ ] Apply card dimensions and corner radius from `CardVisualConfig`.
-- [ ] Establish a consistent card visual hierarchy.
-- [ ] Integrate TrueShadow where it improves card readability.
-- [ ] Apply Quibli/URP visual direction if 3D or stylized materials are used.
-- [ ] Keep Quibli optional unless a stylized 3D/2.5D scene treatment is intentionally added.
-- [ ] Check layout in common desktop and mobile aspect ratios.
-- [ ] Ensure text does not overflow cards, buttons, or panels.
+- [x] Apply card dimensions and corner radius from `CardVisualConfig`.
+- [x] Establish a consistent card visual hierarchy.
+- [x] Integrate TrueShadow where it improves card readability.
+  - Implemented as optional runtime reflection so gameplay UI still compiles and runs if TrueShadow is removed.
+- [x] Apply Quibli/URP visual direction if 3D or stylized materials are used.
+  - Decision: no 3D/2.5D scene treatment is used in the first-playable UGUI scene, so Quibli/URP material polish remains intentionally unused.
+- [x] Keep Quibli optional unless a stylized 3D/2.5D scene treatment is intentionally added.
+- [x] Check layout in common desktop and mobile aspect ratios.
+  - `CanvasScaler` uses a 1440x900 reference and balanced width/height matching; runtime smoke verified generated UI sizing.
+- [x] Ensure text does not overflow cards, buttons, or panels.
 
 Acceptance criteria:
 
@@ -440,6 +443,13 @@ Use this template when claiming or finishing a task:
 ## Agent Work Log
 
 Add entries newest first.
+
+### 2026-04-21 - Codex - Phase 12 Visual Polish and Responsiveness
+
+- Plan item: Phase 12 - Visual Polish and Responsiveness.
+- Files changed: `Assets/Scripts/UI/CardView.cs`, `Assets/Scripts/UI/GameplaySceneBootstrap.cs`, `Assets/Scripts/UI/RewardView.cs`, `Assets/Scripts/UI/RoundedImageUtility.cs`, `Assets/Scripts/Tests/CardViewVisualTests.cs`, `docs/implementation-plan.md`.
+- Verification: Compiled through Unity MCP; all 96 EditMode tests passed; Play Mode opened `Assets/Scenes/Gameplay.unity` with a clean console; runtime layout smoke confirmed active cards use 150x210 dimensions, `CanvasScaler` is configured, and visible UGUI text had no detected overflow risks.
+- Notes / follow-ups: `CardVisualConfig` now drives generated card dimensions and rounded sprites. TrueShadow is attached only when the package type is available. Quibli remains deferred because the current first-playable scene is UGUI-only.
 
 ### 2026-04-21 - Codex - Phase 11 Animation and Feedback
 

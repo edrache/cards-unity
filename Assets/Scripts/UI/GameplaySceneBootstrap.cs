@@ -41,13 +41,14 @@ namespace CardsUnity.UI
             combatController.Initialize(_gameManager);
             rewardController.Initialize(_gameManager);
             AnimConfig animConfig = Resources.Load<AnimConfig>("Config/DefaultAnimConfig");
+            CardVisualConfig visualConfig = Resources.Load<CardVisualConfig>("Config/DefaultCardVisualConfig");
 
             Canvas canvas = CreateCanvas();
             RectTransform root = CreatePanel("Root", canvas.transform, new Color32(34, 38, 45, 255));
             Stretch(root);
             VerticalLayoutGroup rootLayout = root.gameObject.AddComponent<VerticalLayoutGroup>();
-            rootLayout.padding = new RectOffset(24, 24, 18, 18);
-            rootLayout.spacing = 16;
+            rootLayout.padding = new RectOffset(20, 20, 16, 16);
+            rootLayout.spacing = 12;
             rootLayout.childControlWidth = true;
             rootLayout.childControlHeight = true;
             rootLayout.childForceExpandWidth = true;
@@ -58,21 +59,21 @@ namespace CardsUnity.UI
             CombatResultView combatResultView = CreateCombatResultView(top, animConfig);
             DeckPanelView deckPanelView = CreateDeckPanel(top);
 
-            RectTransform enemyBand = CreateBoardBand("Enemy Board", root, 236);
-            RectTransform playerBand = CreateBoardBand("Player Board", root, 236);
+            RectTransform enemyBand = CreateBoardBand("Enemy Board", root, GetBoardBandHeight(visualConfig));
+            RectTransform playerBand = CreateBoardBand("Player Board", root, GetBoardBandHeight(visualConfig));
             BoardView boardView = root.gameObject.AddComponent<BoardView>();
-            SlotView[] enemySlots = CreateSlots(enemyBand, CardOwner.Enemy, animConfig);
-            SlotView[] playerSlots = CreateSlots(playerBand, CardOwner.Player, animConfig);
+            SlotView[] enemySlots = CreateSlots(enemyBand, CardOwner.Enemy, animConfig, visualConfig);
+            SlotView[] playerSlots = CreateSlots(playerBand, CardOwner.Player, animConfig, visualConfig);
             boardView.Initialize(playerSlots, enemySlots);
 
-            RectTransform handBand = CreateBoardBand("Hand", root, 252);
+            RectTransform handBand = CreateBoardBand("Hand", root, GetHandBandHeight(visualConfig));
             HandView handView = handBand.gameObject.AddComponent<HandView>();
             RectTransform handContent = CreateHorizontalContent("HandContent", handBand, 10);
             Text emptyHand = CreateText("EmptyHand", handBand, "No cards in hand", 18, TextAnchor.MiddleCenter);
-            CardView cardTemplate = CreateCardTemplate(canvas.transform, animConfig);
+            CardView cardTemplate = CreateCardTemplate(canvas.transform, animConfig, visualConfig);
             handView.Initialize(handContent, cardTemplate, emptyHand);
 
-            RewardView rewardView = CreateRewardView(root, cardTemplate);
+            RewardView rewardView = CreateRewardView(root, cardTemplate, visualConfig);
             TooltipView tooltipView = CreateTooltipView(root, animConfig);
 
             GameplayUIView ui = root.gameObject.AddComponent<GameplayUIView>();
@@ -96,7 +97,7 @@ namespace CardsUnity.UI
             CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1440, 900);
-            scaler.matchWidthOrHeight = 0.5f;
+            scaler.matchWidthOrHeight = 0.45f;
 
             return canvas;
         }
@@ -104,8 +105,12 @@ namespace CardsUnity.UI
         private static HUDView CreateHud(Transform parent)
         {
             RectTransform panel = CreatePanel("HUD", parent, new Color32(246, 247, 240, 255));
-            panel.gameObject.AddComponent<HorizontalLayoutGroup>().spacing = 8;
+            HorizontalLayoutGroup layout = panel.gameObject.AddComponent<HorizontalLayoutGroup>();
+            layout.padding = new RectOffset(12, 12, 8, 8);
+            layout.spacing = 8;
             panel.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
+            RoundedImageUtility.ApplyRoundedSprite(panel.GetComponent<Image>(), 8f);
+            RoundedImageUtility.AddOptionalTrueShadow(panel.gameObject, 14f, 4f, new Color(0f, 0f, 0f, 0.18f));
 
             Text phase = CreateText("Phase", panel, "Phase", 18, TextAnchor.MiddleLeft);
             Text round = CreateText("Round", panel, "Round", 18, TextAnchor.MiddleLeft);
@@ -126,6 +131,8 @@ namespace CardsUnity.UI
             layout.padding = new RectOffset(12, 12, 8, 8);
             layout.spacing = 2;
             panel.gameObject.AddComponent<LayoutElement>().preferredWidth = 280;
+            RoundedImageUtility.ApplyRoundedSprite(panel.GetComponent<Image>(), 8f);
+            RoundedImageUtility.AddOptionalTrueShadow(panel.gameObject, 12f, 3f, new Color(0f, 0f, 0f, 0.14f));
 
             Text playerDeck = CreateText("PlayerDeck", panel, string.Empty, 16, TextAnchor.MiddleLeft);
             Text playerCemetery = CreateText("PlayerCemetery", panel, string.Empty, 16, TextAnchor.MiddleLeft);
@@ -146,6 +153,8 @@ namespace CardsUnity.UI
             LayoutElement element = panel.gameObject.AddComponent<LayoutElement>();
             element.flexibleWidth = 1;
             element.preferredHeight = 132;
+            RoundedImageUtility.ApplyRoundedSprite(panel.GetComponent<Image>(), 8f);
+            RoundedImageUtility.AddOptionalTrueShadow(panel.gameObject, 12f, 3f, new Color(0f, 0f, 0f, 0.14f));
 
             Text title = CreateText("CombatResultTitle", panel, string.Empty, 17, TextAnchor.MiddleLeft);
             Text body = CreateText("CombatResultBody", panel, string.Empty, 13, TextAnchor.UpperLeft);
@@ -157,9 +166,9 @@ namespace CardsUnity.UI
             return view;
         }
 
-        private static RewardView CreateRewardView(Transform parent, CardView cardTemplate)
+        private static RewardView CreateRewardView(Transform parent, CardView cardTemplate, CardVisualConfig visualConfig)
         {
-            RectTransform panel = CreateBoardBand("Reward", parent, 252);
+            RectTransform panel = CreateBoardBand("Reward", parent, GetHandBandHeight(visualConfig));
             RewardView view = panel.gameObject.AddComponent<RewardView>();
             Text title = CreateText("RewardTitle", panel, "Reward draft", 20, TextAnchor.MiddleCenter);
             RectTransform content = CreateHorizontalContent("RewardChoices", panel, 12);
@@ -177,6 +186,8 @@ namespace CardsUnity.UI
             LayoutElement element = panel.gameObject.AddComponent<LayoutElement>();
             element.preferredHeight = 112;
             element.flexibleWidth = 1;
+            RoundedImageUtility.ApplyRoundedSprite(panel.GetComponent<Image>(), 8f);
+            RoundedImageUtility.AddOptionalTrueShadow(panel.gameObject, 12f, 3f, new Color(0f, 0f, 0f, 0.14f));
 
             Text title = CreateText("TooltipTitle", panel, string.Empty, 17, TextAnchor.MiddleLeft);
             Text body = CreateText("TooltipBody", panel, string.Empty, 14, TextAnchor.UpperLeft);
@@ -188,7 +199,7 @@ namespace CardsUnity.UI
             return view;
         }
 
-        private static SlotView[] CreateSlots(Transform parent, CardOwner owner, AnimConfig animConfig)
+        private static SlotView[] CreateSlots(Transform parent, CardOwner owner, AnimConfig animConfig, CardVisualConfig visualConfig)
         {
             SlotView[] slots = new SlotView[3];
             RectTransform content = CreateHorizontalContent($"{owner}Slots", parent, 16);
@@ -196,14 +207,17 @@ namespace CardsUnity.UI
             {
                 RectTransform slot = CreatePanel($"{owner} Slot {i + 1}", content, new Color32(238, 238, 238, 255));
                 LayoutElement layout = slot.gameObject.AddComponent<LayoutElement>();
-                layout.preferredWidth = 190;
-                layout.preferredHeight = 210;
+                layout.preferredWidth = GetSlotWidth(visualConfig);
+                layout.preferredHeight = GetSlotHeight(visualConfig);
                 VerticalLayoutGroup group = slot.gameObject.AddComponent<VerticalLayoutGroup>();
                 group.padding = new RectOffset(10, 10, 8, 10);
-                group.spacing = 6;
+                group.spacing = 4;
+                RoundedImageUtility.ApplyRoundedSprite(slot.GetComponent<Image>(), GetSlotCornerRadius(visualConfig));
+                RoundedImageUtility.AddOptionalTrueShadow(slot.gameObject, 10f, 2f, new Color(0f, 0f, 0f, 0.12f));
 
                 Text label = CreateText("Label", slot, $"{owner} {i + 1}", 14, TextAnchor.MiddleCenter);
-                CardView card = CreateCardView("Card", slot, animConfig);
+                SetTextLayout(label, 18f, 20f, 0f);
+                CardView card = CreateCardView("Card", slot, animConfig, visualConfig);
                 SlotView slotView = slot.gameObject.AddComponent<SlotView>();
                 slotView.Initialize(i, owner, slot.GetComponent<Image>(), label, card);
                 slots[i] = slotView;
@@ -212,23 +226,30 @@ namespace CardsUnity.UI
             return slots;
         }
 
-        private static CardView CreateCardTemplate(Transform parent, AnimConfig animConfig)
+        private static CardView CreateCardTemplate(Transform parent, AnimConfig animConfig, CardVisualConfig visualConfig)
         {
-            CardView template = CreateCardView("Card Template", parent, animConfig);
+            CardView template = CreateCardView("Card Template", parent, animConfig, visualConfig);
             template.gameObject.SetActive(false);
             return template;
         }
 
-        private static CardView CreateCardView(string name, Transform parent, AnimConfig animConfig)
+        private static CardView CreateCardView(string name, Transform parent, AnimConfig animConfig, CardVisualConfig visualConfig)
         {
             RectTransform card = CreatePanel(name, parent, Color.white);
             LayoutElement layout = card.gameObject.AddComponent<LayoutElement>();
-            layout.preferredWidth = 160;
-            layout.preferredHeight = 200;
+            layout.preferredWidth = GetCardWidth(visualConfig);
+            layout.preferredHeight = GetCardHeight(visualConfig);
+            layout.minWidth = GetCardWidth(visualConfig);
+            layout.minHeight = GetCardHeight(visualConfig);
 
             VerticalLayoutGroup group = card.gameObject.AddComponent<VerticalLayoutGroup>();
-            group.padding = new RectOffset(10, 10, 8, 8);
-            group.spacing = 3;
+            group.padding = new RectOffset(9, 9, 7, 7);
+            group.spacing = 2;
+            group.childControlWidth = true;
+            group.childControlHeight = true;
+            group.childForceExpandHeight = false;
+            RoundedImageUtility.ApplyRoundedSprite(card.GetComponent<Image>(), GetCardCornerRadius(visualConfig));
+            RoundedImageUtility.AddOptionalTrueShadow(card.gameObject, 16f, 4f, new Color(0f, 0f, 0f, 0.22f));
 
             Text icon = CreateText("Icon", card, "?", 30, TextAnchor.MiddleCenter);
             Text cardName = CreateText("Name", card, "Card", 17, TextAnchor.MiddleCenter);
@@ -238,9 +259,20 @@ namespace CardsUnity.UI
             Text preview = CreateText("Preview", card, string.Empty, 12, TextAnchor.MiddleCenter);
             Text owner = CreateText("Owner", card, "Owner", 12, TextAnchor.MiddleCenter);
             Text flavor = CreateText("Flavor", card, string.Empty, 11, TextAnchor.UpperCenter);
+            SetTextLayout(icon, 24f, 26f, 0f);
+            SetTextLayout(cardName, 30f, 32f, 0f);
+            SetTextLayout(value, 24f, 28f, 0f);
+            SetTextLayout(rps, 16f, 18f, 0f);
+            SetTextLayout(role, 16f, 18f, 0f);
+            SetTextLayout(preview, 18f, 20f, 0f);
+            SetTextLayout(owner, 14f, 16f, 0f);
+            SetTextLayout(flavor, 20f, 22f, 1f);
+            flavor.horizontalOverflow = HorizontalWrapMode.Wrap;
+            flavor.verticalOverflow = VerticalWrapMode.Truncate;
+            cardName.horizontalOverflow = HorizontalWrapMode.Wrap;
 
             CardView view = card.gameObject.AddComponent<CardView>();
-            view.Initialize(card.GetComponent<Image>(), icon, cardName, value, rps, role, owner, flavor, preview, animConfig);
+            view.Initialize(card.GetComponent<Image>(), icon, cardName, value, rps, role, owner, flavor, preview, animConfig, visualConfig);
             return view;
         }
 
@@ -267,6 +299,8 @@ namespace CardsUnity.UI
             LayoutElement element = band.gameObject.AddComponent<LayoutElement>();
             element.preferredHeight = height;
             element.flexibleWidth = 1;
+            RoundedImageUtility.ApplyRoundedSprite(band.GetComponent<Image>(), 8f);
+            RoundedImageUtility.AddOptionalTrueShadow(band.gameObject, 10f, 3f, new Color(0f, 0f, 0f, 0.12f));
             CreateText($"{title} Title", band, title, 18, TextAnchor.MiddleLeft);
             return band;
         }
@@ -293,6 +327,7 @@ namespace CardsUnity.UI
             LayoutElement layout = rect.gameObject.AddComponent<LayoutElement>();
             layout.preferredWidth = 110;
             layout.preferredHeight = 44;
+            RoundedImageUtility.ApplyRoundedSprite(rect.GetComponent<Image>(), 8f);
             Button button = rect.gameObject.AddComponent<Button>();
             Text text = CreateText("Text", rect, label, 16, TextAnchor.MiddleCenter);
             text.color = Color.white;
@@ -318,6 +353,18 @@ namespace CardsUnity.UI
             return uiText;
         }
 
+        private static void SetTextLayout(Text text, float minHeight, float preferredHeight, float flexibleHeight)
+        {
+            if (text == null) return;
+
+            LayoutElement layout = text.GetComponent<LayoutElement>();
+            if (layout == null)
+                layout = text.gameObject.AddComponent<LayoutElement>();
+            layout.minHeight = minHeight;
+            layout.preferredHeight = preferredHeight;
+            layout.flexibleHeight = flexibleHeight;
+        }
+
         private static RectTransform CreatePanel(string name, Transform parent, Color color)
         {
             GameObject panel = new GameObject(name, typeof(RectTransform), typeof(Image));
@@ -334,5 +381,14 @@ namespace CardsUnity.UI
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
         }
+
+        private static float GetCardWidth(CardVisualConfig visualConfig) => visualConfig != null ? visualConfig.Width : 150f;
+        private static float GetCardHeight(CardVisualConfig visualConfig) => visualConfig != null ? visualConfig.Height : 210f;
+        private static float GetCardCornerRadius(CardVisualConfig visualConfig) => visualConfig != null ? visualConfig.CornerRadius : 10f;
+        private static float GetSlotWidth(CardVisualConfig visualConfig) => GetCardWidth(visualConfig) + 24f;
+        private static float GetSlotHeight(CardVisualConfig visualConfig) => GetCardHeight(visualConfig) + 36f;
+        private static float GetSlotCornerRadius(CardVisualConfig visualConfig) => GetCardCornerRadius(visualConfig) + 4f;
+        private static float GetBoardBandHeight(CardVisualConfig visualConfig) => GetCardHeight(visualConfig) + 82f;
+        private static float GetHandBandHeight(CardVisualConfig visualConfig) => GetCardHeight(visualConfig) + 82f;
     }
 }
