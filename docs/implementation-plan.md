@@ -266,16 +266,17 @@ Acceptance criteria:
 
 ## Phase 7 - Reward and Encounter Loop
 
-- [ ] Implement `RewardController.GenerateRewardChoices()`.
+- [x] Implement `RewardController.GenerateRewardChoices()`.
   - Shuffle a fresh player deck copy and take three cards.
-- [ ] Implement reward selection.
+- [x] Implement reward selection.
   - Add selected card to `playerDeck`.
-- [ ] Implement new encounter setup.
+- [x] Implement new encounter setup.
   - Create new enemy deck and board.
   - Reset round to `1`.
   - Move phase to draw.
-- [ ] Decide whether the added reward card enters the draw pile immediately or after shuffle, and document the exact behavior.
-- [ ] Add tests for reward choice count, selected card ownership, encounter reset, and player deck persistence.
+- [x] Decide whether the added reward card enters the draw pile immediately or after shuffle, and document the exact behavior.
+  - Decision: card is appended to the end of `playerDeck` without reshuffling. It will be drawn in a future round when the draw pile reaches it.
+- [x] Add tests for reward choice count, selected card ownership, encounter reset, and player deck persistence.
 
 Acceptance criteria:
 
@@ -434,6 +435,13 @@ Use this template when claiming or finishing a task:
 ## Agent Work Log
 
 Add entries newest first.
+
+### 2026-04-21 - Claude - Phase 7 Reward and Encounter Loop
+
+- Plan item: Phase 7 - Reward and Encounter Loop.
+- Files changed: `Assets/Scripts/Runtime/RewardFlow.cs`, `Assets/Scripts/Controllers/RewardController.cs`, `Assets/Scripts/Tests/RewardFlowTests.cs`, `docs/implementation-plan.md`.
+- Verification: Compiled without errors; all 94 EditMode tests passed (17 new in RewardFlowTests, 77 existing).
+- Notes / follow-ups: Reward choices pool from all zones (deck + hand + cemetery + board) to avoid empty pool edge cases. Selected card appended to end of `playerDeck` without reshuffle — this is documented in the plan. `RewardController.SelectRewardAndStartEncounter` combines selection + new encounter in one call to keep UI simple.
 
 ### 2026-04-21 - Claude - Phase 6 Staged Combat Controller
 
