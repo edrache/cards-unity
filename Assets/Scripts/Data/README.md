@@ -10,3 +10,5 @@ Expected homes:
 - Shared enums such as RPS, role, owner, and phase.
 
 Runtime mutation must affect only `CardInstance` objects. Card definitions remain immutable.
+
+`GameState` is constructed with a slot count, usually from `GameConfig.SlotCount`, so board sizes stay config-driven while the state object remains free of scene dependencies.

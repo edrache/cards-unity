@@ -9,7 +9,9 @@ Conversation with the user is conducted in **Polish**.
 
 ## Project Overview
 
-Unity 6 (6000.3.10f1) port of a browser-based turn-based card combat game. The game logic is fully documented in [`../docs/unity-migration.md`](../docs/unity-migration.md) — read it before implementing any game feature. The original HTML/JS prototype lives in the parent directory.
+Unity 6 (6000.3.10f1) port of a browser-based turn-based card combat game. The game logic is fully documented in [`docs/unity-migration.md`](docs/unity-migration.md) — read it before implementing any game feature. The original HTML/JS prototype lives in the parent directory.
+
+The phased implementation plan with task status, acceptance criteria, and agent work log is in [`docs/implementation-plan.md`](docs/implementation-plan.md). Check it before starting any new work and update it after completing tasks.
 
 ## Key Dependencies
 

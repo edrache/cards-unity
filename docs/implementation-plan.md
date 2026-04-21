@@ -143,22 +143,22 @@ Acceptance criteria:
 
 ## Phase 2 - Core Data Model
 
-- [ ] Implement `RpsType` enum.
+- [x] Implement `RpsType` enum.
   - Values: `Pressure`, `Appeal`, `Positioning`.
-- [ ] Implement `CardRole` enum.
+- [x] Implement `CardRole` enum.
   - Values: `Attack`, `Defense`, `Support`, `None`.
-- [ ] Implement `CardOwner` enum.
+- [x] Implement `CardOwner` enum.
   - Values: `Player`, `Enemy`.
-- [ ] Implement `GamePhase` enum.
+- [x] Implement `GamePhase` enum.
   - Values: `Draw`, `Placement`, `Combat`, `Reward`, `End`.
-- [ ] Implement `CardData` ScriptableObject for immutable card definitions.
-- [ ] Implement `CardInstance` as a plain C# runtime class.
+- [x] Implement `CardData` ScriptableObject for immutable card definitions.
+- [x] Implement `CardInstance` as a plain C# runtime class.
   - Include definition reference or copied static fields.
   - Include mutable `Value`.
   - Do not inherit from `MonoBehaviour`.
-- [ ] Implement `GameState` as a plain C# runtime class.
+- [x] Implement `GameState` as a plain C# runtime class.
   - Include phase, round, player deck, player hand, player cemetery, player board, enemy deck, enemy cemetery, enemy board, placement order, and reward choices.
-- [ ] Add basic data model tests if Unity test setup is available.
+- [x] Add basic data model tests if Unity test setup is available.
 
 Acceptance criteria:
 
@@ -434,6 +434,13 @@ Use this template when claiming or finishing a task:
 ## Agent Work Log
 
 Add entries newest first.
+
+### 2026-04-21 - Codex - Phase 2 Core Data Model
+
+- Plan item: Phase 2 - Core Data Model.
+- Files changed: `Assets/Scripts/Data/`, `Assets/Scripts/Tests/`, `docs/implementation-plan.md`.
+- Verification: Added ScriptableObject/plain C# data model, validated scripts through Unity MCP, and ran EditMode data model tests.
+- Notes / follow-ups: Phase 3 should create `CardData` assets and `DeckFactory` cloning/shuffle logic on top of these types.
 
 ### 2026-04-20 - Codex - Phase 1 Configuration Assets
 
