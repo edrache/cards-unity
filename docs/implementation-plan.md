@@ -212,27 +212,27 @@ Acceptance criteria:
 
 ## Phase 5 - Game Manager and Round Flow
 
-- [ ] Implement `GameManager`.
+- [x] Implement `GameManager`.
   - Own one `GameState`.
   - Initialize a new run.
   - Expose events for phase/state changes.
-- [ ] Implement `RoundController.DrawCards()`.
+- [x] Implement `RoundController.DrawCards()`.
   - Draw until hand reaches the number of empty player board slots or deck is empty.
   - Clear `placementOrder`.
   - Move phase to placement.
-- [ ] Implement `RoundController.PlaceCard()`.
+- [x] Implement `RoundController.PlaceCard()`.
   - Move card from hand to the selected board slot.
   - Append card to `placementOrder`.
-- [ ] Implement `RoundController.UnplaceCard()`.
+- [x] Implement `RoundController.UnplaceCard()`.
   - Return card to hand.
   - Remove card from `placementOrder`.
-- [ ] Implement `RoundController.CanResolve()`.
+- [x] Implement `RoundController.CanResolve()`.
   - True when all player slots are filled or hand is empty.
-- [ ] Implement resolution-order calculation.
+- [x] Implement resolution-order calculation.
   - Use placement order first.
   - Skip slots with no enemy card.
   - Append remaining filled slots in index order for edge cases.
-- [ ] Add tests for draw, place, unplace, can-resolve, and resolution ordering.
+- [x] Add tests for draw, place, unplace, can-resolve, and resolution ordering.
 
 Acceptance criteria:
 
@@ -434,6 +434,13 @@ Use this template when claiming or finishing a task:
 ## Agent Work Log
 
 Add entries newest first.
+
+### 2026-04-21 - Claude - Phase 5 Game Manager and Round Flow
+
+- Plan item: Phase 5 - Game Manager and Round Flow.
+- Files changed: `Assets/Scripts/Runtime/RoundFlow.cs`, `Assets/Scripts/Controllers/GameManager.cs`, `Assets/Scripts/Controllers/RoundController.cs`, `Assets/Scripts/Tests/RoundFlowTests.cs`, `docs/implementation-plan.md`.
+- Verification: Compiled without errors; all 21 EditMode tests passed (RoundFlowTests suite).
+- Notes / follow-ups: Round logic extracted to `RoundFlow` static class for testability. `GameManager` loads card definitions from Resources and fills enemy board on `StartNewRun()`. `RoundFlow.FillEnemyBoard` is also called by Phase 6 CombatController after each round.
 
 ### 2026-04-21 - Claude - Phase 4 Combat Resolver
 
