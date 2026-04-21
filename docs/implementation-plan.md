@@ -242,21 +242,21 @@ Acceptance criteria:
 
 ## Phase 6 - Staged Combat Controller
 
-- [ ] Implement `CombatController.PrepareResolveRound()`.
+- [x] Implement `CombatController.PrepareResolveRound()`.
   - Set phase to combat.
   - Build the staged resolution queue.
-- [ ] Implement `CombatController.ResolveCombatStep()`.
+- [x] Implement `CombatController.ResolveCombatStep()`.
   - Resolve one queued column at a time.
   - Return or publish the combat result for UI.
-- [ ] Implement `CombatController.FinalizeResolveRound()`.
+- [x] Implement `CombatController.FinalizeResolveRound()`.
   - Move dead player cards to player cemetery.
   - Move dead enemy cards to enemy cemetery.
   - Return surviving player cards to hand.
   - Refill enemy board from enemy deck left to right.
   - Increment round.
   - Set next phase to end, reward, or draw.
-- [ ] Ensure enemy deck refills only during final cleanup, never after each fight.
-- [ ] Add tests for cleanup, death handling, enemy refill, loss, reward transition, and continue transition.
+- [x] Ensure enemy deck refills only during final cleanup, never after each fight.
+- [x] Add tests for cleanup, death handling, enemy refill, loss, reward transition, and continue transition.
 
 Acceptance criteria:
 
@@ -434,6 +434,13 @@ Use this template when claiming or finishing a task:
 ## Agent Work Log
 
 Add entries newest first.
+
+### 2026-04-21 - Claude - Phase 6 Staged Combat Controller
+
+- Plan item: Phase 6 - Staged Combat Controller.
+- Files changed: `Assets/Scripts/Runtime/CombatFlow.cs`, `Assets/Scripts/Controllers/CombatController.cs`, `Assets/Scripts/Tests/CombatFlowTests.cs`, `docs/implementation-plan.md`.
+- Verification: Compiled without errors; all 77 EditMode tests passed (19 new in CombatFlowTests, 58 existing).
+- Notes / follow-ups: Pure logic lives in `CombatFlow` static class (testable without MonoBehaviour). `CombatController` is the MonoBehaviour integration layer — it holds the `Queue<int>` and `Random` instance, fires `OnCombatResult` event for UI, and delegates cleanup/phase to `CombatFlow`. `DetermineNextPhase` is a separate public method so Phase 7 (`RewardController`) can call it independently if needed.
 
 ### 2026-04-21 - Claude - Phase 5 Game Manager and Round Flow
 
