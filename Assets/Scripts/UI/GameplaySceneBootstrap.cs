@@ -51,8 +51,9 @@ namespace CardsUnity.UI
             rootLayout.childForceExpandWidth = true;
             rootLayout.childForceExpandHeight = false;
 
-            RectTransform top = CreateHorizontalBand("Top", root, 12, 116);
+            RectTransform top = CreateHorizontalBand("Top", root, 12, 150);
             HUDView hudView = CreateHud(top);
+            CombatResultView combatResultView = CreateCombatResultView(top);
             DeckPanelView deckPanelView = CreateDeckPanel(top);
 
             RectTransform enemyBand = CreateBoardBand("Enemy Board", root, 236);
@@ -70,9 +71,10 @@ namespace CardsUnity.UI
             handView.Initialize(handContent, cardTemplate, emptyHand);
 
             RewardView rewardView = CreateRewardView(root, cardTemplate);
+            TooltipView tooltipView = CreateTooltipView(root);
 
             GameplayUIView ui = root.gameObject.AddComponent<GameplayUIView>();
-            ui.Initialize(_gameManager, _roundController, combatController, rewardController, boardView, handView, hudView, deckPanelView, rewardView);
+            ui.Initialize(_gameManager, _roundController, combatController, rewardController, boardView, handView, hudView, deckPanelView, rewardView, combatResultView, tooltipView);
         }
 
         private static void EnsureEventSystem()
@@ -133,6 +135,26 @@ namespace CardsUnity.UI
             return view;
         }
 
+        private static CombatResultView CreateCombatResultView(Transform parent)
+        {
+            RectTransform panel = CreatePanel("Combat Result", parent, new Color32(239, 231, 217, 255));
+            VerticalLayoutGroup layout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(12, 12, 8, 8);
+            layout.spacing = 2;
+            LayoutElement element = panel.gameObject.AddComponent<LayoutElement>();
+            element.flexibleWidth = 1;
+            element.preferredHeight = 132;
+
+            Text title = CreateText("CombatResultTitle", panel, string.Empty, 17, TextAnchor.MiddleLeft);
+            Text body = CreateText("CombatResultBody", panel, string.Empty, 13, TextAnchor.UpperLeft);
+            body.horizontalOverflow = HorizontalWrapMode.Wrap;
+            body.verticalOverflow = VerticalWrapMode.Truncate;
+
+            CombatResultView view = panel.gameObject.AddComponent<CombatResultView>();
+            view.Initialize(title, body);
+            return view;
+        }
+
         private static RewardView CreateRewardView(Transform parent, CardView cardTemplate)
         {
             RectTransform panel = CreateBoardBand("Reward", parent, 252);
@@ -141,6 +163,26 @@ namespace CardsUnity.UI
             RectTransform content = CreateHorizontalContent("RewardChoices", panel, 12);
             view.Initialize(content, cardTemplate, title);
             panel.gameObject.SetActive(false);
+            return view;
+        }
+
+        private static TooltipView CreateTooltipView(Transform parent)
+        {
+            RectTransform panel = CreatePanel("Tooltip", parent, new Color32(232, 238, 241, 255));
+            VerticalLayoutGroup layout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(14, 14, 10, 10);
+            layout.spacing = 3;
+            LayoutElement element = panel.gameObject.AddComponent<LayoutElement>();
+            element.preferredHeight = 112;
+            element.flexibleWidth = 1;
+
+            Text title = CreateText("TooltipTitle", panel, string.Empty, 17, TextAnchor.MiddleLeft);
+            Text body = CreateText("TooltipBody", panel, string.Empty, 14, TextAnchor.UpperLeft);
+            body.horizontalOverflow = HorizontalWrapMode.Wrap;
+            body.verticalOverflow = VerticalWrapMode.Truncate;
+
+            TooltipView view = panel.gameObject.AddComponent<TooltipView>();
+            view.Initialize(title, body);
             return view;
         }
 
@@ -191,11 +233,12 @@ namespace CardsUnity.UI
             Text value = CreateText("Value", card, "0", 24, TextAnchor.MiddleCenter);
             Text rps = CreateText("Rps", card, "RPS", 13, TextAnchor.MiddleCenter);
             Text role = CreateText("Role", card, "Role", 13, TextAnchor.MiddleCenter);
+            Text preview = CreateText("Preview", card, string.Empty, 12, TextAnchor.MiddleCenter);
             Text owner = CreateText("Owner", card, "Owner", 12, TextAnchor.MiddleCenter);
             Text flavor = CreateText("Flavor", card, string.Empty, 11, TextAnchor.UpperCenter);
 
             CardView view = card.gameObject.AddComponent<CardView>();
-            view.Initialize(card.GetComponent<Image>(), icon, cardName, value, rps, role, owner, flavor);
+            view.Initialize(card.GetComponent<Image>(), icon, cardName, value, rps, role, owner, flavor, preview);
             return view;
         }
 

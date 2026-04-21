@@ -1,4 +1,5 @@
 using CardsUnity.Controllers;
+using CardsUnity.Combat;
 using CardsUnity.Data;
 using UnityEngine;
 
@@ -15,6 +16,8 @@ namespace CardsUnity.UI
         [SerializeField] private HUDView hudView;
         [SerializeField] private DeckPanelView deckPanelView;
         [SerializeField] private RewardView rewardView;
+        [SerializeField] private CombatResultView combatResultView;
+        [SerializeField] private TooltipView tooltipView;
 
         public void Initialize(
             GameManager manager,
@@ -25,7 +28,9 @@ namespace CardsUnity.UI
             HandView hand,
             HUDView hud,
             DeckPanelView deckPanel,
-            RewardView rewards)
+            RewardView rewards,
+            CombatResultView combatResults = null,
+            TooltipView tooltip = null)
         {
             gameManager = manager;
             roundController = round;
@@ -36,10 +41,13 @@ namespace CardsUnity.UI
             hudView = hud;
             deckPanelView = deckPanel;
             rewardView = rewards;
+            combatResultView = combatResults;
+            tooltipView = tooltip;
 
             hudView?.Bind(gameManager, roundController, combatController, rewardController);
             rewardView?.BindController(rewardController);
             BindInteractionEvents();
+            BindCombatEvents();
             Subscribe();
             Refresh();
         }
@@ -47,6 +55,7 @@ namespace CardsUnity.UI
         private void OnEnable()
         {
             Subscribe();
+            BindCombatEvents();
         }
 
         private void OnDisable()
@@ -65,6 +74,8 @@ namespace CardsUnity.UI
         {
             if (gameManager != null)
                 gameManager.OnStateChanged -= Refresh;
+            if (combatController != null)
+                combatController.OnCombatResult -= HandleCombatResult;
         }
 
         public void Refresh()
@@ -72,10 +83,16 @@ namespace CardsUnity.UI
             if (gameManager == null || gameManager.State == null) return;
 
             boardView?.Bind(gameManager.State);
+            boardView?.BindPreviewBadges(gameManager.State);
             handView?.Bind(gameManager.State.PlayerHand);
             hudView?.Refresh(gameManager.State);
             deckPanelView?.Bind(gameManager.State);
             rewardView?.Bind(gameManager.State);
+
+            if (gameManager.State.Phase != GamePhase.Combat)
+                combatResultView?.Clear();
+            if (gameManager.State.Phase != GamePhase.Placement)
+                tooltipView?.Hide();
         }
 
         private void BindInteractionEvents()
@@ -96,6 +113,8 @@ namespace CardsUnity.UI
                 slot.OnUnplaceRequested -= HandleUnplaceRequested;
                 slot.OnCardDropped += HandleCardDropped;
                 slot.OnUnplaceRequested += HandleUnplaceRequested;
+                slot.OnHoverChanged -= HandleSlotHoverChanged;
+                slot.OnHoverChanged += HandleSlotHoverChanged;
             }
 
             if (boardView.EnemySlots == null) return;
@@ -104,7 +123,22 @@ namespace CardsUnity.UI
                 if (slot == null) continue;
                 slot.OnCardDropped -= HandleCardDropped;
                 slot.OnCardDropped += HandleCardDropped;
+                slot.OnHoverChanged -= HandleSlotHoverChanged;
+                slot.OnHoverChanged += HandleSlotHoverChanged;
             }
+        }
+
+        private void BindCombatEvents()
+        {
+            if (combatController == null) return;
+
+            combatController.OnCombatResult -= HandleCombatResult;
+            combatController.OnCombatResult += HandleCombatResult;
+        }
+
+        private void HandleCombatResult(CombatResult result)
+        {
+            combatResultView?.Show(result);
         }
 
         private void HandleCardDragStarted(CardView cardView)
@@ -138,6 +172,52 @@ namespace CardsUnity.UI
             if (gameManager.State.Phase != GamePhase.Placement) return;
 
             roundController.UnplaceCard(slot.SlotIndex);
+        }
+
+        private void HandleSlotHoverChanged(SlotView slot, bool hovering)
+        {
+            if (!hovering)
+            {
+                tooltipView?.Hide();
+                return;
+            }
+
+            ShowPreviewForSlot(slot);
+        }
+
+        private void ShowPreviewForSlot(SlotView slot)
+        {
+            if (tooltipView == null || gameManager == null || slot == null)
+                return;
+            if (gameManager.State.Phase != GamePhase.Placement)
+            {
+                tooltipView.Hide();
+                return;
+            }
+
+            int index = slot.SlotIndex;
+            if (index < 0 || index >= gameManager.State.PlayerBoard.Length || index >= gameManager.State.EnemyBoard.Length)
+            {
+                tooltipView.Hide();
+                return;
+            }
+
+            CardInstance playerCard = gameManager.State.PlayerBoard[index];
+            CardInstance enemyCard = gameManager.State.EnemyBoard[index];
+            if (playerCard == null || enemyCard == null)
+            {
+                tooltipView.Hide();
+                return;
+            }
+
+            CombatPreview preview = CombatResolver.GetCombatPreview(
+                playerCard,
+                enemyCard,
+                gameManager.State.PlayerBoard,
+                gameManager.State.EnemyBoard,
+                index);
+
+            tooltipView.ShowPreview(index, playerCard, enemyCard, preview);
         }
 
         private void SetPlayerSlotDropHints(bool active, CardView draggedCard)

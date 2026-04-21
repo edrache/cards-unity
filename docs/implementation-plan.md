@@ -335,14 +335,14 @@ Acceptance criteria:
 
 ## Phase 10 - Combat Result, Tooltip, and Preview UI
 
-- [ ] Implement `CombatResultView`.
+- [x] Implement `CombatResultView`.
   - Show RPS outcome, rolls, chosen rolls, damage, before/after values, and deaths.
-- [ ] Implement `TooltipView`.
+- [x] Implement `TooltipView`.
   - Show preview for placed cards before combat.
-- [ ] Show preview badges on placed cards.
+- [x] Show preview badges on placed cards.
   - Best-case and worst-case outgoing damage.
   - Player death risk where applicable.
-- [ ] Ensure combat preview is hidden or disabled during inappropriate phases.
+- [x] Ensure combat preview is hidden or disabled during inappropriate phases.
 
 Acceptance criteria:
 
@@ -437,6 +437,13 @@ Use this template when claiming or finishing a task:
 ## Agent Work Log
 
 Add entries newest first.
+
+### 2026-04-21 - Codex - Phase 10 Combat Result, Tooltip, and Preview UI
+
+- Plan item: Phase 10 - Combat Result, Tooltip, and Preview UI.
+- Files changed: `Assets/Scripts/UI/CardView.cs`, `Assets/Scripts/UI/BoardView.cs`, `Assets/Scripts/UI/SlotView.cs`, `Assets/Scripts/UI/CombatResultView.cs`, `Assets/Scripts/UI/TooltipView.cs`, `Assets/Scripts/UI/GameplayUIView.cs`, `Assets/Scripts/UI/GameplaySceneBootstrap.cs`, `docs/implementation-plan.md`.
+- Verification: Compiled through Unity MCP; Play Mode opened `Assets/Scenes/Gameplay.unity` with a clean console; runtime smoke placed cards, generated preview badges, resolved a combat step, and confirmed `CombatResultView` activated with resolver output; all 94 EditMode tests passed.
+- Notes / follow-ups: Preview data is calculated through `CombatResolver.GetCombatPreview` and does not mutate card values. Tooltip and preview badges are visible only during placement, while combat results are visible only during combat.
 
 ### 2026-04-21 - Codex - Phase 9 Input and Interaction
 

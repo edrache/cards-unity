@@ -1,4 +1,5 @@
 using CardsUnity.Data;
+using CardsUnity.Combat;
 using UnityEngine;
 
 namespace CardsUnity.UI
@@ -22,6 +23,34 @@ namespace CardsUnity.UI
             if (state == null) return;
             BindSlots(playerSlots, state.PlayerBoard);
             BindSlots(enemySlots, state.EnemyBoard);
+        }
+
+        public void BindPreviewBadges(GameState state)
+        {
+            if (state == null || playerSlots == null) return;
+
+            for (int i = 0; i < playerSlots.Length; i++)
+            {
+                SlotView slot = playerSlots[i];
+                CardView cardView = slot != null ? slot.CardView : null;
+                if (cardView == null || cardView.Card == null)
+                    continue;
+
+                if (state.Phase != GamePhase.Placement || i >= state.EnemyBoard.Length || state.PlayerBoard[i] == null || state.EnemyBoard[i] == null)
+                {
+                    cardView.SetPreviewBadge(string.Empty, false);
+                    continue;
+                }
+
+                CombatPreview preview = CombatResolver.GetCombatPreview(
+                    state.PlayerBoard[i],
+                    state.EnemyBoard[i],
+                    state.PlayerBoard,
+                    state.EnemyBoard,
+                    i);
+
+                cardView.SetPreviewBadge($"DMG {preview.PlayerMinDamageDealt}-{preview.PlayerMaxDamageDealt}", preview.PlayerCanDie);
+            }
         }
 
         private static void BindSlots(SlotView[] slots, CardInstance[] cards)

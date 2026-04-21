@@ -22,6 +22,7 @@ namespace CardsUnity.UI
         public CardOwner Owner { get; private set; }
         public bool IsHovering { get; private set; }
         public CardInstance Card => cardView != null ? cardView.Card : null;
+        public CardView CardView => cardView;
 
         public event Action<SlotView, bool> OnHoverChanged;
         public event Action<SlotView, CardView> OnCardDropped;

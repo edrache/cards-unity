@@ -16,6 +16,7 @@ namespace CardsUnity.UI
         [SerializeField] private Text roleText;
         [SerializeField] private Text ownerText;
         [SerializeField] private Text flavorText;
+        [SerializeField] private Text previewBadgeText;
 
         private RectTransform _rectTransform;
         private CanvasGroup _canvasGroup;
@@ -37,7 +38,8 @@ namespace CardsUnity.UI
             Text rps,
             Text role,
             Text owner,
-            Text flavor)
+            Text flavor,
+            Text previewBadge = null)
         {
             background = cardBackground;
             iconText = icon;
@@ -47,6 +49,7 @@ namespace CardsUnity.UI
             roleText = role;
             ownerText = owner;
             flavorText = flavor;
+            previewBadgeText = previewBadge;
             CacheComponents();
         }
 
@@ -69,6 +72,7 @@ namespace CardsUnity.UI
             SetText(roleText, card.Role.ToString());
             SetText(ownerText, card.Owner.ToString());
             SetText(flavorText, card.Flavor);
+            SetPreviewBadge(string.Empty, false);
 
             if (background != null)
                 background.color = GetCardColor(card);
@@ -77,6 +81,15 @@ namespace CardsUnity.UI
         public void SetCanDrag(bool canDrag)
         {
             CanDrag = canDrag;
+        }
+
+        public void SetPreviewBadge(string text, bool warning)
+        {
+            if (previewBadgeText == null) return;
+
+            previewBadgeText.text = text;
+            previewBadgeText.gameObject.SetActive(!string.IsNullOrWhiteSpace(text));
+            previewBadgeText.color = warning ? new Color32(128, 32, 24, 255) : new Color32(36, 82, 52, 255);
         }
 
         public void Clear()
