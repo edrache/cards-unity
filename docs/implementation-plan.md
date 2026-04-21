@@ -187,22 +187,22 @@ Acceptance criteria:
 
 ## Phase 4 - Combat Resolver
 
-- [ ] Implement `CombatResolver.GetRpsResult()`.
-- [ ] Implement support bonus calculation.
+- [x] Implement `CombatResolver.GetRpsResult()`.
+- [x] Implement support bonus calculation.
   - Count only immediate left and right allies.
   - Count only allies with `CardRole.Support`.
-- [ ] Implement effective range calculation.
+- [x] Implement effective range calculation.
   - `effectiveRange = card.Value + supportBonus`.
-- [ ] Implement roll handling for advantage, disadvantage, and neutral matchups.
-- [ ] Implement simultaneous damage calculation.
+- [x] Implement roll handling for advantage, disadvantage, and neutral matchups.
+- [x] Implement simultaneous damage calculation.
   - Attack role adds `+1` to outgoing damage.
   - Defense role subtracts `1` from incoming damage, minimum `0`.
   - Neutral uses shared lower roll before defense reduction.
-- [ ] Implement `ResolvePair()` result object.
+- [x] Implement `ResolvePair()` result object.
   - Include rolls, chosen rolls, damage dealt, values before and after, and death flags.
-- [ ] Implement read-only combat preview.
+- [x] Implement read-only combat preview.
   - Include RPS label, roll mode, effective range, support bonus, damage range, and death risk.
-- [ ] Add focused tests for every RPS matchup, every role modifier, support adjacency, neutral shared damage, and simultaneous death.
+- [x] Add focused tests for every RPS matchup, every role modifier, support adjacency, neutral shared damage, and simultaneous death.
 
 Acceptance criteria:
 
@@ -434,6 +434,13 @@ Use this template when claiming or finishing a task:
 ## Agent Work Log
 
 Add entries newest first.
+
+### 2026-04-21 - Claude - Phase 4 Combat Resolver
+
+- Plan item: Phase 4 - Combat Resolver.
+- Files changed: `Assets/Scripts/Combat/RpsResult.cs`, `Assets/Scripts/Combat/CombatResult.cs`, `Assets/Scripts/Combat/CombatPreview.cs`, `Assets/Scripts/Combat/CombatResolver.cs`, `Assets/Scripts/Tests/CombatResolverTests.cs`, `docs/implementation-plan.md`.
+- Verification: Compiled without errors via Unity MCP refresh; all 23 EditMode tests passed (CombatResolverTests suite).
+- Notes / follow-ups: Phase 5 can use `CombatResolver.ResolvePair` and `GetCombatPreview` directly. `CombatResolver` has no MonoBehaviour, scene, or asset dependency.
 
 ### 2026-04-21 - Codex - Phase 3 Card Definitions and Deck Factory
 
