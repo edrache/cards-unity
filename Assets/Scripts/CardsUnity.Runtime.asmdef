@@ -1,7 +1,9 @@
 {
     "name": "CardsUnity.Runtime",
     "rootNamespace": "CardsUnity",
-    "references": [],
+    "references": [
+        "DOTween"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

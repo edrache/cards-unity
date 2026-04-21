@@ -43,8 +43,8 @@ namespace CardsUnity.Controllers
             CombatResult result = CombatFlow.ResolveStep(gameManager.State, _queue, _rng);
             if (result != null)
             {
-                OnCombatResult?.Invoke(result);
                 gameManager.NotifyStateChanged();
+                OnCombatResult?.Invoke(result);
             }
             return result;
         }

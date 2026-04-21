@@ -1,7 +1,9 @@
 using CardsUnity.Controllers;
 using CardsUnity.Combat;
+using CardsUnity.Config;
 using CardsUnity.Data;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace CardsUnity.UI
 {
@@ -18,6 +20,13 @@ namespace CardsUnity.UI
         [SerializeField] private RewardView rewardView;
         [SerializeField] private CombatResultView combatResultView;
         [SerializeField] private TooltipView tooltipView;
+        [SerializeField] private AnimConfig animConfig;
+        [SerializeField] private UnityEvent hitFeedback;
+        [SerializeField] private UnityEvent defeatFeedback;
+        [SerializeField] private UnityEvent rewardFeedback;
+        [SerializeField] private UnityEvent gameOverFeedback;
+
+        private GamePhase? _lastObservedPhase;
 
         public void Initialize(
             GameManager manager,
@@ -30,7 +39,8 @@ namespace CardsUnity.UI
             DeckPanelView deckPanel,
             RewardView rewards,
             CombatResultView combatResults = null,
-            TooltipView tooltip = null)
+            TooltipView tooltip = null,
+            AnimConfig animationConfig = null)
         {
             gameManager = manager;
             roundController = round;
@@ -43,6 +53,7 @@ namespace CardsUnity.UI
             rewardView = rewards;
             combatResultView = combatResults;
             tooltipView = tooltip;
+            animConfig = animationConfig;
 
             hudView?.Bind(gameManager, roundController, combatController, rewardController);
             rewardView?.BindController(rewardController);
@@ -90,9 +101,14 @@ namespace CardsUnity.UI
             rewardView?.Bind(gameManager.State);
 
             if (gameManager.State.Phase != GamePhase.Combat)
+            {
                 combatResultView?.Clear();
+                PlayCleanupAnimations();
+            }
             if (gameManager.State.Phase != GamePhase.Placement)
                 tooltipView?.Hide();
+
+            InvokePhaseFeedback(gameManager.State.Phase);
         }
 
         private void BindInteractionEvents()
@@ -139,6 +155,11 @@ namespace CardsUnity.UI
         private void HandleCombatResult(CombatResult result)
         {
             combatResultView?.Show(result);
+            PlayCombatResultAnimation(result);
+            if (result != null && (result.PlayerDamageDealt > 0 || result.EnemyDamageDealt > 0))
+                hitFeedback?.Invoke();
+            if (result != null && (result.PlayerDied || result.EnemyDied))
+                defeatFeedback?.Invoke();
         }
 
         private void HandleCardDragStarted(CardView cardView)
@@ -164,6 +185,7 @@ namespace CardsUnity.UI
 
             roundController.PlaceCard(cardView.Card, slot.SlotIndex);
             ClearPlayerSlotDropHints();
+            slot.CardView?.PlaySnap();
         }
 
         private void HandleUnplaceRequested(SlotView slot)
@@ -268,6 +290,45 @@ namespace CardsUnity.UI
                 return false;
 
             return gameManager.State.PlayerHand.Contains(cardView.Card);
+        }
+
+        private void PlayCombatResultAnimation(CombatResult result)
+        {
+            if (result == null || boardView == null) return;
+
+            int slotIndex = result.SlotIndex;
+            if (boardView.PlayerSlots != null && slotIndex >= 0 && slotIndex < boardView.PlayerSlots.Length)
+                boardView.PlayerSlots[slotIndex]?.CardView?.PlayCombatReveal(result.PlayerDied, -1f);
+
+            if (boardView.EnemySlots != null && slotIndex >= 0 && slotIndex < boardView.EnemySlots.Length)
+                boardView.EnemySlots[slotIndex]?.CardView?.PlayCombatReveal(result.EnemyDied, 1f);
+        }
+
+        private void PlayCleanupAnimations()
+        {
+            if (boardView == null) return;
+
+            PlayCleanupOnSlots(boardView.PlayerSlots);
+            PlayCleanupOnSlots(boardView.EnemySlots);
+        }
+
+        private static void PlayCleanupOnSlots(SlotView[] slots)
+        {
+            if (slots == null) return;
+
+            foreach (SlotView slot in slots)
+                slot?.CardView?.PlayCleanup();
+        }
+
+        private void InvokePhaseFeedback(GamePhase phase)
+        {
+            if (_lastObservedPhase == phase) return;
+            _lastObservedPhase = phase;
+
+            if (phase == GamePhase.Reward)
+                rewardFeedback?.Invoke();
+            if (phase == GamePhase.End)
+                gameOverFeedback?.Invoke();
         }
     }
 }

@@ -352,13 +352,16 @@ Acceptance criteria:
 
 ## Phase 11 - Animation and Feedback
 
-- [ ] Add DOTween-based card lift, drag, snap, and return animations using `AnimConfig`.
-- [ ] Add staged combat reveal animation.
-- [ ] Add defeated-card tilt and cleanup animation.
-- [ ] Add Feel/MMFeedbacks hooks for hits, defeats, reward selection, and game over where appropriate.
-- [ ] Add NiceVibrations haptics only after desktop interaction is stable.
-- [ ] Add basic audio/VFX placeholders only where they support clear feedback.
-- [ ] Verify animations do not change gameplay ordering or timing assumptions.
+- [x] Add DOTween-based card lift, drag, snap, and return animations using `AnimConfig`.
+- [x] Add staged combat reveal animation.
+- [x] Add defeated-card tilt and cleanup animation.
+- [x] Add Feel/MMFeedbacks hooks for hits, defeats, reward selection, and game over where appropriate.
+  - First-playable hook point: `GameplayUIView` exposes `UnityEvent` feedback hooks without requiring MMFeedbacks at runtime.
+- [x] Add NiceVibrations haptics only after desktop interaction is stable.
+  - Decision: haptics remain deferred until mobile polish; desktop pointer interaction is the current baseline.
+- [x] Add basic audio/VFX placeholders only where they support clear feedback.
+  - Decision: DOTween UI feedback is sufficient for first playable; no placeholder audio/VFX assets were added.
+- [x] Verify animations do not change gameplay ordering or timing assumptions.
 
 Acceptance criteria:
 
@@ -437,6 +440,13 @@ Use this template when claiming or finishing a task:
 ## Agent Work Log
 
 Add entries newest first.
+
+### 2026-04-21 - Codex - Phase 11 Animation and Feedback
+
+- Plan item: Phase 11 - Animation and Feedback.
+- Files changed: `Assets/Scripts/CardsUnity.Runtime.asmdef`, `Assets/Scripts/Controllers/CombatController.cs`, `Assets/Scripts/UI/CardView.cs`, `Assets/Scripts/UI/CombatResultView.cs`, `Assets/Scripts/UI/GameplaySceneBootstrap.cs`, `Assets/Scripts/UI/GameplayUIView.cs`, `Assets/Scripts/UI/TooltipView.cs`, `docs/implementation-plan.md`.
+- Verification: Compiled through Unity MCP; Play Mode opened `Assets/Scenes/Gameplay.unity` with a clean console; runtime smoke placed cards, resolved a combat step, confirmed active DOTween tweens, and verified `CombatResultView`; all 94 EditMode tests passed after rerunning the MCP test job when the first test job timed out during initialization.
+- Notes / follow-ups: `CardsUnity.Runtime` now references the DOTween precompiled assembly. Animation timings are sourced from `AnimConfig`. `CombatController.ResolveCombatStep` now notifies state changes before firing `OnCombatResult` so reveal animations run after UI rebinding. MMFeedbacks can be wired to `GameplayUIView` UnityEvents later; NiceVibrations and audio/VFX assets remain deferred polish.
 
 ### 2026-04-21 - Codex - Phase 10 Combat Result, Tooltip, and Preview UI
 

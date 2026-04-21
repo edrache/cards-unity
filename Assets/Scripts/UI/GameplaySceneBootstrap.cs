@@ -1,4 +1,5 @@
 using CardsUnity.Controllers;
+using CardsUnity.Config;
 using CardsUnity.Data;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -39,6 +40,7 @@ namespace CardsUnity.UI
             _roundController.Initialize(_gameManager);
             combatController.Initialize(_gameManager);
             rewardController.Initialize(_gameManager);
+            AnimConfig animConfig = Resources.Load<AnimConfig>("Config/DefaultAnimConfig");
 
             Canvas canvas = CreateCanvas();
             RectTransform root = CreatePanel("Root", canvas.transform, new Color32(34, 38, 45, 255));
@@ -53,28 +55,28 @@ namespace CardsUnity.UI
 
             RectTransform top = CreateHorizontalBand("Top", root, 12, 150);
             HUDView hudView = CreateHud(top);
-            CombatResultView combatResultView = CreateCombatResultView(top);
+            CombatResultView combatResultView = CreateCombatResultView(top, animConfig);
             DeckPanelView deckPanelView = CreateDeckPanel(top);
 
             RectTransform enemyBand = CreateBoardBand("Enemy Board", root, 236);
             RectTransform playerBand = CreateBoardBand("Player Board", root, 236);
             BoardView boardView = root.gameObject.AddComponent<BoardView>();
-            SlotView[] enemySlots = CreateSlots(enemyBand, CardOwner.Enemy);
-            SlotView[] playerSlots = CreateSlots(playerBand, CardOwner.Player);
+            SlotView[] enemySlots = CreateSlots(enemyBand, CardOwner.Enemy, animConfig);
+            SlotView[] playerSlots = CreateSlots(playerBand, CardOwner.Player, animConfig);
             boardView.Initialize(playerSlots, enemySlots);
 
             RectTransform handBand = CreateBoardBand("Hand", root, 252);
             HandView handView = handBand.gameObject.AddComponent<HandView>();
             RectTransform handContent = CreateHorizontalContent("HandContent", handBand, 10);
             Text emptyHand = CreateText("EmptyHand", handBand, "No cards in hand", 18, TextAnchor.MiddleCenter);
-            CardView cardTemplate = CreateCardTemplate(canvas.transform);
+            CardView cardTemplate = CreateCardTemplate(canvas.transform, animConfig);
             handView.Initialize(handContent, cardTemplate, emptyHand);
 
             RewardView rewardView = CreateRewardView(root, cardTemplate);
-            TooltipView tooltipView = CreateTooltipView(root);
+            TooltipView tooltipView = CreateTooltipView(root, animConfig);
 
             GameplayUIView ui = root.gameObject.AddComponent<GameplayUIView>();
-            ui.Initialize(_gameManager, _roundController, combatController, rewardController, boardView, handView, hudView, deckPanelView, rewardView, combatResultView, tooltipView);
+            ui.Initialize(_gameManager, _roundController, combatController, rewardController, boardView, handView, hudView, deckPanelView, rewardView, combatResultView, tooltipView, animConfig);
         }
 
         private static void EnsureEventSystem()
@@ -135,7 +137,7 @@ namespace CardsUnity.UI
             return view;
         }
 
-        private static CombatResultView CreateCombatResultView(Transform parent)
+        private static CombatResultView CreateCombatResultView(Transform parent, AnimConfig animConfig)
         {
             RectTransform panel = CreatePanel("Combat Result", parent, new Color32(239, 231, 217, 255));
             VerticalLayoutGroup layout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
@@ -151,7 +153,7 @@ namespace CardsUnity.UI
             body.verticalOverflow = VerticalWrapMode.Truncate;
 
             CombatResultView view = panel.gameObject.AddComponent<CombatResultView>();
-            view.Initialize(title, body);
+            view.Initialize(title, body, animConfig);
             return view;
         }
 
@@ -166,7 +168,7 @@ namespace CardsUnity.UI
             return view;
         }
 
-        private static TooltipView CreateTooltipView(Transform parent)
+        private static TooltipView CreateTooltipView(Transform parent, AnimConfig animConfig)
         {
             RectTransform panel = CreatePanel("Tooltip", parent, new Color32(232, 238, 241, 255));
             VerticalLayoutGroup layout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
@@ -182,11 +184,11 @@ namespace CardsUnity.UI
             body.verticalOverflow = VerticalWrapMode.Truncate;
 
             TooltipView view = panel.gameObject.AddComponent<TooltipView>();
-            view.Initialize(title, body);
+            view.Initialize(title, body, animConfig);
             return view;
         }
 
-        private static SlotView[] CreateSlots(Transform parent, CardOwner owner)
+        private static SlotView[] CreateSlots(Transform parent, CardOwner owner, AnimConfig animConfig)
         {
             SlotView[] slots = new SlotView[3];
             RectTransform content = CreateHorizontalContent($"{owner}Slots", parent, 16);
@@ -201,7 +203,7 @@ namespace CardsUnity.UI
                 group.spacing = 6;
 
                 Text label = CreateText("Label", slot, $"{owner} {i + 1}", 14, TextAnchor.MiddleCenter);
-                CardView card = CreateCardView("Card", slot);
+                CardView card = CreateCardView("Card", slot, animConfig);
                 SlotView slotView = slot.gameObject.AddComponent<SlotView>();
                 slotView.Initialize(i, owner, slot.GetComponent<Image>(), label, card);
                 slots[i] = slotView;
@@ -210,14 +212,14 @@ namespace CardsUnity.UI
             return slots;
         }
 
-        private static CardView CreateCardTemplate(Transform parent)
+        private static CardView CreateCardTemplate(Transform parent, AnimConfig animConfig)
         {
-            CardView template = CreateCardView("Card Template", parent);
+            CardView template = CreateCardView("Card Template", parent, animConfig);
             template.gameObject.SetActive(false);
             return template;
         }
 
-        private static CardView CreateCardView(string name, Transform parent)
+        private static CardView CreateCardView(string name, Transform parent, AnimConfig animConfig)
         {
             RectTransform card = CreatePanel(name, parent, Color.white);
             LayoutElement layout = card.gameObject.AddComponent<LayoutElement>();
@@ -238,7 +240,7 @@ namespace CardsUnity.UI
             Text flavor = CreateText("Flavor", card, string.Empty, 11, TextAnchor.UpperCenter);
 
             CardView view = card.gameObject.AddComponent<CardView>();
-            view.Initialize(card.GetComponent<Image>(), icon, cardName, value, rps, role, owner, flavor, preview);
+            view.Initialize(card.GetComponent<Image>(), icon, cardName, value, rps, role, owner, flavor, preview, animConfig);
             return view;
         }
 
