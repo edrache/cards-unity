@@ -168,15 +168,15 @@ Acceptance criteria:
 
 ## Phase 3 - Card Definitions and Deck Factory
 
-- [ ] Create all 12 player `CardData` assets from `unity-migration.md` section 3.1.
-- [ ] Create all 6 enemy `CardData` assets from `unity-migration.md` section 3.2.
-- [ ] Implement `DeckFactory`.
+- [x] Create all 12 player `CardData` assets from `unity-migration.md` section 3.1.
+- [x] Create all 6 enemy `CardData` assets from `unity-migration.md` section 3.2.
+- [x] Implement `DeckFactory`.
   - Create player deck from player card definitions.
   - Create enemy deck from enemy card definitions.
   - Clone every `CardData` into a separate `CardInstance`.
   - Shuffle with Fisher-Yates.
-- [ ] Decide and document RNG injection strategy for deterministic tests.
-- [ ] Add tests for deck size, ownership, value ranges, cloning, and shuffle determinism where possible.
+- [x] Decide and document RNG injection strategy for deterministic tests.
+- [x] Add tests for deck size, ownership, value ranges, cloning, and shuffle determinism where possible.
 
 Acceptance criteria:
 
@@ -434,6 +434,13 @@ Use this template when claiming or finishing a task:
 ## Agent Work Log
 
 Add entries newest first.
+
+### 2026-04-21 - Codex - Phase 3 Card Definitions and Deck Factory
+
+- Plan item: Phase 3 - Card Definitions and Deck Factory.
+- Files changed: `Assets/Scripts/Data/`, `Assets/Scripts/Tests/`, `Assets/Resources/CardDefinitions/`, `docs/implementation-plan.md`.
+- Verification: Created player/enemy `CardData` assets from the migration guide/source prototype, compiled through Unity MCP, and ran EditMode tests for deck creation, cloning, ownership, value ranges, and deterministic shuffle.
+- Notes / follow-ups: Phase 4 can use `DeckFactory` output directly for combat resolver tests.
 
 ### 2026-04-21 - Codex - Phase 2 Core Data Model
 
