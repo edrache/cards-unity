@@ -9,7 +9,7 @@ Conversation with the user is conducted in **Polish**.
 
 ## Project Overview
 
-Unity 6 (6000.3.10f1) port of a browser-based turn-based card combat game. The game logic is fully documented in [`../docs/unity-migration.md`](../docs/unity-migration.md) — read it before implementing any game feature. The original HTML/JS prototype lives in the parent directory.
+Unity 6 (6000.3.10f1) project. Currently a bare scaffold — no game logic has been implemented yet.
 
 ## Key Dependencies
 
@@ -19,46 +19,44 @@ Unity 6 (6000.3.10f1) port of a browser-based turn-based card combat game. The g
 | Rewired (Rewired/) | Input management |
 | Feel / MMFeedbacks | Screen shake, haptics, VFX feedback |
 | Quibli | Stylized / toon shaders (URP) |
-| TrueShadow | UI drop shadows |
+| TrueShadow (Le Tai's Asset/) | UI drop shadows |
+| Unity Input System (`com.unity.inputsystem`) | New input backend |
+| Cinemachine (`com.unity.cinemachine`) | Camera control |
+| Timeline (`com.unity.timeline`) | Sequenced animations / cutscenes |
+| Post Processing (`com.unity.postprocessing`) | Screen-space effects |
+| Unity MCP (`com.coplaydev.unity-mcp`) | Editor control via MCP protocol |
 
 Rendering: URP 17.3.0. PC and Mobile URP variants are in `Assets/Settings/`.
 
-## Architecture
+## Source Layout
 
-Follow the layered architecture defined in `unity-migration.md §9`:
+Runtime code lives under `Assets/Scripts/`:
 
-**Data layer (no MonoBehaviour)**
-- `CardData` — ScriptableObject with static card definition
-- `CardInstance` — plain C# class, mutable runtime copy (`value` is both HP and dice ceiling — never split these)
-- `GameState` — plain C# class mirroring the JS game state
-- `CombatResolver` — static class for RPS resolution and damage math
-- `DeckFactory` — static class; Fisher-Yates shuffle; always clone `CardData` into `CardInstance`
+- `Data` — game state, runtime instances, immutable definitions, enums.
+- `Config` — ScriptableObject tuning objects.
+- `Runtime` — bootstrap helpers and shared runtime services.
+- `Combat` — combat resolver code, result objects, previews.
+- `Controllers` — MonoBehaviour game-flow coordinators.
+- `UI` — UGUI views and pointer interaction components.
+- `Tests` — Unity Test Framework tests.
 
-**Game flow (MonoBehaviour)**
-- `GameManager` — owns `GameState`, drives phase transitions, exposes C# events
-- `RoundController` — draw, place, unplace, canResolve
-- `CombatController` — staged combat resolution (one column at a time)
-- `RewardController` — reward draft, new encounter setup
+Assemblies:
 
-**UI layer (MonoBehaviour)**
-- `CardView` — renders `CardInstance`; implements `IBeginDragHandler / IDragHandler / IEndDragHandler`
-- `SlotView` — highlights on hover; receives card drop
-- `BoardView`, `HandView`, `HUDView`, `DeckPanelView`, `RewardView`, `CombatResultView`, `TooltipView`
+- `CardsUnity.Runtime` — runtime code under `Assets/Scripts/`.
+- `CardsUnity.Tests` — EditMode tests under `Assets/Scripts/Tests/`.
 
-## Critical Game Rules
+## Verification Commands
 
-See `unity-migration.md §12` for the full invariant list. The most important:
+Use the Unity 6000.3.10f1 batchmode runner from the repository root.
 
-1. `value` is **both** HP and dice ceiling — never separate them.
-2. Damage is **simultaneous** — a dying card still deals its damage.
-3. **Placement order = resolution order.**
-4. Support bonus applies only to **immediately adjacent** allies.
-5. Neutral matchup: both sides take `min(playerRoll, enemyRoll)` as shared damage.
-6. Enemy deck **refills after every round**, not per fight.
+EditMode tests:
 
-## Configuration
+```bash
+/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -quit -projectPath . -runTests -testPlatform EditMode -testResults TestResults/EditMode.xml
+```
 
-Map all tuning values to ScriptableObjects (not hardcoded):
-- `GameConfig` — slot count (3)
-- `AnimConfig` — DOTween durations from `unity-migration.md §8`
-- `CardVisualConfig` — card dimensions and corner radius
+PlayMode tests:
+
+```bash
+/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -quit -projectPath . -runTests -testPlatform PlayMode -testResults TestResults/PlayMode.xml
+```
