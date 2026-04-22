@@ -1,0 +1,19 @@
+- gra karciana
+- karta może posiadać takie elementy: typ, wartość, tytuł, efekty, grafikę, flavor tekst; w przyszłości mogą dojść nowe elementy
+- efekty to tagi, każdy tag ma efekt, który może działać w różnych momentach, np. przy zagraniu, na koniec tury, po ataku itp
+- karta może mieć jeden z 3 typów: pressure, appeal, positioning; w przyszłości nazwy mogą się zmienić
+- typy działają jak papier kamień nożyce RPS - pressure wygrywa z appeal, appeal wygrywa z positioning, positioning wygrywa z pressure
+- gracz ma swoją talię, którą w trakcie gry będzie rozwijał - dodawał i usuwał karty
+- gra będzie się składać z szeregu wyzwań, każde wyzwanie ma 2 zegary - jeśli jeden z nich się wypełni to nastapi koniec wyzwania
+- jeden zegar to zegar gracza, drugi przeciwnika - w podstawowej wersji zegar ma wartość równą liczbie kart - gracza i przeciwnia; pokonanie karty zwiększa zegar (czyli jest to jakby hp strony)
+- gracz dobiera na początku tury liczbę kart do wartości równej wartości - Draft (na poczatek liczba ta wynosi 3)
+- kiedy nie może dobrać kart tasowany jest discard
+- na planszy rozłożone są sloty na zagrywane karty
+- każdy slot może mieć jakiś efekt, który zadzieje się po zagraniu karty, albo kiedy karta nie zostanie tam zagrana, albo inny efekt, który potem powstanie; może też nie być efektu
+- przy slocie może znajdować się miejsce na kartę przeciwnika
+- jeśli znajduje się karta przeciwnia to po położeniu przez gracza karty nastepuje walka
+- walka wygląda tak - jeśli karta wygrywa RPS to siła ataku to wartość karty; jeśli karta nie wygrywa RPS, czyli przegrywa lub remisuje, to siła ataku to liczba losowa miedzy 1 a wartością karty. Siła ataku odejmowana jest od wartości karty przeciwnika. Jeśli wartość spadnie do 0 lub mniej - karta zostaje zniszczona i trafia na discard
+- jeśli gracz nie może lub nie che zagrać więcej kart - klika na End Turn, tura się kończy
+- na koniec tury, karty zagrane przez gracza wracają na rękę, karty przeciwnika z jego talii trafiają na pusta miejsca przy slotach, które mają na nie miejsce
+- na początek gra ma działać na Canvas
+- karty jako prefab + scriptable objecty
