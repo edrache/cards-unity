@@ -10,6 +10,27 @@
 
 ---
 
+## Implementation Status
+
+Last updated: 2026-04-22
+
+| Task | Owner | Status | Notes |
+|---|---|---|---|
+| Task 1 — Assembly Definitions | James | Done | Verified by Unity MCP EditMode test run. |
+| Task 2 — Core Data Types | James | Done | Verified by Unity MCP EditMode test run. |
+| Task 3 — Combat Logic with Tests | James | Done | Verified by Unity MCP EditMode test run. |
+| Task 4 — Deck, Hand, Board, Clock with Tests | Galileo | Done | Verified by Unity MCP EditMode test run. |
+| Task 5 — TurnController with Tests | Socrates | Done | Verified by Unity MCP EditMode test run. |
+| Task 6 — UI Scripts + GameConfig | Socrates | Done | Verified by Unity MCP EditMode test run. |
+| Task 7 — Card Prefab | Marek | Not started | Requires Unity Editor prefab work after scripts compile. |
+| Task 8 — Sample Card ScriptableObjects + GameConfig | Marek | Not started | Requires Unity Editor asset work after scripts compile. |
+| Task 9 — Game Scene | Marek | Not started | Requires Unity Editor scene work after scripts compile. |
+| Task 10 — First Playtest | Marek | Not started | Depends on Tasks 7–9. |
+
+Latest verification: Unity MCP EditMode test job `e8a424d2c201411fa53b2e4d145af306` passed 27/27 tests on 2026-04-22.
+
+---
+
 ## Role Split
 
 Every task is labeled:
