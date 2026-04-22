@@ -1,0 +1,130 @@
+using CardsUnity;
+using TMPro;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+
+namespace CardsUnity.UI
+{
+    public class CardView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    {
+        [SerializeField] private TextMeshProUGUI titleText;
+        [SerializeField] private TextMeshProUGUI valueText;
+        [SerializeField] private TextMeshProUGUI typeText;
+        [SerializeField] private Image artworkImage;
+        [SerializeField] private Image cardBackground;
+
+        public static readonly Color[] TypeColors =
+        {
+            new Color(0.85f, 0.3f, 0.3f),
+            new Color(0.3f, 0.7f, 0.85f),
+            new Color(0.3f, 0.85f, 0.5f),
+        };
+
+        public CardDefinition Card { get; private set; }
+        public System.Action<CardView> OnDragStart;
+        public System.Action<CardView> OnDragEnd;
+
+        private Transform _originalParent;
+        private int _originalSiblingIndex;
+        private Canvas _rootCanvas;
+        private bool _draggable = true;
+
+        private void Awake()
+        {
+            _rootCanvas = GetComponentInParent<Canvas>(includeInactive: true);
+        }
+
+        public void SetDraggable(bool draggable)
+        {
+            _draggable = draggable;
+        }
+
+        public void SetCard(CardDefinition card)
+        {
+            Card = card;
+
+            if (card == null)
+            {
+                if (titleText) titleText.text = string.Empty;
+                if (valueText) valueText.text = string.Empty;
+                if (typeText) typeText.text = string.Empty;
+                if (artworkImage)
+                {
+                    artworkImage.sprite = null;
+                    artworkImage.enabled = false;
+                }
+
+                return;
+            }
+
+            if (titleText) titleText.text = card.title;
+            if (valueText) valueText.text = card.value.ToString();
+            if (typeText) typeText.text = card.type.ToString();
+
+            if (artworkImage)
+            {
+                artworkImage.sprite = card.artwork;
+                artworkImage.enabled = card.artwork != null;
+            }
+
+            if (cardBackground)
+            {
+                int index = Mathf.Clamp((int)card.type, 0, TypeColors.Length - 1);
+                cardBackground.color = TypeColors[index];
+            }
+        }
+
+        public void SetCardInstance(CardInstance card)
+        {
+            if (card == null)
+            {
+                SetCard((CardDefinition)null);
+                return;
+            }
+
+            SetCard(card.Definition);
+            if (valueText)
+                valueText.text = card.CurrentValue.ToString();
+        }
+
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            if (!_draggable || _rootCanvas == null)
+                return;
+
+            _originalParent = transform.parent;
+            _originalSiblingIndex = transform.GetSiblingIndex();
+            transform.SetParent(_rootCanvas.transform, worldPositionStays: true);
+            transform.SetAsLastSibling();
+            OnDragStart?.Invoke(this);
+        }
+
+        public void OnDrag(PointerEventData eventData)
+        {
+            if (!_draggable || _rootCanvas == null)
+                return;
+
+            RectTransformUtility.ScreenPointToWorldPointInRectangle(
+                _rootCanvas.transform as RectTransform,
+                eventData.position,
+                _rootCanvas.worldCamera,
+                out var worldPos);
+            transform.position = worldPos;
+        }
+
+        public void OnEndDrag(PointerEventData eventData)
+        {
+            if (!_draggable || _rootCanvas == null)
+                return;
+
+            if (_originalParent != null)
+            {
+                transform.SetParent(_originalParent, worldPositionStays: true);
+                transform.SetSiblingIndex(_originalSiblingIndex);
+            }
+
+            OnDragEnd?.Invoke(this);
+        }
+    }
+}
