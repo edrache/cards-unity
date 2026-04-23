@@ -28,11 +28,24 @@ namespace CardsUnity.UI
         private Transform _originalParent;
         private int _originalSiblingIndex;
         private Canvas _rootCanvas;
+        private CanvasGroup _canvasGroup;
         private bool _draggable = true;
 
         private void Awake()
         {
+            EnsureDragDependencies();
+        }
+
+        private void EnsureDragDependencies()
+        {
             _rootCanvas = GetComponentInParent<Canvas>(includeInactive: true);
+
+            if (_canvasGroup != null)
+                return;
+
+            _canvasGroup = GetComponent<CanvasGroup>();
+            if (_canvasGroup == null)
+                _canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
 
         public void SetDraggable(bool draggable)
@@ -90,6 +103,8 @@ namespace CardsUnity.UI
 
         public void OnBeginDrag(PointerEventData eventData)
         {
+            EnsureDragDependencies();
+
             if (!_draggable || _rootCanvas == null)
                 return;
 
@@ -97,11 +112,14 @@ namespace CardsUnity.UI
             _originalSiblingIndex = transform.GetSiblingIndex();
             transform.SetParent(_rootCanvas.transform, worldPositionStays: true);
             transform.SetAsLastSibling();
+            _canvasGroup.blocksRaycasts = false;
             OnDragStart?.Invoke(this);
         }
 
         public void OnDrag(PointerEventData eventData)
         {
+            EnsureDragDependencies();
+
             if (!_draggable || _rootCanvas == null)
                 return;
 
@@ -115,6 +133,8 @@ namespace CardsUnity.UI
 
         public void OnEndDrag(PointerEventData eventData)
         {
+            EnsureDragDependencies();
+
             if (!_draggable || _rootCanvas == null)
                 return;
 
@@ -124,6 +144,7 @@ namespace CardsUnity.UI
                 transform.SetSiblingIndex(_originalSiblingIndex);
             }
 
+            _canvasGroup.blocksRaycasts = true;
             OnDragEnd?.Invoke(this);
         }
     }
