@@ -90,6 +90,34 @@ namespace CardsUnity.Tests
             Assert.IsFalse(result.Destroyed);
         }
 
+        [Test]
+        public void ResolveExchange_applies_damage_to_both_cards()
+        {
+            var player = MakeCard(CardType.Pressure, value: 5);
+            var opponent = MakeCard(CardType.Positioning, value: 4);
+
+            var result = CombatResolver.ResolveExchange(player, opponent, new System.Random(0));
+
+            Assert.Less(player.CurrentValue, 5);
+            Assert.Less(opponent.CurrentValue, 4);
+            Assert.Greater(result.FirstResult.DamageDealt, 0);
+            Assert.Greater(result.SecondResult.DamageDealt, 0);
+        }
+
+        [Test]
+        public void ResolveExchange_uses_simultaneous_damage_when_both_cards_destroy_each_other()
+        {
+            var player = MakeCard(CardType.Pressure, value: 1);
+            var opponent = MakeCard(CardType.Pressure, value: 1);
+
+            var result = CombatResolver.ResolveExchange(player, opponent, new System.Random(0));
+
+            Assert.AreEqual(0, opponent.CurrentValue);
+            Assert.AreEqual(0, player.CurrentValue);
+            Assert.IsTrue(result.FirstResult.Destroyed);
+            Assert.IsTrue(result.SecondResult.Destroyed);
+        }
+
         private static CardInstance MakeCard(CardType type, int value)
         {
             var definition = ScriptableObject.CreateInstance<CardDefinition>();

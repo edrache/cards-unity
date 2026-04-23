@@ -88,11 +88,18 @@ namespace CardsUnity
 
         private void ResolveSlotCombat(SlotState slot)
         {
-            var result = CombatResolver.ResolveCombat(slot.PlayerCard, slot.OpponentCard, _rng);
-            if (result.Destroyed)
+            var result = CombatResolver.ResolveExchange(slot.PlayerCard, slot.OpponentCard, _rng);
+
+            if (result.FirstResult.Destroyed)
             {
                 _opponentClock.Increment();
                 slot.OpponentCard = null;
+            }
+
+            if (result.SecondResult.Destroyed)
+            {
+                _playerClock.Increment();
+                slot.PlayerCard = null;
             }
         }
 

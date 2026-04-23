@@ -102,6 +102,31 @@ namespace CardsUnity.Tests
         }
 
         [Test]
+        public void PlayCard_applies_counter_damage_to_player_card()
+        {
+            _turn.StartTurn();
+            _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Positioning, value: 1));
+
+            var playerCard = _playerHand.Cards.First(c => c.type == CardType.Pressure);
+            _turn.PlayCard(playerCard, slotIndex: 0);
+
+            Assert.AreEqual(2, _board.Slots[0].PlayerCard?.CurrentValue);
+        }
+
+        [Test]
+        public void PlayCard_increments_player_clock_when_player_card_is_destroyed_by_counterattack()
+        {
+            _turn.StartTurn();
+            _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Positioning, value: 10));
+
+            var playerCard = _playerHand.Cards.First(c => c.type == CardType.Pressure);
+            _turn.PlayCard(playerCard, slotIndex: 0);
+
+            Assert.AreEqual(1, _playerClock.CurrentValue);
+            Assert.IsNull(_board.Slots[0].PlayerCard);
+        }
+
+        [Test]
         public void EndTurn_returns_player_cards_to_hand()
         {
             _turn.StartTurn();

@@ -17,6 +17,7 @@ namespace CardsUnity.UI
 
         private CardView _playerView;
         private CardView _opponentView;
+        private bool CanAcceptPlayerCard => _playerView == null;
 
         public void ShowPlayerCard(CardInstance card, CardView prefab)
         {
@@ -81,11 +82,14 @@ namespace CardsUnity.UI
         public void SetHighlight(bool active)
         {
             if (highlightImage != null)
-                highlightImage.enabled = active;
+                highlightImage.enabled = active && CanAcceptPlayerCard;
         }
 
         public void OnDrop(PointerEventData eventData)
         {
+            if (!CanAcceptPlayerCard)
+                return;
+
             var dragged = eventData.pointerDrag?.GetComponent<CardView>();
             if (dragged != null)
                 OnCardDropped?.Invoke(dragged, SlotIndex);

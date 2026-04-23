@@ -41,6 +41,8 @@ namespace CardsUnity.UI
                 if (slot == null)
                     continue;
 
+                slotViews[i].SetHighlight(false);
+
                 if (slot.HasPlayerCard)
                     slotViews[i].ShowPlayerCard(slot.PlayerCard, opponentCardPrefab);
                 else
@@ -57,6 +59,7 @@ namespace CardsUnity.UI
                 if (slotViews[i] == null)
                     continue;
 
+                slotViews[i].SetHighlight(false);
                 slotViews[i].ClearPlayerCard();
                 slotViews[i].ClearOpponentCard();
             }

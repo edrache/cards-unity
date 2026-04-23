@@ -11,6 +11,7 @@ namespace CardsUnity.UI
         [SerializeField] private TextMeshProUGUI titleText;
         [SerializeField] private TextMeshProUGUI valueText;
         [SerializeField] private TextMeshProUGUI typeText;
+        [SerializeField] private TextMeshProUGUI flavorText;
         [SerializeField] private Image artworkImage;
         [SerializeField] private Image cardBackground;
 
@@ -62,6 +63,7 @@ namespace CardsUnity.UI
                 if (titleText) titleText.text = string.Empty;
                 if (valueText) valueText.text = string.Empty;
                 if (typeText) typeText.text = string.Empty;
+                if (flavorText) flavorText.text = string.Empty;
                 if (artworkImage)
                 {
                     artworkImage.sprite = null;
@@ -74,6 +76,7 @@ namespace CardsUnity.UI
             if (titleText) titleText.text = card.title;
             if (valueText) valueText.text = card.value.ToString();
             if (typeText) typeText.text = card.type.ToString();
+            if (flavorText) flavorText.text = card.flavorText;
 
             if (artworkImage)
             {
