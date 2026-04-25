@@ -1,246 +1,316 @@
 # Card Game Design Summary
 
-## Overview
+*Last updated: 2026-04-25*
 
-This project is a turn-based card game prototype built in Unity 6 on a Canvas-based interface. The current design focuses on a compact single-challenge loop where the player draws cards, commits them to board slots, resolves combat against enemy cards, and tries to fill the opponent's clock before their own clock is filled.
+---
 
-The prototype is intentionally narrow in scope. It exists to validate the core combat language, turn rhythm, and board interaction before expanding into a larger campaign or deckbuilding structure.
+## Vision
 
-## Core Fantasy
+The game is intended to be a personal experience. Players should feel that the story unfolding on screen is their own — not someone else's authored narrative but a situation shaped by their specific decisions, the layout of their table, and how they played their cards. The visual style is inspired by Cultist Simulator: a large open table on which cards appear, with minimal explicit visual content so that players project their own imagination onto the material.
 
-The player navigates a sequence of abstract confrontations using cards that represent tactical approaches rather than literal attacks. Each card belongs to one of three strategic archetypes:
+A risk acknowledged in the design: players who do not naturally fill in the narrative will play the game in a purely mechanical way. This is an open design challenge.
 
-- `Pressure`
-- `Appeal`
-- `Positioning`
+### Three Design Pillars
 
-These archetypes form the core identity of the game. They create readable matchups, support prediction and counterplay, and make even a small deck feel expressive.
+Every element added to the game should serve at least one of these three pillars:
 
-## High-Level Structure
+1. **Personalization** — The player's table, hand, and decisions create a situation unique to them. The layout of the board, the cards they have earned, and the choices they have made during a run all shape what their game looks like and how it plays.
 
-The intended larger game structure is a run made of multiple challenges. Each challenge is resolved through cards and two opposing clocks. In the current prototype, only a single self-contained challenge is implemented.
+2. **Combos and Meaningful Decisions** — The player can trigger satisfying effect chains by playing the right cards in the right slots in the right order. The game offers many decisions but not so many that they feel overwhelming. Decision weight matters more than decision volume.
 
-Within a challenge:
+3. **Emotional Response** — The game should make the player feel something — relief, dread, anger at in-world events, or satisfaction. These emotions should be directed at the situation in the game, not at the game as a system.
 
-- The player has a deck and a hand.
-- The opponent has a deck that automatically populates the board.
-- The board contains a fixed number of slots.
-- Each side has a clock that acts as challenge progress and health.
-- Destroying enemy cards fills the opponent clock.
-- Losing your own cards fills the player clock.
-
-When one clock reaches its maximum, the challenge ends immediately.
-
-## Card Model
-
-Each card definition currently contains:
-
-- `title`
-- `type`
-- `value`
-- `effects`
-- `artwork`
-- `flavorText`
-
-Runtime cards are represented as instances with mutable `CurrentValue`, which allows damage to persist while a card remains on the board during a combat exchange.
-
-### Current Sample Cards
-
-The repository currently includes three sample card definitions:
-
-- `Bold Move` (`Pressure`, value `4`)
-- `Sweet Talk` (`Appeal`, value `3`)
-- `Maneuver` (`Positioning`, value `5`)
-
-These are starter prototype assets used to validate the loop rather than a final content set.
+---
 
 ## Card Types and Matchups
 
-The game uses a rock-paper-scissors relationship:
+Each card belongs to one of three archetypes, which form a rock-paper-scissors cycle:
 
+| Type | Description |
+|---|---|
+| `Pressure` | Force-based solutions |
+| `Appeal` | Charisma, charm, appearance |
+| `Positioning` | Planning, thinking, outmaneuvering |
+
+Matchup cycle:
 - `Pressure` beats `Appeal`
 - `Appeal` beats `Positioning`
 - `Positioning` beats `Pressure`
 - Matching types result in a draw
 
-This relationship is the main source of deterministic advantage in combat.
+A potential fourth type is under consideration: a **typeless** type that always loses matchups. This would serve as a penalty card or story-driven downgrade.
+
+---
+
+## Card Model
+
+Each card has:
+
+- `title`
+- `type`
+- `currentValue` — mutable; reduced by damage during play
+- `maxValue` — the ceiling `currentValue` resets to; upgradable between challenges
+- `effects` — a list of effect entries (trigger + action pairs)
+- `artwork`
+- `flavorText`
+
+### Card Value Lifecycle
+
+A card's `currentValue` is reduced during combat. When the value reaches `0`, the card is destroyed and moves to the discard pile. When the player's draw pile is exhausted, the discard pile is shuffled back in.
+
+**Open question:** does `currentValue` reset to `maxValue` when entering discard, or only when re-entering the deck?
+
+The full card loop — `deck → hand → board → discard → deck` — is itself a mechanical resource. Effects can reference any transition point in this loop.
+
+---
 
 ## Combat Rules
 
-Combat happens when the player plays a card into a slot that already contains an opponent card.
+Combat resolves when a player card occupies the same slot as an opponent card.
 
-### Outcome Evaluation
+### Matchup Outcomes
 
-For each attacking side, the game first determines the matchup result:
-
-- `Win`
-- `Draw`
-- `Lose`
-
-### Damage Rule
-
-Damage depends on matchup outcome:
-
-- On `Win`, damage equals the attacker's current value.
-- On `Draw` or `Lose`, damage is a random value between `1` and the attacker's current value.
+- **Win**: the attacker deals damage equal to its full `currentValue`.
+- **Draw** or **Lose**: the attacker deals a random value between `1` and its `currentValue`.
 
 ### Exchange Rule
 
-The implemented prototype resolves combat as a simultaneous exchange:
-
-- The player card deals damage to the opponent card.
-- The opponent card deals damage back in the same combat step.
+Both sides resolve simultaneously:
+- Player card deals damage to opponent card.
+- Opponent card deals damage back in the same step.
 - Both damage values are calculated before either card is removed.
 
-This means mutual destruction is possible.
+Mutual destruction is possible.
 
-### Destruction Rule
+### Destruction
 
-If a card's current value is reduced to `0`, it is destroyed.
+A card whose `currentValue` reaches `0` is destroyed and sent to discard.
 
-In the current implementation:
-
-- Destroying an opponent card increments the opponent clock by `1`.
-- Losing a player card increments the player clock by `1`.
-
-The original predesign described destroyed cards moving to discard. That discard loop is only implemented for deck piles, not yet for board casualties or returned hand cards.
+---
 
 ## Turn Structure
 
-The prototype uses a simple player-driven turn loop.
+**One turn = one card played.**
 
-At challenge start, the scene controller performs an initial setup pass that gives the player an opening hand and then populates the opponent side of the board before the first real decision.
+The player has a hand of cards. Each turn they drag one card onto a slot. The consequences of that placement resolve immediately (on-play effects, combat if an opponent card is present). Then it is the next turn.
 
-### Start of Turn
+### Drawing Cards
 
-At the start of the turn, the player draws until hand size reaches the `Draft Value`.
+The player's hand is not automatically refilled each turn. A special slot on the board functions as a draw action: playing a card there triggers a draw up to the hand limit. If the player has 1 card in hand and the limit is 5, they draw 4.
 
-Current default:
+Optionally, this same slot can first return all surviving cards from board slots to the player's hand before drawing — so the player can reclaim their placed cards at the cost of receiving weaker, already-damaged cards back instead of fresh draws from the deck.
 
-- `Draft Value = 3`
+**Round** = the period from one draw action to the next.
 
-If the draw pile is empty but the discard pile contains cards, the discard pile is shuffled back into the draw pile.
+### Hand Limit
 
-### Player Action Phase
+A variable on the table determines the current hand limit. This value can be modified by effects.
 
-The player may drag a card from hand onto any empty player slot.
+---
 
-If the slot contains an opponent card:
+## Board and Slots
 
-- combat resolves immediately
-- clocks may advance
-- one or both cards may be destroyed
+The board is a large, freely arrangeable surface. Players can reposition card groups, decks, and decorative elements without affecting gameplay rules. Cards in hand can be placed anywhere. Slot groups can be moved.
 
-If the slot does not contain an opponent card:
+### Slot Types
 
-- the player card simply occupies that slot for the rest of the turn
+**Standard slot** — has a position for an opponent card. At the start of a turn, if the opponent-card position is empty, an opponent card is drawn from the opponent source and placed there.
 
-The current prototype allows one player card per slot and does not include costs, action points, or combo chains.
+**Functional slot** — a position that triggers effects rather than hosting a direct opponent card. Effect timing options:
+- **On play**: fires when the player places a card here
+- **End of turn if empty**: fires if the player did not place a card here this turn
+- **Passive**: fires continuously regardless of card presence
+- **Affecting opponent**: modifies the opponent card on an adjacent or linked slot
 
-### End Turn
+**Draw slot** — the special slot used to draw cards (described above under Turn Structure).
 
-When the player presses `End Turn`:
+### Slot Groups
 
-- all surviving player cards on the board return to the player's hand as their original card definitions
-- all player board slots are cleared
-- the opponent fills empty opponent slots by drawing from its deck
+Slots can be organized into groups. Groups share a clock (see below) and can be thematically linked (e.g., a single encounter). Groups are moveable on the board.
 
-If the opponent draw pile is empty and discard exists, the discard pile is shuffled back in using the same deck logic.
+### Slot Effects
 
-## Board and Slot Logic
+Slot effects are defined as trigger + action pairs (same structure as card effects). A card played onto a slot can suppress the slot's own effect: one of the possible card actions is "disable the effect of this slot."
 
-The default prototype board has:
+---
 
-- `3` slots
+## Fatigue
 
-Each slot supports:
+When a card placed on a slot remains there when a new opponent card appears (because the player did not act on that slot), the card becomes **fatigued**. A fatigued card does not automatically fight.
 
-- one player card position
-- one opponent card position
+To re-engage, the player must return the card to hand and play it again.
 
-The broader design allows slots to have special effects or conditional behaviors. That concept exists in the predesign, but slot effects are not implemented yet in runtime code.
+Effects that interact with fatigue:
+- Card does not fatigue
+- Card still attacks while fatigued (effectively the same as not fatiguing)
+- When card is fatigued: draw a card if below hand limit
+- When card is fatigued: increase the value of other cards of a specific type, or in the same area
+- When card is fatigued: weaken opponent cards
 
-## Clocks and Win Conditions
+---
 
-Each challenge uses two clocks:
+## Clocks
 
-- player clock
-- opponent clock
+The game uses multiple **clocks** rather than a single HP value. A clock is any numeric resource that fills up and triggers an event when full.
 
-In the current prototype, each clock's maximum value is derived from deck size:
+### Clock Types
 
-- player clock max = number of cards in the player's starting deck
-- opponent clock max = number of cards in the opponent deck
+**Player clock** — the main losing condition. Certain slots or opponent cards drain it over time (e.g., "at end of turn, if this slot is empty, subtract 2 from player clock").
 
-A side loses when its clock becomes full.
+**Zone clocks** — attached to a slot group. Opponent cards in the group contribute their `currentValue` to the zone clock each turn if the player has not covered their slot. When a zone clock fills, an event triggers.
 
-That means:
+### Type Contribution Tracking
 
-- if the opponent clock fills first, the player wins
-- if the player clock fills first, the player loses
+Zone clocks can also record which card types were used to resolve them. When a zone clock fills, the game checks which type contributed the most. The outcome event can differ based on that dominant type — creating a stylistic consequence for how the player solved the challenge.
 
-UI panels for win and loss states are already supported by the scene controller.
+---
 
-## Current Prototype Configuration
+## Story Cards
 
-The default game configuration in the repository currently uses:
+Cards are divided into two categories:
 
-- `Draft Value = 3`
-- `Board Slot Count = 3`
-- player starting deck size = `9`
-- opponent deck size = `5`
+**Starter cards** — general-purpose actions that work across most situations (e.g., a generic Strike, Charm, or Scheme). These make up the player's initial deck.
 
-The player starting deck is a repeated mix of all three sample cards. The opponent deck is a smaller mixed set.
+**Story cards** — cards that impose a global rule change on the entire table. Examples:
+- Pressure cards cannot be played until a specific clock fills or a specific opponent card is defeated.
+- All cards of a given type are treated as a different type for the rest of the run.
+
+Story cards appear as consequences of gameplay events — things the player failed to prevent, or caused to happen. They carry narrative justification tied to those prior events.
+
+---
 
 ## Effects System
 
-The data model already supports effect tags through `CardEffectTag`.
+All effects — on cards, on slots, or from story cards — share the same structure:
 
-Current trigger types:
+```
+trigger → action
+```
 
-- `OnPlay`
-- `OnEndTurn`
-- `AfterAttack`
-- `OnDestroyed`
+### Triggers
 
-At the moment, these tags are descriptive only. They are stored in card data but do not yet drive gameplay behavior. They exist as a foundation for future mechanics.
+| Trigger | Description |
+|---|---|
+| On play | Card is placed on a slot |
+| On end of turn | Turn ends |
+| On start of turn | Turn begins |
+| On combat start | A fight begins (globally or in a specific area) |
+| On survive combat | Card survives a fight |
+| On value drop | Card's value decreases |
+| On value threshold | Card's value drops to or below a specified number |
+| On fatigue | Card becomes fatigued |
+| On un-fatigue | Card returns from fatigued to active state |
+| On return to hand | Card returns to the player's hand |
+| On draw | Card is drawn into hand |
+| On destroy / on discard | Card is destroyed and enters discard |
+| On return to deck | Card moves from discard back into the deck |
 
-## Implemented Scope vs Planned Scope
+### Actions
 
-### Implemented in the Prototype
+| Action | Description |
+|---|---|
+| Draw card | Draw one card |
+| Draw to limit | Draw up to hand limit |
+| Advance clock | Move a zone clock or player clock |
+| Change card value | Increase or decrease `currentValue` of own or opponent cards |
+| Search discard | Look through discard and select a card |
+| Search deck | Look through deck and select a card (by type or value threshold) |
+| Return cards from slots | Move surviving board cards back to hand |
+| Disable slot effect | Suppress the effect of the current slot |
+| Block opponent draw | Prevent opponent from drawing a card to a specific slot |
 
-- single-challenge loop
-- deck, hand, board, and clock state
-- draw-to-draft turn start
-- drag-and-drop card play
-- automatic combat on contested slots
-- simultaneous combat exchange
-- end turn flow
-- win/lose state detection
+### Scope
+
+Effects can target:
+- Cards in hand
+- Cards on slots
+- Cards in a specific slot group (area)
+- All cards on the board globally
+
+### Composition
+
+Whether effects are authored as fixed pairs (trigger + action as a single entry) or composed from separate trigger and action components is an open design question. Free composition risks creating nonsensical or broken combinations. Pre-authored pairs are safer but less flexible.
+
+### Global passive effects
+
+Some cards or story cards apply persistent rules to the entire table:
+- Ban a specific card type from being played
+- Treat one type as another type for matchup resolution
+
+---
+
+## Opponent Generation
+
+Two approaches are under consideration:
+
+**Deck-based opponent** — the opponent has a fixed deck. Cards drawn from it appear on the board. Predictable; allows the player to build knowledge of the opponent.
+
+**Table-based opponent** — opponent cards are generated by rolling on a random table. Each result specifies a type, a value, and an effect+trigger pair. The table uses an RPG-style escalation: rolls are made on a 1–20 range with a d10-equivalent die, but modifiers (from zone clocks, player progress, or card effects) push the effective roll higher, surfacing more difficult entries. At the start of a run, high results are effectively inaccessible. The player's choices during the run determine how far the table escalates.
+
+The table-based approach is less predictable but creates a different kind of tension. An open design question is whether the player should be able to see and learn the table over time, and how to display modifiers that affect rolls.
+
+---
+
+## Challenges and Encounters
+
+Periodically, a slot group appears as a **challenge** (e.g., an ambush or confrontation). The opponent cards in the group apply ongoing pressure — draining clocks, triggering effects — until the challenge is resolved.
+
+Because the player plays only one card per turn, resolving a challenge requires prioritizing it over other board activity. This is the core tension-management decision of mid-game play.
+
+Resolving a challenge rewards the player with new cards or upgrades to existing cards (`maxValue` increases or new effect entries).
+
+---
+
+## Deck and Card Progression
+
+Cards that are destroyed enter the discard pile. When the draw pile empties, discard is shuffled back in. Cards return with `currentValue` reset to `maxValue`.
+
+Progression options:
+- Earn new cards from resolved challenges
+- Upgrade existing cards (increase `maxValue`, add or change effects)
+
+Open question: does upgrading a card mean adding a new trigger+action entry, or replacing an existing one?
+
+---
+
+## Board Configuration (Current Prototype)
+
+| Parameter | Value |
+|---|---|
+| Draft value (hand limit) | 3 |
+| Board slot count | 3 |
+| Player starting deck size | 9 |
+| Opponent deck size | 5 |
+
+Sample player cards: `Bold Move` (Pressure, 4), `Sweet Talk` (Appeal, 3), `Maneuver` (Positioning, 5).
+
+---
+
+## Implementation Status
+
+### Implemented
+
+- Single-challenge loop
+- Deck, hand, board, and clock state
+- Draw-to-hand at turn start
+- Drag-and-drop card play
+- Automatic combat on contested slots
+- Simultaneous combat exchange (with mutual destruction)
+- End turn flow
+- Win/lose state detection
 - ScriptableObject-based card and config data
+- Effect tag fields on cards (`OnPlay`, `OnEndTurn`, `AfterAttack`, `OnDestroyed`) — data only, not yet evaluated
 
-### Planned but Not Yet Implemented
+### Planned
 
-- challenge series or run structure
-- deck growth between challenges
-- actual gameplay resolution for card effect tags
-- slot-specific gameplay effects
-- discard handling for destroyed board cards
-- richer opponent behavior and encounter scripting
-- additional card fields, content variety, and balancing
-
-## Design Intent
-
-The prototype is built around a few clear principles:
-
-- fast readable turns
-- low rules overhead
-- meaningful type-based prediction
-- partial randomness that keeps weak matchups viable
-- enough board state to create tension without slowing pacing
-
-The most important design choice is the combination of deterministic RPS advantage with non-zero random damage on losing or neutral matchups. This prevents combat from becoming completely binary while still rewarding informed placement.
-
-## Summary
-
-At its current stage, the game is a compact tactical card battler prototype. The player cycles a small hand, contests three slots, and tries to destroy enemy cards faster than the opponent destroys theirs. The design already establishes the core verbs and data model, while leaving room for future expansion through card effects, slot rules, and multi-challenge progression.
+- Fatigue mechanic
+- One-card-per-turn loop (replacing current all-cards-then-resolve flow)
+- Functional and draw slots with actual effect evaluation
+- Zone clocks and type-contribution tracking
+- Story cards and global table rules
+- Deck/card progression between challenges
+- Challenge slot groups and encounter scripting
+- Table-based opponent generation
+- Free table arrangement (Cultist Simulator-style UI)
+- Discard handling for destroyed board cards
+- Card `maxValue` and upgrade system
