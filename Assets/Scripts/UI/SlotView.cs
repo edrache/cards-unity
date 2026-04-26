@@ -85,6 +85,7 @@ namespace CardsUnity.UI
                 highlightImage.enabled = active && CanAcceptPlayerCard;
         }
 
+        // TODO Task 6: render effect descriptions from definition onto TMP labels
         public void SetEffectDescriptions(SlotDefinition definition) { }
 
         public void OnDrop(PointerEventData eventData)
