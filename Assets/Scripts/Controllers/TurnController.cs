@@ -73,6 +73,8 @@ namespace CardsUnity
             if (slot.HasOpponentCard)
                 ResolveSlotCombat(slot);
 
+            // Passive OnCardPlayed effects fire regardless of whether the card survived combat.
+            // This is intentional: the effect is triggered by the act of playing, not card survival.
             EvaluateSlotEffectsForSlot(slot, SlotEffectTrigger.OnCardPlayed);
         }
 
@@ -199,6 +201,8 @@ namespace CardsUnity
                 slot.OpponentCard = new CardInstance(card);
         }
 
+        // Intentionally includes the slot that triggered this effect: if a draw slot
+        // fires ReturnCardsFromSlots, the just-played card returns to hand as well.
         private void ReturnAllPlayerCardsToHand()
         {
             foreach (var slot in _board.Slots)
