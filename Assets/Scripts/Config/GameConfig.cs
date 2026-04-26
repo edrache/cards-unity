@@ -10,5 +10,6 @@ namespace CardsUnity
         public int boardSlotCount = 3;
         public List<CardDefinition> startingDeck = new List<CardDefinition>();
         public List<CardDefinition> opponentDeck = new List<CardDefinition>();
+        public List<SlotDefinition> slotDefinitions = new List<SlotDefinition>();
     }
 }

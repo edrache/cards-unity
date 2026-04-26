@@ -76,5 +76,18 @@ namespace CardsUnity.UI
                     slotView.SetHighlight(active);
             }
         }
+
+        public void ConfigureSlots(SlotDefinition[] definitions)
+        {
+            if (slotViews == null || definitions == null)
+                return;
+
+            int count = Math.Min(slotViews.Length, definitions.Length);
+            for (int i = 0; i < count; i++)
+            {
+                if (slotViews[i] != null)
+                    slotViews[i].SetEffectDescriptions(definitions[i]);
+            }
+        }
     }
 }

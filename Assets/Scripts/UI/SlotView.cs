@@ -85,6 +85,8 @@ namespace CardsUnity.UI
                 highlightImage.enabled = active && CanAcceptPlayerCard;
         }
 
+        public void SetEffectDescriptions(SlotDefinition definition) { }
+
         public void OnDrop(PointerEventData eventData)
         {
             if (!CanAcceptPlayerCard)

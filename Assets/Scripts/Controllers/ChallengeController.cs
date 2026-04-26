@@ -42,7 +42,10 @@ namespace CardsUnity
             var opponentDeck = BuildDeck(config.opponentDeck, _rng);
 
             _hand = new HandState();
-            _board = new BoardState(config.boardSlotCount);
+            bool hasDefinitions = config.slotDefinitions != null && config.slotDefinitions.Count > 0;
+            _board = hasDefinitions
+                ? new BoardState(config.slotDefinitions.ToArray())
+                : new BoardState(config.boardSlotCount);
             _playerClock = new ClockState(config.startingDeck != null ? config.startingDeck.Count : 0);
             _opponentClock = new ClockState(config.opponentDeck != null ? config.opponentDeck.Count : 0);
 
@@ -69,6 +72,9 @@ namespace CardsUnity
 
             if (losePanel != null)
                 losePanel.SetActive(false);
+
+            if (hasDefinitions)
+                boardView.ConfigureSlots(config.slotDefinitions.ToArray());
 
             BeginTurn();
             _turn.EndTurn();
