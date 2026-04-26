@@ -280,8 +280,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Bold Move
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: adeb472b801494f4e8b2b8a3b0018592, type: 2}
-  m_sharedMaterial: {fileID: 1083042144006679999, guid: adeb472b801494f4e8b2b8a3b0018592, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 94ba8e9094dbf430f8281a6e97d2fb4d, type: 2}
+  m_sharedMaterial: {fileID: -3713224194013397420, guid: 94ba8e9094dbf430f8281a6e97d2fb4d, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -305,8 +305,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 12
-  m_fontSizeBase: 12
+  m_fontSize: 14
+  m_fontSizeBase: 14
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -407,7 +407,7 @@ MonoBehaviour:
   titleText: {fileID: 3617226139185062497}
   valueText: {fileID: 7921168664153047663}
   typeText: {fileID: 7530095150179407908}
-  flavorText: {fileID: 0}
+  flavorText: {fileID: 4403405800689116529}
   artworkImage: {fileID: 9083303787651883450}
   cardBackground: {fileID: 926526389834393687}
 --- !u!1 &3980268041226884967

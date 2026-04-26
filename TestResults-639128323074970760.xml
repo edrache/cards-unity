@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="34" result="Passed" total="34" passed="34" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.0340199">
+  <test-suite type="TestSuite" id="1000" name="GameJam-2026-04-17" fullname="GameJam-2026-04-17" runstate="Runnable" testcasecount="34" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.034020" total="34" passed="34" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1041" name="CardsUnity.Tests.dll" fullname="/Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/ScriptAssemblies/CardsUnity.Tests.dll" runstate="Runnable" testcasecount="34" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.031401" total="34" passed="34" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="92763" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1042" name="CardsUnity" fullname="CardsUnity" runstate="Runnable" testcasecount="34" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.031165" total="34" passed="34" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1043" name="Tests" fullname="CardsUnity.Tests" runstate="Runnable" testcasecount="34" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.030964" total="34" passed="34" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestFixture" id="1002" name="CardViewTests" fullname="CardsUnity.Tests.CardViewTests" classname="CardsUnity.Tests.CardViewTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.009036" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1003" name="Drag_toggles_blocksRaycasts_to_allow_slot_drop" fullname="CardsUnity.Tests.CardViewTests.Drag_toggles_blocksRaycasts_to_allow_slot_drop" methodname="Drag_toggles_blocksRaycasts_to_allow_slot_drop" classname="CardsUnity.Tests.CardViewTests" runstate="Runnable" seed="1993203288" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.004595" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1004" name="CombatResolverTests" fullname="CardsUnity.Tests.CombatResolverTests" classname="CardsUnity.Tests.CombatResolverTests" runstate="Runnable" testcasecount="12" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.004931" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1006" name="Appeal_vs_Positioning_returns_Win" fullname="CardsUnity.Tests.CombatResolverTests.Appeal_vs_Positioning_returns_Win" methodname="Appeal_vs_Positioning_returns_Win" classname="CardsUnity.Tests.CombatResolverTests" runstate="Runnable" seed="1625857081" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.001486" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1014" name="Combat_does_not_set_Destroyed_when_defender_survives" fullname="CardsUnity.Tests.CombatResolverTests.Combat_does_not_set_Destroyed_when_defender_survives" methodname="Combat_does_not_set_Destroyed_when_defender_survives" classname="CardsUnity.Tests.CombatResolverTests" runstate="Runnable" seed="23960205" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000211" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1012" name="Combat_reduces_defender_CurrentValue" fullname="CardsUnity.Tests.CombatResolverTests.Combat_reduces_defender_CurrentValue" methodname="Combat_reduces_defender_CurrentValue" classname="CardsUnity.Tests.CombatResolverTests" runstate="Runnable" seed="2038302629" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000269" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1013" name="Combat_sets_Destroyed_when_defender_value_reaches_zero" fullname="CardsUnity.Tests.CombatResolverTests.Combat_sets_Destroyed_when_defender_value_reaches_zero" methodname="Combat_sets_Destroyed_when_defender_value_reaches_zero" classname="CardsUnity.Tests.CombatResolverTests" runstate="Runnable" seed="389338316" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000078" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1011" name="Lose_deals_damage_between_1_and_card_value" fullname="CardsUnity.Tests.CombatResolverTests.Lose_deals_damage_between_1_and_card_value" methodname="Lose_deals_damage_between_1_and_card_value" classname="CardsUnity.Tests.CombatResolverTests" runstate="Runnable" seed="1524696609" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.001284" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1007" name="Positioning_vs_Pressure_returns_Win" fullname="CardsUnity.Tests.CombatResolverTests.Positioning_vs_Pressure_returns_Win" methodname="Positioning_vs_Pressure_returns_Win" classname="CardsUnity.Tests.CombatResolverTests" runstate="Runnable" seed="6882025" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000055" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1005" name="Pressure_vs_Appeal_returns_Win" fullname="CardsUnity.Tests.CombatResolverTests.Pressure_vs_Appeal_returns_Win" methodname="Pressure_vs_Appeal_returns_Win" classname="CardsUnity.Tests.CombatResolverTests" runstate="Runnable" seed="429331629" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000031" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1008" name="Pressure_vs_Positioning_returns_Lose" fullname="CardsUnity.Tests.CombatResolverTests.Pressure_vs_Positioning_returns_Lose" methodname="Pressure_vs_Positioning_returns_Lose" classname="CardsUnity.Tests.CombatResolverTests" runstate="Runnable" seed="450770790" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000029" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1009" name="Pressure_vs_Pressure_returns_Draw" fullname="CardsUnity.Tests.CombatResolverTests.Pressure_vs_Pressure_returns_Draw" methodname="Pressure_vs_Pressure_returns_Draw" classname="CardsUnity.Tests.CombatResolverTests" runstate="Runnable" seed="1988874234" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000025" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1015" name="ResolveExchange_applies_damage_to_both_cards" fullname="CardsUnity.Tests.CombatResolverTests.ResolveExchange_applies_damage_to_both_cards" methodname="ResolveExchange_applies_damage_to_both_cards" classname="CardsUnity.Tests.CombatResolverTests" runstate="Runnable" seed="319764234" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000206" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1016" name="ResolveExchange_uses_simultaneous_damage_when_both_cards_destroy_each_other" fullname="CardsUnity.Tests.CombatResolverTests.ResolveExchange_uses_simultaneous_damage_when_both_cards_destroy_each_other" methodname="ResolveExchange_uses_simultaneous_damage_when_both_cards_destroy_each_other" classname="CardsUnity.Tests.CombatResolverTests" runstate="Runnable" seed="402571146" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000074" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1010" name="Win_deals_full_card_value_as_damage" fullname="CardsUnity.Tests.CombatResolverTests.Win_deals_full_card_value_as_damage" methodname="Win_deals_full_card_value_as_damage" classname="CardsUnity.Tests.CombatResolverTests" runstate="Runnable" seed="1061172113" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000049" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1017" name="DeckStateTests" fullname="CardsUnity.Tests.DeckStateTests" classname="CardsUnity.Tests.DeckStateTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.002668" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1023" name="CanDraw_false_when_both_piles_empty" fullname="CardsUnity.Tests.DeckStateTests.CanDraw_false_when_both_piles_empty" methodname="CanDraw_false_when_both_piles_empty" classname="CardsUnity.Tests.DeckStateTests" runstate="Runnable" seed="1151625208" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000274" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1024" name="CanDraw_true_when_only_discard_has_cards" fullname="CardsUnity.Tests.DeckStateTests.CanDraw_true_when_only_discard_has_cards" methodname="CanDraw_true_when_only_discard_has_cards" classname="CardsUnity.Tests.DeckStateTests" runstate="Runnable" seed="494353067" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000686" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1021" name="Discard_adds_to_discard_pile" fullname="CardsUnity.Tests.DeckStateTests.Discard_adds_to_discard_pile" methodname="Discard_adds_to_discard_pile" classname="CardsUnity.Tests.DeckStateTests" runstate="Runnable" seed="813782490" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000063" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1019" name="Draw_reduces_draw_pile_count" fullname="CardsUnity.Tests.DeckStateTests.Draw_reduces_draw_pile_count" methodname="Draw_reduces_draw_pile_count" classname="CardsUnity.Tests.DeckStateTests" runstate="Runnable" seed="878948830" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000044" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1018" name="Draw_returns_card" fullname="CardsUnity.Tests.DeckStateTests.Draw_returns_card" methodname="Draw_returns_card" classname="CardsUnity.Tests.DeckStateTests" runstate="Runnable" seed="1055910940" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000598" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1020" name="Draw_returns_null_when_both_piles_empty" fullname="CardsUnity.Tests.DeckStateTests.Draw_returns_null_when_both_piles_empty" methodname="Draw_returns_null_when_both_piles_empty" classname="CardsUnity.Tests.DeckStateTests" runstate="Runnable" seed="536065210" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000051" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1022" name="ShuffleDiscard_moves_all_cards_to_draw_pile" fullname="CardsUnity.Tests.DeckStateTests.ShuffleDiscard_moves_all_cards_to_draw_pile" methodname="ShuffleDiscard_moves_all_cards_to_draw_pile" classname="CardsUnity.Tests.DeckStateTests" runstate="Runnable" seed="1628788444" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000154" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1025" name="RectOutlineGraphicTests" fullname="CardsUnity.Tests.RectOutlineGraphicTests" classname="CardsUnity.Tests.RectOutlineGraphicTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.009440" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1026" name="PopulateMesh_creates_four_outline_quads_for_regular_rect" fullname="CardsUnity.Tests.RectOutlineGraphicTests.PopulateMesh_creates_four_outline_quads_for_regular_rect" methodname="PopulateMesh_creates_four_outline_quads_for_regular_rect" classname="CardsUnity.Tests.RectOutlineGraphicTests" runstate="Runnable" seed="1959539938" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.008730" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1027" name="PopulateMesh_skips_vertical_edges_when_rect_is_too_short" fullname="CardsUnity.Tests.RectOutlineGraphicTests.PopulateMesh_skips_vertical_edges_when_rect_is_too_short" methodname="PopulateMesh_skips_vertical_edges_when_rect_is_too_short" classname="CardsUnity.Tests.RectOutlineGraphicTests" runstate="Runnable" seed="929208467" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000277" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1028" name="TurnControllerTests" fullname="CardsUnity.Tests.TurnControllerTests" classname="CardsUnity.Tests.TurnControllerTests" runstate="Runnable" testcasecount="12" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.004229" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1039" name="EndTurn_clears_player_cards_from_slots" fullname="CardsUnity.Tests.TurnControllerTests.EndTurn_clears_player_cards_from_slots" methodname="EndTurn_clears_player_cards_from_slots" classname="CardsUnity.Tests.TurnControllerTests" runstate="Runnable" seed="1584183721" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.001039" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1040" name="EndTurn_places_opponent_cards_in_empty_slots" fullname="CardsUnity.Tests.TurnControllerTests.EndTurn_places_opponent_cards_in_empty_slots" methodname="EndTurn_places_opponent_cards_in_empty_slots" classname="CardsUnity.Tests.TurnControllerTests" runstate="Runnable" seed="145437168" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000201" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1038" name="EndTurn_returns_player_cards_to_hand" fullname="CardsUnity.Tests.TurnControllerTests.EndTurn_returns_player_cards_to_hand" methodname="EndTurn_returns_player_cards_to_hand" classname="CardsUnity.Tests.TurnControllerTests" runstate="Runnable" seed="1945230427" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000106" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1036" name="PlayCard_applies_counter_damage_to_player_card" fullname="CardsUnity.Tests.TurnControllerTests.PlayCard_applies_counter_damage_to_player_card" methodname="PlayCard_applies_counter_damage_to_player_card" classname="CardsUnity.Tests.TurnControllerTests" runstate="Runnable" seed="836072919" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000278" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1035" name="PlayCard_increments_opponent_clock_when_card_destroyed" fullname="CardsUnity.Tests.TurnControllerTests.PlayCard_increments_opponent_clock_when_card_destroyed" methodname="PlayCard_increments_opponent_clock_when_card_destroyed" classname="CardsUnity.Tests.TurnControllerTests" runstate="Runnable" seed="183263037" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000132" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1037" name="PlayCard_increments_player_clock_when_player_card_is_destroyed_by_counterattack" fullname="CardsUnity.Tests.TurnControllerTests.PlayCard_increments_player_clock_when_player_card_is_destroyed_by_counterattack" methodname="PlayCard_increments_player_clock_when_player_card_is_destroyed_by_counterattack" classname="CardsUnity.Tests.TurnControllerTests" runstate="Runnable" seed="1583629199" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000122" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1032" name="PlayCard_places_card_in_slot" fullname="CardsUnity.Tests.TurnControllerTests.PlayCard_places_card_in_slot" methodname="PlayCard_places_card_in_slot" classname="CardsUnity.Tests.TurnControllerTests" runstate="Runnable" seed="886883911" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000097" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1033" name="PlayCard_removes_card_from_hand" fullname="CardsUnity.Tests.TurnControllerTests.PlayCard_removes_card_from_hand" methodname="PlayCard_removes_card_from_hand" classname="CardsUnity.Tests.TurnControllerTests" runstate="Runnable" seed="810268376" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000085" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1034" name="PlayCard_to_occupied_slot_deals_full_damage_on_win" fullname="CardsUnity.Tests.TurnControllerTests.PlayCard_to_occupied_slot_deals_full_damage_on_win" methodname="PlayCard_to_occupied_slot_deals_full_damage_on_win" classname="CardsUnity.Tests.TurnControllerTests" runstate="Runnable" seed="1805881672" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000177" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1030" name="StartTurn_does_not_exceed_draft_value_when_hand_already_has_cards" fullname="CardsUnity.Tests.TurnControllerTests.StartTurn_does_not_exceed_draft_value_when_hand_already_has_cards" methodname="StartTurn_does_not_exceed_draft_value_when_hand_already_has_cards" classname="CardsUnity.Tests.TurnControllerTests" runstate="Runnable" seed="792620782" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000125" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1029" name="StartTurn_draws_up_to_draft_value" fullname="CardsUnity.Tests.TurnControllerTests.StartTurn_draws_up_to_draft_value" methodname="StartTurn_draws_up_to_draft_value" classname="CardsUnity.Tests.TurnControllerTests" runstate="Runnable" seed="1108113896" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000086" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1031" name="StartTurn_shuffles_discard_when_draw_pile_empty" fullname="CardsUnity.Tests.TurnControllerTests.StartTurn_shuffles_discard_when_draw_pile_empty" methodname="StartTurn_shuffles_discard_when_draw_pile_empty" classname="CardsUnity.Tests.TurnControllerTests" runstate="Runnable" seed="1636049163" result="Passed" start-time="2026-04-26 18:31:47Z" end-time="2026-04-26 18:31:47Z" duration="0.000103" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+              <output><![CDATA[<b><color=#2EA3FF>MCP-FOR-UNITY</color></b>: [TestRunnerNoThrottle] Restored Interaction Mode after test run.
+Saving results to: /Users/marek/Library/Application Support/DefaultCompany/GameJam-2026-04-17/TestResults.xml
+]]></output>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

@@ -171,6 +171,13 @@ The hand limit is a variable tracked on the board state, not a hardcoded constan
 
 Default board: 3 slots.
 
+Each `SlotState` may also hold an optional `SlotDefinition` (ScriptableObject). When a `SlotDefinition` is present:
+- `hasOpponentCardSpot` / `hasPlayerCardSpot` declare whether the slot can currently host opponent and player cards.
+- `effects` is a list of `SlotEffectDefinition` entries evaluated by `TurnController`.
+- `SlotView` exposes up to three effect description labels (one per context: `NoOpponentCard`, `NoPlayerCard`, `Passive`).
+
+Slots with no `SlotDefinition` use the legacy default behaviour: both anchors are available and opponent cards are auto-placed at end of turn by `PlaceOpponentCards()`.
+
 ### Planned: Slot Types
 
 **Standard slot** — has an opponent card position. At the start of a turn, if that position is empty, the opponent draws and places a card there.
@@ -245,12 +252,29 @@ The game uses multiple clocks rather than a single HP value. A clock is any nume
 
 ### Current Implementation
 
-`CardEffectTag` (ScriptableObject) fields:
+**Card effects** — `CardEffectTag` (ScriptableObject) fields:
 - `tagName` — string
 - `trigger` — `EffectTrigger` enum: `OnPlay`, `OnEndTurn`, `AfterAttack`, `OnDestroyed`
 - `description` — string
 
 These tags exist on `CardDefinition.effects` but **are not evaluated** by any runtime code. They are data-only placeholders.
+
+**Slot effects** — `SlotEffectDefinition` (ScriptableObject) fields:
+- `context` — `SlotEffectContext`: `NoOpponentCard`, `NoPlayerCard`, `Passive`
+- `trigger` — `SlotEffectTrigger`: `OnPlayerTurnStart`, `OnCardPlayed`
+- `action` — `SlotEffectAction`: `DrawOpponentCard`, `AddToClock`, `ReturnCardsFromSlots`, `DrawToHandLimit`
+- `actionValue` — `int` used by `AddToClock`
+- `clockTarget` — `ClockTarget`: `PlayerClock`, `OpponentClock`
+- `description` — `string` shown in `SlotView`
+
+Slot effects **are evaluated at runtime** by `TurnController`.
+
+| Action | Trigger | Context | Behaviour |
+|---|---|---|---|
+| `DrawOpponentCard` | `OnPlayerTurnStart` | `NoOpponentCard` | Draw from opponent deck and place the card on this slot |
+| `AddToClock` | `OnPlayerTurnStart` | `NoPlayerCard` | Increment the selected clock by `actionValue` |
+| `ReturnCardsFromSlots` | `OnCardPlayed` | `Passive` | Return all player cards currently on the board to hand |
+| `DrawToHandLimit` | `OnCardPlayed` | `Passive` | Draw from the player deck until hand reaches `draftValue` |
 
 ### Planned: Trigger + Action Structure
 
@@ -350,6 +374,7 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | `boardSlotCount` | 3 | Number of slots on the board |
 | `startingDeck` | 9 cards | Player's starting deck (mix of sample cards) |
 | `opponentDeck` | 5 cards | Opponent's deck (smaller mixed set) |
+| `slotDefinitions` | Empty list | Optional per-slot definitions used to switch the board into slot-effect mode |
 
 ---
 
@@ -366,6 +391,10 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 - Win/loss state detection (clock fill check)
 - ScriptableObject-based card and config data
 - Full test coverage for combat, deck, and turn logic
+- Slot effect system: `SlotEffectDefinition` and `SlotDefinition` ScriptableObjects with runtime evaluation in `TurnController`
+- Slot effect actions implemented: `DrawOpponentCard`, `AddToClock`, `ReturnCardsFromSlots`, `DrawToHandLimit`
+- Slot UI effect descriptions via `TextMeshProUGUI` labels in `SlotView`
+- Reusable UI outline renderer for `Canvas` elements via `RectOutlineGraphic` (`MaskableGraphic` + shader) with configurable thickness, color, rounded corners, solid/dashed mode, dash length, gap length, dash offset, and fixed vs edge-fitted dash distribution
 
 ### Defined but Not Evaluated
 
@@ -378,7 +407,6 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | One-card-per-turn loop | Replaces current all-cards-then-resolve flow |
 | Fatigue mechanic | Cards stay on slots, become fatigued |
 | Draw slot | Special slot to return cards + draw |
-| Functional slot effects | Effect evaluation at runtime |
 | Zone clocks | Per-group clocks with type tracking |
 | Story cards | Global rule-change cards tied to narrative |
 | `MaxValue` and upgrades | Separate current vs max value on `CardInstance` |
@@ -399,3 +427,5 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | 2026-04-25 | Prototype implemented: single-challenge loop, drag-and-drop, simultaneous combat, win/loss detection |
 | 2026-04-25 | Design expanded via voice notes: three pillars, one-card-per-turn, fatigue, zone clocks, story cards, draw slot, table-based opponent, `MaxValue`, free board layout |
 | 2026-04-26 | All design consolidated into this document (`game-design-doc.md`) |
+| 2026-04-26 | Added `RectOutlineGraphic` for UI `RectTransform` borders with configurable rounded solid and dashed shader-driven outlines |
+| 2026-04-26 | Slot effect system implemented: `SlotEffectDefinition` and `SlotDefinition`, four runtime actions, slot spot gating, and `SlotView` TMP effect descriptions |

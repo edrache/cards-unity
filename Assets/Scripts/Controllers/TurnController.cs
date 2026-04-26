@@ -65,6 +65,9 @@ namespace CardsUnity
             if (slot.PlayerCard != null)
                 return;
 
+            if (!CanHostPlayerCard(slot))
+                return;
+
             if (!_playerHand.Remove(card))
                 return;
 
@@ -187,6 +190,9 @@ namespace CardsUnity
 
         private void DrawOpponentCardToSlot(SlotState slot)
         {
+            if (!CanHostOpponentCard(slot))
+                return;
+
             if (slot.HasOpponentCard)
                 return;
 
@@ -230,6 +236,16 @@ namespace CardsUnity
                 if (card != null)
                     _playerHand.Add(card);
             }
+        }
+
+        private static bool CanHostPlayerCard(SlotState slot)
+        {
+            return slot?.Definition == null || slot.Definition.hasPlayerCardSpot;
+        }
+
+        private static bool CanHostOpponentCard(SlotState slot)
+        {
+            return slot?.Definition == null || slot.Definition.hasOpponentCardSpot;
         }
     }
 }

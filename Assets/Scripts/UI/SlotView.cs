@@ -19,16 +19,19 @@ namespace CardsUnity.UI
         public int SlotIndex { get; set; }
         public Action<CardView, int> OnCardDropped;
 
+        private SlotDefinition _definition;
         private CardView _playerView;
         private CardView _opponentView;
-        private bool CanAcceptPlayerCard => _playerView == null;
+        private bool HasPlayerCardSpot => _definition == null || _definition.hasPlayerCardSpot;
+        private bool HasOpponentCardSpot => _definition == null || _definition.hasOpponentCardSpot;
+        private bool CanAcceptPlayerCard => HasPlayerCardSpot && _playerView == null;
 
         public void ShowPlayerCard(CardInstance card, CardView prefab)
         {
             if (_playerView != null)
                 Destroy(_playerView.gameObject);
 
-            if (card == null || prefab == null || playerCardAnchor == null)
+            if (!HasPlayerCardSpot || card == null || prefab == null || playerCardAnchor == null)
             {
                 _playerView = null;
                 return;
@@ -58,7 +61,7 @@ namespace CardsUnity.UI
             if (_opponentView != null)
                 Destroy(_opponentView.gameObject);
 
-            if (card == null || prefab == null || opponentCardAnchor == null)
+            if (!HasOpponentCardSpot || card == null || prefab == null || opponentCardAnchor == null)
             {
                 _opponentView = null;
                 return;
@@ -91,6 +94,10 @@ namespace CardsUnity.UI
 
         public void SetEffectDescriptions(SlotDefinition definition)
         {
+            _definition = definition;
+            EnsureEffectLabels();
+            ApplySpotAvailability();
+
             ApplyEffectLabel(noOpponentCardEffectLabel, null);
             ApplyEffectLabel(noPlayerCardEffectLabel, null);
             ApplyEffectLabel(passiveEffectLabel, null);
@@ -135,6 +142,54 @@ namespace CardsUnity.UI
 
             label.text = text ?? string.Empty;
             label.gameObject.SetActive(!string.IsNullOrEmpty(text));
+        }
+
+        private void ApplySpotAvailability()
+        {
+            if (playerCardAnchor != null)
+                playerCardAnchor.gameObject.SetActive(HasPlayerCardSpot);
+
+            if (opponentCardAnchor != null)
+                opponentCardAnchor.gameObject.SetActive(HasOpponentCardSpot);
+        }
+
+        private void EnsureEffectLabels()
+        {
+            if (noOpponentCardEffectLabel == null)
+                noOpponentCardEffectLabel = CreateEffectLabel("NoOpponentEffectLabel", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -18f), new Vector2(0.5f, 1f));
+
+            if (passiveEffectLabel == null)
+                passiveEffectLabel = CreateEffectLabel("PassiveEffectLabel", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(0.5f, 0.5f));
+
+            if (noPlayerCardEffectLabel == null)
+                noPlayerCardEffectLabel = CreateEffectLabel("NoPlayerEffectLabel", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 18f), new Vector2(0.5f, 0f));
+        }
+
+        private TextMeshProUGUI CreateEffectLabel(string objectName, Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPosition, Vector2 pivot)
+        {
+            var labelObject = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            labelObject.transform.SetParent(transform, false);
+
+            var rectTransform = labelObject.GetComponent<RectTransform>();
+            rectTransform.anchorMin = anchorMin;
+            rectTransform.anchorMax = anchorMax;
+            rectTransform.pivot = pivot;
+            rectTransform.anchoredPosition = anchoredPosition;
+            rectTransform.sizeDelta = new Vector2(180f, 28f);
+
+            var label = labelObject.GetComponent<TextMeshProUGUI>();
+            label.fontSize = 11f;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            label.overflowMode = TextOverflowModes.Ellipsis;
+            label.alignment = TextAlignmentOptions.Center;
+            label.color = new Color(0.91f, 0.89f, 0.83f, 0.92f);
+            label.raycastTarget = false;
+
+            if (TMP_Settings.defaultFontAsset != null)
+                label.font = TMP_Settings.defaultFontAsset;
+
+            labelObject.SetActive(false);
+            return label;
         }
     }
 }

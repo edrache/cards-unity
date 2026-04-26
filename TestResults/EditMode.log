@@ -1,0 +1,469 @@
+Unity Editor version:    6000.3.10f1 (e35f0c77bd8e)
+Branch:                  6000.3/staging
+Build type:              Release
+Batch mode:              YES
+macOS version:           Version 26.4.1 (Build 25E253)
+Darwin version:          25.4.0
+Architecture:            arm64
+Running under Rosetta:   NO
+Available memory:        32768 MB
+Date:                    2026-04-26T18:30:23Z
+[Licensing::Module] Trying to connect to existing licensing client channel...
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-marek" at "2026-04-26T18:30:23.818766Z"
+Launching external process: /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/PackageManager/Server/UnityPackageManager
+
+COMMAND LINE ARGUMENTS:
+/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+-batchmode
+-quit
+-projectPath
+.
+-runTests
+-testPlatform
+EditMode
+-testResults
+TestResults/EditMode.xml
+-logFile
+TestResults/EditMode.log
+Successfully changed project path to: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.17.4+4293ba1
+  Session Id:              3a6c78766a15417ea261d08eaca6e9d9
+  Correlation Id:          21b2c4ae047b09a352124eb9aefe398b
+  External correlation Id: 1729392454553355811
+  Machine Id:              PgG9MecNdz8uWzsd8vvE66ZwUzU=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-marek" (connect: 0.00s, validation: 0.00s, handshake: 0.24s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-marek-notifications" at "2026-04-26T18:30:24.062331Z"
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: SC-5WUR-NHHS-GAVG-E6X3-XXXX
+  Product: Unity Pro
+  Type: ULF
+  Expiration: 2026-09-25T00:00:00Z
+[Licensing::Module] License group:
+  Id: 12370443284604-monstercouch-UnitXXXX
+  Product: Unity Pro
+  Type: Assigned
+  Expiration: 2026-09-19T00:00:00Z
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.00
+[Licensing::Module] Licensing Background thread has ended after 0.24s
+/Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gfx=262144"
+Player connection [8285280448]  Target information:
+
+Player connection [8285280448]  * "[IP] 127.51.68.120 [Port] 55504 [Flags] 2 [Guid] 2985947129 [EditorId] 2985947129 [Version] 1048832 [Id] OSXEditor(0,MacBook-Pro-M5.local) [Debug] 1 [PackageName] OSXEditor [ProjectName] Editor" 
+
+Player connection [8285280448]  * "[IP] 192.168.55.102 [Port] 55504 [Flags] 2 [Guid] 2985947129 [EditorId] 2985947129 [Version] 1048832 [Id] OSXEditor(0,MacBook-Pro-M5.local) [Debug] 1 [PackageName] OSXEditor [ProjectName] Editor" 
+
+Player connection [8285280448]  * "[IP] 192.168.55.106 [Port] 55504 [Flags] 2 [Guid] 2985947129 [EditorId] 2985947129 [Version] 1048832 [Id] OSXEditor(0,MacBook-Pro-M5.local) [Debug] 1 [PackageName] OSXEditor [ProjectName] Editor" 
+
+Player connection [8285280448] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [8285280448] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+[Package Manager] Connected to IPC stream "Upm-92539" after 0.1 seconds.
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: SC-5WUR-NHHS-GAVG-E6X3-XXXX
+  Product: Unity Pro
+  Type: ULF
+  Expiration: 2026-09-25T00:00:00Z
+[Licensing::Module] License group:
+  Id: 12370443284604-monstercouch-UnitXXXX
+  Product: Unity Pro
+  Type: Assigned
+  Expiration: 2026-09-19T00:00:00Z
+Library Redirect Path: Library/
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Refreshing native plugins compatible for Editor in 1.47 ms, found 2 plugins.
+Preloading 1 native plugins for Editor in 0.79 ms.
+Initialize engine version: 6000.3.10f1 (e35f0c77bd8e)
+[Subsystems] Discovering subsystems at path /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Assets
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+ preferred device: Apple M5 (high power)
+Metal devices available: 1
+0: Apple M5 (high power)
+Using device Apple M5 (high power)
+Initializing Metal device caps: Apple M5
+Mac GPU Family: 2
+Apple GPU Family: 9
+MSL Version: 3.0
+Has Float MSAA: 1
+Has Float Filtering: 1
+ReadWrite Texture Tier: 2
+Shader 'MoreMountains/MMRipple': fallback shader 'Particle/AlphaBlended' not found
+Initialize mono
+Mono path[0] = '/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/Scripting/Managed'
+Mono path[1] = '/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/Scripting/MonoBleedingEdge/lib/mono/unityjit-macos'
+Mono config path = '/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/Scripting/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56539
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+ImportWorker Server TCP listen port: 0
+AcceleratorClientConnectionCallback - disconnected - :0
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/PlaybackEngines/MacStandaloneSupport/UnityEditor.OSXStandalone.Extensions.dll
+Register platform support module: /Applications/Unity/Hub/Editor/6000.3.10f1/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+Registered in 0.000354 seconds.
+- Loaded All Assemblies, in  0.185 seconds
+Native extension for WindowsStandalone target not found
+Native extension for OSXStandalone target not found
+ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.197 seconds
+Domain Reload Profiling: 382ms
+	BeginReloadAssembly (54ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (0ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (13ms)
+	RebuildCommonClasses (18ms)
+	RebuildNativeTypeToScriptingClass (7ms)
+	initialDomainReloadingComplete (20ms)
+	LoadAllAssembliesAndSetupDomain (86ms)
+		LoadAssemblies (40ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (84ms)
+			TypeCache.Refresh (83ms)
+				TypeCache.ScanAssembly (76ms)
+			BuildScriptInfoCaches (0ms)
+			ResolveRequiredComponents (0ms)
+	FinalizeReload (197ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (177ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (21ms)
+			SetLoadedEditorAssemblies (2ms)
+			BeforeProcessingInitializeOnLoad (46ms)
+			ProcessInitializeOnLoadAttributes (72ms)
+			ProcessInitializeOnLoadMethodAttributes (35ms)
+			AfterProcessingInitializeOnLoad (0ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (0ms)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: SC-5WUR-NHHS-GAVG-E6X3-XXXX
+  Product: Unity Pro
+  Type: ULF
+  Expiration: 2026-09-25T00:00:00Z
+[Licensing::Module] License group:
+  Id: 12370443284604-monstercouch-UnitXXXX
+  Product: Unity Pro
+  Type: Assigned
+  Expiration: 2026-09-19T00:00:00Z
+Application.AssetDatabase Initial Refresh Start
+Package Manager log level set to [2]
+[Package Manager] Restoring resolved packages state from cache
+[Licensing::Client] Successfully resolved entitlement details
+[Package Manager] Registered 71 packages:
+  Packages from [https://packages.unity.com]:
+    com.unity.2d.animation@13.0.4 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.2d.animation@7396d8477ca9)
+    com.unity.2d.psdimporter@12.0.1 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.2d.psdimporter@9abe0f7cac7e)
+    com.unity.ai.navigation@2.0.10 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.ai.navigation@c33a115e9883)
+    com.unity.animation.rigging@1.4.1 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.animation.rigging@ae5f251e1ed4)
+    com.unity.cinemachine@3.1.6 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.cinemachine@285f38545487)
+    com.unity.collab-proxy@2.11.3 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.collab-proxy@e566cd3e7623)
+    com.unity.ide.rider@3.0.39 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.ide.rider@4504839d03f7)
+    com.unity.ide.visualstudio@2.0.26 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.ide.visualstudio@a99d56dec63f)
+    com.unity.inputsystem@1.18.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.inputsystem@57d0e36f6123)
+    com.unity.postprocessing@3.5.4 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.postprocessing@141166b789e3)
+    com.unity.recorder@5.1.6 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.recorder@f58b3db87352)
+    com.unity.timeline@1.8.10 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.timeline@7f8b2fb101b6)
+    com.unity.visualscripting@1.9.9 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.visualscripting@191c0d7e3b69)
+    com.unity.collections@2.6.2 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.collections@aea9d3bd5e19)
+    com.unity.bindings.openimageio@1.0.2 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.bindings.openimageio@94e2abc0bc65)
+    com.unity.splines@2.8.3 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.splines@56b2023b4b9f)
+    com.unity.burst@1.8.28 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.burst@07790c2d06d9)
+    com.unity.2d.common@12.0.2 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.2d.common@800085e896ad)
+    com.unity.nuget.newtonsoft-json@3.2.2 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.nuget.newtonsoft-json@4dfd81071c64)
+    com.unity.searcher@4.9.4 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.searcher@d45a78918735)
+    com.unity.mathematics@1.3.3 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.mathematics@19a9377c4ffa)
+    com.unity.nuget.mono-cecil@1.11.6 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.nuget.mono-cecil@ecb9724e46ff)
+    com.unity.test-framework.performance@3.2.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.test-framework.performance@0840f58e4562)
+    com.unity.settings-manager@2.1.1 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.settings-manager@0b8638c5ce86)
+  Built-in packages:
+    com.unity.multiplayer.center@1.0.1 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.multiplayer.center@f01f4ba8d00a)
+    com.unity.render-pipelines.universal@17.3.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.render-pipelines.universal@37e0d4fc2503)
+    com.unity.test-framework@1.6.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.test-framework@0b7a23ab2e1d)
+    com.unity.ugui@2.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.ugui@bb329a87fcdc)
+    com.unity.modules.accessibility@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.accessibility)
+    com.unity.modules.adaptiveperformance@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.adaptiveperformance)
+    com.unity.modules.ai@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.ai)
+    com.unity.modules.androidjni@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.androidjni)
+    com.unity.modules.animation@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.animation)
+    com.unity.modules.assetbundle@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.assetbundle)
+    com.unity.modules.audio@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.audio)
+    com.unity.modules.cloth@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.cloth)
+    com.unity.modules.director@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.director)
+    com.unity.modules.imageconversion@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.imageconversion)
+    com.unity.modules.imgui@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.imgui)
+    com.unity.modules.jsonserialize@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.jsonserialize)
+    com.unity.modules.particlesystem@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.particlesystem)
+    com.unity.modules.physics@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.physics)
+    com.unity.modules.physics2d@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.physics2d)
+    com.unity.modules.screencapture@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.screencapture)
+    com.unity.modules.terrain@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.terrain)
+    com.unity.modules.terrainphysics@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.terrainphysics)
+    com.unity.modules.tilemap@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.tilemap)
+    com.unity.modules.ui@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.ui)
+    com.unity.modules.uielements@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.uielements)
+    com.unity.modules.umbra@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.umbra)
+    com.unity.modules.unityanalytics@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.unityanalytics)
+    com.unity.modules.unitywebrequest@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.unitywebrequest)
+    com.unity.modules.unitywebrequestassetbundle@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.unitywebrequestassetbundle)
+    com.unity.modules.unitywebrequestaudio@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.unitywebrequestaudio)
+    com.unity.modules.unitywebrequesttexture@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.unitywebrequesttexture)
+    com.unity.modules.unitywebrequestwww@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.unitywebrequestwww)
+    com.unity.modules.vectorgraphics@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.vectorgraphics)
+    com.unity.modules.vehicles@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.vehicles)
+    com.unity.modules.video@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.video)
+    com.unity.modules.vr@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.vr)
+    com.unity.modules.wind@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.wind)
+    com.unity.modules.xr@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.xr)
+    com.unity.modules.subsystems@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.subsystems)
+    com.unity.modules.hierarchycore@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.modules.hierarchycore)
+    com.unity.ext.nunit@2.0.5 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.ext.nunit@d8c07649098d)
+    com.unity.render-pipelines.core@17.3.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.render-pipelines.core@04ab0eefa0c3)
+    com.unity.shadergraph@17.3.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.shadergraph@c8830f61858d)
+    com.unity.render-pipelines.universal-config@17.0.3 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.render-pipelines.universal-config@8dc1aab4af1d)
+    com.unity.2d.sprite@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.2d.sprite@d14b9d497a24)
+    com.unity.2d.tilemap@1.0.0 (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.unity.2d.tilemap@f011712243ad)
+  Git packages:
+    com.coplaydev.unity-mcp@https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main (location: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/Library/PackageCache/com.coplaydev.unity-mcp@9daf4fc33c33)
+[Subsystems] No new subsystems found in resolved package list.
+[Package Manager] Done registering packages in 0.01 seconds
+Assembly reference Packages/com.unity.cinemachine/Editor/Samples/ExposeHDRPInternals/HDRP-Editor-ref.asmref has no target assembly definition
+Assembly reference Packages/com.unity.cinemachine/Editor/Samples/ExposeHDRPInternals/HDRP-Editor-ref.asmref has no target assembly definition
+[40m[32minfo[39m[22m[49m: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://unix:/tmp/ilpp.sock-91e29592d31b173e7d0b4f170c7ddf51
+[40m[32minfo[39m[22m[49m: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+[40m[32minfo[39m[22m[49m: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+[40m[32minfo[39m[22m[49m: Microsoft.Hosting.Lifetime[0]
+      Content root path: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/
+[40m[32minfo[39m[22m[49m: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping application/grpc -
+[40m[32minfo[39m[22m[49m: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+[40m[32minfo[39m[22m[49m: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+[40m[32minfo[39m[22m[49m: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping application/grpc - - 200 - application/grpc 18.3837ms
+Starting: /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/BuildPipeline/bee_backend --ipc --defer-dag-verification --dagfile="Library/Bee/200b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity
+DisplayProgressbar: Compiling Scripts
+Starting: /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/Scripting/netcorerun/netcorerun "/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/BuildPipeline/ScriptCompilationBuildProgram.exe" "Library/Bee/200b0aE.dag.json" "Library/Bee/200b0aE-inputdata.json" "Library/Bee/buildprogram0.traceevents"
+WorkingDir: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity
+ExitCode: 4 Duration: 0s117ms
+Rebuilding DAG because FileSignature timestamp changed: Library/Bee/200b0aE-inputdata.json
+*** Tundra requires additional run (0.10 seconds), 0 items updated, 595 evaluated
+ExitCode: 0 Duration: 0s752ms
+Starting: /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/BuildPipeline/bee_backend --ipc --defer-dag-verification --dagfile="Library/Bee/200b0aE.dag" --continue-on-failure --dagfilejson="Library/Bee/200b0aE.dag.json" --profile="Library/Bee/backend2.traceevents" ScriptAssemblies
+WorkingDir: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity
+[40m[32minfo[39m[22m[49m: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/ConfigurePostProcessors application/grpc -
+[40m[32minfo[39m[22m[49m: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/ConfigurePostProcessors'
+[40m[1m[33mwarn[39m[22m[49m: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Assembly system.runtime.interopservices.windowsruntime has duplicate hint path. Ignoring "/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/Scripting/UnityReferenceAssemblies/unity-4.8-api/Facades/System.Runtime.InteropServices.WindowsRuntime.dll" in favor of "/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/Scripting/NetStandard/Extensions/2.0.0/System.Runtime.InteropServices.WindowsRuntime.dll"
+[40m[1m[33mwarn[39m[22m[49m: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Assembly system.componentmodel.composition has duplicate hint path. Ignoring "/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/Scripting/UnityReferenceAssemblies/unity-4.8-api/System.ComponentModel.Composition.dll" in favor of "/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/Scripting/NetStandard/compat/2.1.0/shims/netfx/System.ComponentModel.Composition.dll"
+[40m[32minfo[39m[22m[49m: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved Unity.Burst.Cecil, Version=0.11.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e with Library/PackageCache/com.unity.burst@07790c2d06d9/Unity.Burst.CodeGen/Unity.Burst.Cecil.dll
+[40m[32minfo[39m[22m[49m: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Resolved Mono.Cecil, Version=0.11.5.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e with Library/PackageCache/com.unity.nuget.mono-cecil@ecb9724e46ff/Mono.Cecil.dll
+[40m[32minfo[39m[22m[49m: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/ConfigurePostProcessors'
+[40m[32minfo[39m[22m[49m: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/ConfigurePostProcessors application/grpc - - 200 - application/grpc 12.5235ms
+ExitCode: 0 Duration: 0s438ms
+Finished compiling graph: 1205 nodes, 26689 flattened edges (21585 ToBuild, 216 ToUse), maximum node priority 1523
+[ 895/1202  0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+*** Tundra build success (0.43 seconds), 1 items updated, 1202 evaluated
+AssetDatabase: script compilation time: 1.663707s
+Begin MonoManager ReloadAssembly
+Total cache size 267199850
+Total cache size after purge 267199850, took 00:00:00.1279113
+Symbol file LoadedFromMemory is not a mono symbol file
+- Loaded All Assemblies, in  0.377 seconds
+'Packages/com.unity.cinemachine/Editor/Editors/CinemachineVirtualCameraBaseEditor.cs' contains partial class of Unity.Object, exactly 1 of the partial classes needs to be in a file with the same filename. This is to know the one that can be referenced from ie. GameObjects
+'Packages/com.unity.cinemachine/Editor/Obsolete/CinemachineVirtualCameraBaseEditor.cs' contains partial class of Unity.Object, exactly 1 of the partial classes needs to be in a file with the same filename. This is to know the one that can be referenced from ie. GameObjects
+Refreshing native plugins compatible for Editor in 1.21 ms, found 7 plugins.
+Native extension for WindowsStandalone target not found
+Native extension for OSXStandalone target not found
+Assembly reference Packages/com.unity.cinemachine/Editor/Samples/ExposeHDRPInternals/HDRP-Editor-ref.asmref has no target assembly definition
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-GameJam-2026-04-17
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  2.632 seconds
+Domain Reload Profiling: 3010ms
+	BeginReloadAssembly (67ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (5ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (17ms)
+	RebuildCommonClasses (17ms)
+	RebuildNativeTypeToScriptingClass (6ms)
+	initialDomainReloadingComplete (11ms)
+	LoadAllAssembliesAndSetupDomain (275ms)
+		LoadAssemblies (151ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (154ms)
+			TypeCache.Refresh (109ms)
+				TypeCache.ScanAssembly (100ms)
+			BuildScriptInfoCaches (35ms)
+			ResolveRequiredComponents (9ms)
+	FinalizeReload (2632ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (2517ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (9ms)
+			SetLoadedEditorAssemblies (2ms)
+			BeforeProcessingInitializeOnLoad (105ms)
+			ProcessInitializeOnLoadAttributes (2310ms)
+			ProcessInitializeOnLoadMethodAttributes (90ms)
+			AfterProcessingInitializeOnLoad (1ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (2ms)
+Asset Pipeline Refresh (id=56c2491ae32ed4a82b931a8402ea69e5): Total: 5.353 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=3258 ms
+		Asset DB Callback time: managed=16 ms, native=7 ms
+		Scripting: domain reloads=1, domain reload time=377 ms, compile time=1664 ms, other=28 ms
+		Project Asset Count: scripts=2113, non-scripts=4762
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 1
+	InvokeCustomDependenciesCallbacks: 0.000ms
+	InvokePackagesCallback: 8.074ms
+	ApplyChangesToAssetFolders: 0.181ms
+	Scan: 420.573ms
+	OnSourceAssetsModified: 0.000ms
+	CategorizeAssetsWithTransientArtifact: 32.272ms
+	ProcessAssetsWithTransientArtifactChanges: 47.475ms
+	CategorizeAssets: 49.517ms
+	ImportOutOfDateAssets: 2639.336ms (973.435ms without children)
+		CompileScripts: 1664.412ms
+		ReloadNativeAssets: 0.019ms
+		UnloadImportedAssets: 0.466ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.600ms
+		InitializingProgressBar: 0.000ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.000ms
+		OnDemandSchedulerStart: 0.404ms
+	PostProcessAllAssets: 16.324ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.000ms
+	UnloadStreamsBegin: 1.575ms
+	PersistCurrentRevisions: 0.136ms
+	UnloadStreamsEnd: 0.001ms
+	GenerateScriptTypeHashes: 3.457ms
+	Untracked: 2137.256ms
+
+Application.AssetDatabase Initial Refresh End
+Launching external process: /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Helpers/UnityShaderCompiler
+Launched and connected shader compiler UnityShaderCompiler after 0.02 seconds
+Scanning for USB devices : 0.351ms
+Initializing Unity extensions:
+2026-04-26 20:30:30.664 Unity[92539:13386189] NSEventModifierFlagFunction specified to -setKeyEquivalentModifierMask: for item <NSMenuItem: 0x9c1c973e0 Quick Recording, ke='Command-F10'>, but is only supported for system-provided menu items; will not be used
+2026-04-26 20:30:30.667 Unity[92539:13386189] NSEventModifierFlagFunction specified to -setKeyEquivalentModifierMask: for item <NSMenuItem: 0x9c1cf7160 SDF, ke='Command-F12'>, but is only supported for system-provided menu items; will not be used
+Unloading 33 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 8879 unused Assets / (5.1 MB). Loaded Objects now: 9820.
+Memory consumption went from 251.2 MB to 246.1 MB.
+Total: 6.865833 ms (FindLiveObjects: 0.299625 ms CreateObjectMapping: 0.185458 ms MarkObjects: 4.975417 ms  DeleteObjects: 1.405084 ms)
+
+Batchmode quit successfully invoked - shutting down!
+<b><color=#2EA3FF>MCP-FOR-UNITY</color></b>: No process found listening on port 8080
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at /Users/bokken/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+MCPForUnity.Editor.Helpers.McpLog:Info (string,bool) (at ./Library/PackageCache/com.coplaydev.unity-mcp@9daf4fc33c33/Editor/Helpers/McpLog.cs:40)
+MCPForUnity.Editor.Services.ServerManagementService:StopLocalHttpServerInternal (bool,System.Nullable`1<int>,bool) (at ./Library/PackageCache/com.coplaydev.unity-mcp@9daf4fc33c33/Editor/Services/ServerManagementService.cs:712)
+MCPForUnity.Editor.Services.ServerManagementService:StopLocalHttpServer () (at ./Library/PackageCache/com.coplaydev.unity-mcp@9daf4fc33c33/Editor/Services/ServerManagementService.cs:349)
+MCPForUnity.Editor.Services.McpEditorShutdownCleanup:OnEditorQuitting () (at ./Library/PackageCache/com.coplaydev.unity-mcp@9daf4fc33c33/Editor/Services/McpEditorShutdownCleanup.cs:60)
+UnityEditor.EditorApplication:Internal_EditorApplicationQuit () (at /Users/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs:128)
+
+(Filename: ./Library/PackageCache/com.coplaydev.unity-mcp@9daf4fc33c33/Editor/Helpers/McpLog.cs Line: 40)
+
+Start importing ProjectSettings/ProjectSettings.asset using Guid(00000000000000004000000000000000) (LibraryAssetImporter) -> (artifact id: '2c0472dc31dd4978f9f11c2d65b92a35') in 0.004507625 seconds
+Refreshing native plugins compatible for Editor in 1.14 ms, found 7 plugins.
+Preloading 1 native plugins for Editor in 0.16 ms.
+Asset Pipeline Refresh (id=38c39cd7f96e543c891d0512affa0028): Total: 0.213 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Thread 0x348a07000 may have been prematurely finalized
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+[Licensing::IpcConnector] LicenseClient-marek-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-marek channel disconnected successfully.
+Thread 0x16c857000 may have been prematurely finalized
+Thread 0x16c8e3000 may have been prematurely finalized
+Thread 0x16c96f000 may have been prematurely finalized
+Thread 0x16c9fb000 may have been prematurely finalized
+Thread 0x16cb13000 may have been prematurely finalized
+Thread 0x16ca87000 may have been prematurely finalized
+Thread 0x16cb9f000 may have been prematurely finalized
+Thread 0x16cc2b000 may have been prematurely finalized
+AcceleratorClientConnectionCallback - disconnected - :0
+[40m[32minfo[39m[22m[49m: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+Cleanup mono
+[40m[32minfo[39m[22m[49m: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      ALC ILPP context 1 is unloading
+debugger-agent: Unable to listen on 45
+Exiting batchmode successfully now!
+[Package Manager] Server process was shutdown

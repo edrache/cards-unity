@@ -1,0 +1,51 @@
+Unity Editor version:    6000.3.10f1 (e35f0c77bd8e)
+Branch:                  6000.3/staging
+Build type:              Release
+Batch mode:              YES
+macOS version:           Version 26.4.1 (Build 25E253)
+Darwin version:          25.4.0
+Architecture:            arm64
+Running under Rosetta:   NO
+Available memory:        32768 MB
+Date:                    2026-04-26T18:55:53Z
+[Licensing::Module] Trying to connect to existing licensing client channel...
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-marek" at "2026-04-26T18:55:53.903936Z"
+Launching external process: /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Resources/PackageManager/Server/UnityPackageManager
+
+COMMAND LINE ARGUMENTS:
+/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity
+-batchmode
+-projectPath
+/Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity
+-runTests
+-testPlatform
+EditMode
+-testResults
+/Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/TestResults/EditMode.xml
+-logFile
+/Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity/TestResults/EditMode2.log
+Successfully changed project path to: /Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity
+/Users/marek/OfflineDocuments/Repo/Antigravity/cards-unity
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.17.4+4293ba1
+  Session Id:              5787c07ce4c840dba2da9d318b8768ab
+  Correlation Id:          21b2c4ae047b09a352124eb9aefe398b
+  External correlation Id: 8806809127619204636
+  Machine Id:              PgG9MecNdz8uWzsd8vvE66ZwUzU=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-marek" (connect: 0.00s, validation: 0.00s, handshake: 0.23s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-marek-notifications" at "2026-04-26T18:55:54.133315Z"
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: SC-5WUR-NHHS-GAVG-E6X3-XXXX
+  Product: Unity Pro
+  Type: ULF
+  Expiration: 2026-09-25T00:00:00Z
+[Licensing::Module] License group:
+  Id: 12370443284604-monstercouch-UnitXXXX
+  Product: Unity Pro
+  Type: Assigned
+  Expiration: 2026-09-19T00:00:00Z
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.00
+[Licensing::Module] Licensing Background thread has ended after 0.23s
+[Package Manager] Server process was shutdown

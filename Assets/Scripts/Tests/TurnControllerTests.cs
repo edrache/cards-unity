@@ -233,6 +233,22 @@ namespace CardsUnity.Tests
         }
 
         [Test]
+        public void StartTurn_DrawOpponentCard_does_not_fill_slot_without_opponent_spot()
+        {
+            var def = MakeSlotDefinition(
+                SlotEffectContext.NoOpponentCard,
+                SlotEffectTrigger.OnPlayerTurnStart,
+                SlotEffectAction.DrawOpponentCard);
+            def.hasOpponentCardSpot = false;
+            var board = new BoardState(new SlotDefinition[] { def, null, null });
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+
+            Assert.IsNull(board.Slots[0].OpponentCard);
+        }
+
+        [Test]
         public void StartTurn_AddToClock_increments_player_clock_when_no_player_card()
         {
             var def = MakeSlotDefinition(
@@ -313,6 +329,26 @@ namespace CardsUnity.Tests
 
             // hand had 0 after playing, DrawToHandLimit draws 3
             Assert.AreEqual(3, _playerHand.Cards.Count);
+        }
+
+        [Test]
+        public void PlayCard_does_not_place_card_on_slot_without_player_spot()
+        {
+            var def = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnCardPlayed,
+                SlotEffectAction.DrawToHandLimit);
+            def.hasPlayerCardSpot = false;
+            var board = new BoardState(new SlotDefinition[] { def, null, null });
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+            var card = _playerHand.Cards[0];
+
+            turn.PlayCard(card, slotIndex: 0);
+
+            Assert.That(_playerHand.Cards, Does.Contain(card));
+            Assert.IsNull(board.Slots[0].PlayerCard);
         }
     }
 }
