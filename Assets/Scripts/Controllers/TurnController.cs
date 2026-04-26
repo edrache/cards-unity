@@ -49,6 +49,8 @@ namespace CardsUnity
                 if (card != null)
                     _playerHand.Add(card);
             }
+
+            EvaluateSlotEffects(SlotEffectTrigger.OnPlayerTurnStart);
         }
 
         public void PlayCard(CardDefinition card, int slotIndex)
@@ -70,6 +72,8 @@ namespace CardsUnity
 
             if (slot.HasOpponentCard)
                 ResolveSlotCombat(slot);
+
+            EvaluateSlotEffectsForSlot(slot, SlotEffectTrigger.OnCardPlayed);
         }
 
         public void EndTurn()
@@ -110,6 +114,9 @@ namespace CardsUnity
                 if (slot.HasOpponentCard)
                     continue;
 
+                if (slot.Definition != null)
+                    continue;
+
                 if (_opponentDeck.DrawCount == 0 && _opponentDeck.CanDraw)
                     _opponentDeck.ShuffleDiscardIntoDrawPile(_rng);
 
@@ -119,6 +126,105 @@ namespace CardsUnity
                 var card = _opponentDeck.Draw();
                 if (card != null)
                     slot.OpponentCard = new CardInstance(card);
+            }
+        }
+
+        private void EvaluateSlotEffects(SlotEffectTrigger trigger)
+        {
+            foreach (var slot in _board.Slots)
+                EvaluateSlotEffectsForSlot(slot, trigger);
+        }
+
+        private void EvaluateSlotEffectsForSlot(SlotState slot, SlotEffectTrigger trigger)
+        {
+            if (slot.Definition?.effects == null)
+                return;
+
+            foreach (var effect in slot.Definition.effects)
+            {
+                if (effect == null || effect.trigger != trigger)
+                    continue;
+
+                if (!IsContextConditionMet(effect.context, slot))
+                    continue;
+
+                ExecuteSlotEffect(effect, slot);
+            }
+        }
+
+        private static bool IsContextConditionMet(SlotEffectContext context, SlotState slot)
+        {
+            return context switch
+            {
+                SlotEffectContext.NoOpponentCard => !slot.HasOpponentCard,
+                SlotEffectContext.NoPlayerCard => !slot.HasPlayerCard,
+                SlotEffectContext.Passive => true,
+                _ => false
+            };
+        }
+
+        private void ExecuteSlotEffect(SlotEffectDefinition effect, SlotState slot)
+        {
+            switch (effect.action)
+            {
+                case SlotEffectAction.DrawOpponentCard:
+                    DrawOpponentCardToSlot(slot);
+                    break;
+                case SlotEffectAction.AddToClock:
+                    var clock = effect.clockTarget == ClockTarget.PlayerClock ? _playerClock : _opponentClock;
+                    clock.Increment(effect.actionValue);
+                    break;
+                case SlotEffectAction.ReturnCardsFromSlots:
+                    ReturnAllPlayerCardsToHand();
+                    break;
+                case SlotEffectAction.DrawToHandLimit:
+                    DrawPlayerCardsToHandLimit();
+                    break;
+            }
+        }
+
+        private void DrawOpponentCardToSlot(SlotState slot)
+        {
+            if (slot.HasOpponentCard)
+                return;
+
+            if (_opponentDeck.DrawCount == 0 && _opponentDeck.CanDraw)
+                _opponentDeck.ShuffleDiscardIntoDrawPile(_rng);
+
+            if (!_opponentDeck.CanDraw)
+                return;
+
+            var card = _opponentDeck.Draw();
+            if (card != null)
+                slot.OpponentCard = new CardInstance(card);
+        }
+
+        private void ReturnAllPlayerCardsToHand()
+        {
+            foreach (var slot in _board.Slots)
+            {
+                if (slot.PlayerCard == null)
+                    continue;
+
+                _playerHand.Add(slot.PlayerCard.Definition);
+                slot.PlayerCard = null;
+            }
+        }
+
+        private void DrawPlayerCardsToHandLimit()
+        {
+            int cardsToDraw = Math.Max(0, _draftValue - _playerHand.Cards.Count);
+            for (int i = 0; i < cardsToDraw; i++)
+            {
+                if (_playerDeck.DrawCount == 0 && _playerDeck.CanDraw)
+                    _playerDeck.ShuffleDiscardIntoDrawPile(_rng);
+
+                if (!_playerDeck.CanDraw)
+                    break;
+
+                var card = _playerDeck.Draw();
+                if (card != null)
+                    _playerHand.Add(card);
             }
         }
     }

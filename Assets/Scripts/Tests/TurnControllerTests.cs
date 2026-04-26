@@ -170,5 +170,149 @@ namespace CardsUnity.Tests
             def.value = value;
             return def;
         }
+
+        private static SlotDefinition MakeSlotDefinition(
+            SlotEffectContext context,
+            SlotEffectTrigger trigger,
+            SlotEffectAction action,
+            int actionValue = 1,
+            ClockTarget clockTarget = ClockTarget.PlayerClock)
+        {
+            var effect = ScriptableObject.CreateInstance<SlotEffectDefinition>();
+            effect.context = context;
+            effect.trigger = trigger;
+            effect.action = action;
+            effect.actionValue = actionValue;
+            effect.clockTarget = clockTarget;
+
+            var def = ScriptableObject.CreateInstance<SlotDefinition>();
+            def.effects = new System.Collections.Generic.List<SlotEffectDefinition> { effect };
+            return def;
+        }
+
+        private TurnController MakeTurnWithBoard(BoardState board)
+        {
+            return new TurnController(
+                _playerDeck, _playerHand,
+                _opponentDeck, board,
+                _playerClock, _opponentClock,
+                draftValue: 3,
+                rng: new System.Random(42));
+        }
+
+        [Test]
+        public void StartTurn_DrawOpponentCard_fills_empty_slot_with_opponent_card()
+        {
+            var def = MakeSlotDefinition(
+                SlotEffectContext.NoOpponentCard,
+                SlotEffectTrigger.OnPlayerTurnStart,
+                SlotEffectAction.DrawOpponentCard);
+            var board = new BoardState(new SlotDefinition[] { def, null, null });
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+
+            Assert.IsNotNull(board.Slots[0].OpponentCard);
+        }
+
+        [Test]
+        public void StartTurn_DrawOpponentCard_does_not_replace_existing_opponent_card()
+        {
+            var def = MakeSlotDefinition(
+                SlotEffectContext.NoOpponentCard,
+                SlotEffectTrigger.OnPlayerTurnStart,
+                SlotEffectAction.DrawOpponentCard);
+            var board = new BoardState(new SlotDefinition[] { def, null, null });
+            var existing = new CardInstance(MakeCardDef(CardType.Appeal, 5));
+            board.Slots[0].OpponentCard = existing;
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+
+            Assert.AreSame(existing, board.Slots[0].OpponentCard);
+        }
+
+        [Test]
+        public void StartTurn_AddToClock_increments_player_clock_when_no_player_card()
+        {
+            var def = MakeSlotDefinition(
+                SlotEffectContext.NoPlayerCard,
+                SlotEffectTrigger.OnPlayerTurnStart,
+                SlotEffectAction.AddToClock,
+                actionValue: 2,
+                clockTarget: ClockTarget.PlayerClock);
+            var board = new BoardState(new SlotDefinition[] { def, null, null });
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+
+            Assert.AreEqual(2, _playerClock.CurrentValue);
+        }
+
+        [Test]
+        public void StartTurn_AddToClock_does_not_fire_when_player_card_present()
+        {
+            var def = MakeSlotDefinition(
+                SlotEffectContext.NoPlayerCard,
+                SlotEffectTrigger.OnPlayerTurnStart,
+                SlotEffectAction.AddToClock,
+                actionValue: 2,
+                clockTarget: ClockTarget.PlayerClock);
+            var board = new BoardState(new SlotDefinition[] { def, null, null });
+            board.Slots[0].PlayerCard = new CardInstance(MakeCardDef(CardType.Pressure, 3));
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+
+            Assert.AreEqual(0, _playerClock.CurrentValue);
+        }
+
+        [Test]
+        public void PlayCard_ReturnCardsFromSlots_returns_all_board_cards_to_hand()
+        {
+            var drawSlotDef = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnCardPlayed,
+                SlotEffectAction.ReturnCardsFromSlots);
+            var board = new BoardState(new SlotDefinition[] { null, null, drawSlotDef });
+            // manually place a card in slot 0 (simulating a card already on board)
+            board.Slots[0].PlayerCard = new CardInstance(MakeCardDef(CardType.Pressure, 3));
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn(); // draws 3 cards
+            var handCard = _playerHand.Cards[0];
+            turn.PlayCard(handCard, slotIndex: 2);
+
+            // slot 0 card returned, slot 2 played card returned
+            Assert.IsNull(board.Slots[0].PlayerCard);
+            Assert.IsNull(board.Slots[2].PlayerCard);
+            // hand: 2 remaining + 1 from slot 0 + 1 played card returned = 4
+            Assert.AreEqual(4, _playerHand.Cards.Count);
+        }
+
+        [Test]
+        public void PlayCard_DrawToHandLimit_draws_up_to_draft_value()
+        {
+            var drawSlotDef = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnCardPlayed,
+                SlotEffectAction.DrawToHandLimit);
+            var board = new BoardState(new SlotDefinition[] { null, null, drawSlotDef });
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn(); // draws 3 cards
+            // consume 2 cards to lower hand count
+            var card0 = _playerHand.Cards[0];
+            var card1 = _playerHand.Cards[1];
+            turn.PlayCard(card0, slotIndex: 0);
+            turn.PlayCard(card1, slotIndex: 1);
+            // hand now has 1 card
+
+            var handCard = _playerHand.Cards[0];
+            turn.PlayCard(handCard, slotIndex: 2); // plays to draw slot
+
+            // hand had 0 after playing, DrawToHandLimit draws 3
+            Assert.AreEqual(3, _playerHand.Cards.Count);
+        }
     }
 }
