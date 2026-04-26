@@ -10,5 +10,12 @@ namespace CardsUnity
             for (int i = 0; i < slotCount; i++)
                 Slots[i] = new SlotState();
         }
+
+        public BoardState(SlotDefinition[] definitions)
+        {
+            Slots = new SlotState[definitions.Length];
+            for (int i = 0; i < definitions.Length; i++)
+                Slots[i] = new SlotState(definitions[i]);
+        }
     }
 }
