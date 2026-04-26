@@ -1,5 +1,6 @@
 using System;
 using CardsUnity;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -11,6 +12,9 @@ namespace CardsUnity.UI
         [SerializeField] private Transform playerCardAnchor;
         [SerializeField] private Transform opponentCardAnchor;
         [SerializeField] private Image highlightImage;
+        [SerializeField] private TextMeshProUGUI noOpponentCardEffectLabel;
+        [SerializeField] private TextMeshProUGUI noPlayerCardEffectLabel;
+        [SerializeField] private TextMeshProUGUI passiveEffectLabel;
 
         public int SlotIndex { get; set; }
         public Action<CardView, int> OnCardDropped;
@@ -85,8 +89,34 @@ namespace CardsUnity.UI
                 highlightImage.enabled = active && CanAcceptPlayerCard;
         }
 
-        // TODO Task 6: render effect descriptions from definition onto TMP labels
-        public void SetEffectDescriptions(SlotDefinition definition) { }
+        public void SetEffectDescriptions(SlotDefinition definition)
+        {
+            ApplyEffectLabel(noOpponentCardEffectLabel, null);
+            ApplyEffectLabel(noPlayerCardEffectLabel, null);
+            ApplyEffectLabel(passiveEffectLabel, null);
+
+            if (definition?.effects == null)
+                return;
+
+            foreach (var effect in definition.effects)
+            {
+                if (effect == null)
+                    continue;
+
+                switch (effect.context)
+                {
+                    case SlotEffectContext.NoOpponentCard:
+                        ApplyEffectLabel(noOpponentCardEffectLabel, effect.description);
+                        break;
+                    case SlotEffectContext.NoPlayerCard:
+                        ApplyEffectLabel(noPlayerCardEffectLabel, effect.description);
+                        break;
+                    case SlotEffectContext.Passive:
+                        ApplyEffectLabel(passiveEffectLabel, effect.description);
+                        break;
+                }
+            }
+        }
 
         public void OnDrop(PointerEventData eventData)
         {
@@ -96,6 +126,15 @@ namespace CardsUnity.UI
             var dragged = eventData.pointerDrag?.GetComponent<CardView>();
             if (dragged != null)
                 OnCardDropped?.Invoke(dragged, SlotIndex);
+        }
+
+        private static void ApplyEffectLabel(TextMeshProUGUI label, string text)
+        {
+            if (label == null)
+                return;
+
+            label.text = text ?? string.Empty;
+            label.gameObject.SetActive(!string.IsNullOrEmpty(text));
         }
     }
 }
