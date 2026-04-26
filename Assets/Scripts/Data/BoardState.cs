@@ -1,3 +1,5 @@
+using System;
+
 namespace CardsUnity
 {
     public class BoardState
@@ -13,7 +15,9 @@ namespace CardsUnity
 
         public BoardState(SlotDefinition[] definitions)
         {
+            if (definitions == null) throw new ArgumentNullException(nameof(definitions));
             Slots = new SlotState[definitions.Length];
+            // null entries are intentional: they produce a plain slot with no definition (legacy behaviour)
             for (int i = 0; i < definitions.Length; i++)
                 Slots[i] = new SlotState(definitions[i]);
         }
