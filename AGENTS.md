@@ -61,6 +61,16 @@ PlayMode tests:
 /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -quit -projectPath . -runTests -testPlatform PlayMode -testResults TestResults/PlayMode.xml
 ```
 
+## Design Documentation
+
+The single source of truth for all game design is `docs/game-design-doc.md`.
+
+When implementing any change — adding a mechanic, modifying a rule, removing a feature, changing a data model — you **must**:
+1. Update the relevant section(s) in `docs/game-design-doc.md`.
+2. Append an entry to the Changelog table at the bottom of that file (date, one-line description of the change).
+
+Do not let the implementation diverge from the documented design without updating the doc. If a design decision is unclear or undocumented, treat `docs/game-design-doc.md` as the authoritative reference and ask the user before changing it.
+
 ## Workflow
 
 - Keep runtime data and resolver logic free of Unity scene dependencies unless the architecture explicitly calls for a `MonoBehaviour`.
