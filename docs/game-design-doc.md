@@ -1,7 +1,7 @@
 # Game Design Document
 
 *This is the single source of truth for all game design decisions.*
-*Last updated: 2026-04-26*
+*Last updated: 2026-04-29*
 
 Any change to mechanics — adding, modifying, or removing a rule, system, or data model — must be reflected here. Append an entry to the [Changelog](#changelog) at the bottom.
 
@@ -175,6 +175,7 @@ Each `SlotState` may also hold an optional `SlotDefinition` (ScriptableObject). 
 - `hasOpponentCardSpot` / `hasPlayerCardSpot` declare whether the slot can currently host opponent and player cards.
 - `effects` is a list of `SlotEffectDefinition` entries evaluated by `TurnController`.
 - `SlotView` exposes up to three effect description labels (one per context: `NoOpponentCard`, `NoPlayerCard`, `Passive`).
+- `SlotView` can serialize its own `SlotDefinition` directly on the scene object, and `ChallengeController` will use scene slot definitions before falling back to `GameConfig.slotDefinitions`.
 
 Slots with no `SlotDefinition` use the legacy default behaviour: both anchors are available and opponent cards are auto-placed at end of turn by `PlaceOpponentCards()`.
 
@@ -429,3 +430,4 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | 2026-04-26 | All design consolidated into this document (`game-design-doc.md`) |
 | 2026-04-26 | Added `RectOutlineGraphic` for UI `RectTransform` borders with configurable rounded solid and dashed shader-driven outlines |
 | 2026-04-26 | Slot effect system implemented: `SlotEffectDefinition` and `SlotDefinition`, four runtime actions, slot spot gating, and `SlotView` TMP effect descriptions |
+| 2026-04-29 | Board slots can now serialize `SlotDefinition` directly in scene `SlotView` objects, with `ChallengeController` preferring scene layout over `GameConfig.slotDefinitions` |

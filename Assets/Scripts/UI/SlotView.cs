@@ -12,12 +12,16 @@ namespace CardsUnity.UI
         [SerializeField] private Transform playerCardAnchor;
         [SerializeField] private Transform opponentCardAnchor;
         [SerializeField] private Image highlightImage;
+        [SerializeField] private GameObject playerCardSpotVisual;
+        [SerializeField] private GameObject opponentCardSpotVisual;
+        [SerializeField] private SlotDefinition slotDefinition;
         [SerializeField] private TextMeshProUGUI noOpponentCardEffectLabel;
         [SerializeField] private TextMeshProUGUI noPlayerCardEffectLabel;
         [SerializeField] private TextMeshProUGUI passiveEffectLabel;
 
         public int SlotIndex { get; set; }
         public Action<CardView, int> OnCardDropped;
+        public SlotDefinition Definition => slotDefinition;
 
         private SlotDefinition _definition;
         private CardView _playerView;
@@ -25,6 +29,11 @@ namespace CardsUnity.UI
         private bool HasPlayerCardSpot => _definition == null || _definition.hasPlayerCardSpot;
         private bool HasOpponentCardSpot => _definition == null || _definition.hasOpponentCardSpot;
         private bool CanAcceptPlayerCard => HasPlayerCardSpot && _playerView == null;
+
+        private void Awake()
+        {
+            ApplyDefinition(slotDefinition);
+        }
 
         public void ShowPlayerCard(CardInstance card, CardView prefab)
         {
@@ -125,6 +134,12 @@ namespace CardsUnity.UI
             }
         }
 
+        public void ApplyDefinition(SlotDefinition definition)
+        {
+            slotDefinition = definition;
+            SetEffectDescriptions(slotDefinition);
+        }
+
         public void OnDrop(PointerEventData eventData)
         {
             if (!CanAcceptPlayerCard)
@@ -151,6 +166,12 @@ namespace CardsUnity.UI
 
             if (opponentCardAnchor != null)
                 opponentCardAnchor.gameObject.SetActive(HasOpponentCardSpot);
+
+            if (playerCardSpotVisual != null)
+                playerCardSpotVisual.SetActive(HasPlayerCardSpot);
+
+            if (opponentCardSpotVisual != null)
+                opponentCardSpotVisual.SetActive(HasOpponentCardSpot);
         }
 
         private void EnsureEffectLabels()

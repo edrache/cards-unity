@@ -24,6 +24,7 @@ namespace CardsUnity.UI
 
                 int slotIndex = i;
                 slotView.SlotIndex = slotIndex;
+                slotView.ApplyDefinition(slotView.Definition);
                 slotView.OnCardDropped += (cardView, droppedSlotIndex) =>
                     OnCardPlayed?.Invoke(cardView.Card, droppedSlotIndex);
             }
@@ -79,15 +80,58 @@ namespace CardsUnity.UI
 
         public void ConfigureSlots(SlotDefinition[] definitions)
         {
-            if (slotViews == null || definitions == null)
+            if (slotViews == null)
                 return;
+
+            if (definitions == null)
+            {
+                for (int i = 0; i < slotViews.Length; i++)
+                {
+                    if (slotViews[i] != null)
+                        slotViews[i].ApplyDefinition(null);
+                }
+
+                return;
+            }
 
             int count = Math.Min(slotViews.Length, definitions.Length);
             for (int i = 0; i < count; i++)
             {
                 if (slotViews[i] != null)
-                    slotViews[i].SetEffectDescriptions(definitions[i]);
+                    slotViews[i].ApplyDefinition(definitions[i]);
             }
+
+            for (int i = count; i < slotViews.Length; i++)
+            {
+                if (slotViews[i] != null)
+                    slotViews[i].ApplyDefinition(null);
+            }
+        }
+
+        public SlotDefinition[] GetSceneSlotDefinitions()
+        {
+            if (slotViews == null)
+                return Array.Empty<SlotDefinition>();
+
+            var definitions = new SlotDefinition[slotViews.Length];
+            for (int i = 0; i < slotViews.Length; i++)
+                definitions[i] = slotViews[i] != null ? slotViews[i].Definition : null;
+
+            return definitions;
+        }
+
+        public bool HasAnySceneSlotDefinitions()
+        {
+            if (slotViews == null)
+                return false;
+
+            foreach (var slotView in slotViews)
+            {
+                if (slotView != null && slotView.Definition != null)
+                    return true;
+            }
+
+            return false;
         }
     }
 }

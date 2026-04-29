@@ -30,3 +30,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ec61f295d39d9462c8fda0b42b302269, type: 2}
   - {fileID: 11400000, guid: 6bcb47d6119fe44d6b727ee7296ff729, type: 2}
   - {fileID: 11400000, guid: ce44d6269510744bb8a2f09cd61c28cc, type: 2}
+  slotDefinitions:
+  - {fileID: 11400000, guid: e6f2009613bf040d29d9372b7ddfd875, type: 2}
+  - {fileID: 11400000, guid: 5b1a32838738a44ecb407f77113733d6, type: 2}

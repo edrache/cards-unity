@@ -42,9 +42,7 @@ namespace CardsUnity
             var opponentDeck = BuildDeck(config.opponentDeck, _rng);
 
             _hand = new HandState();
-            var slotDefs = config.slotDefinitions != null && config.slotDefinitions.Count > 0
-                ? config.slotDefinitions.ToArray()
-                : null;
+            var slotDefs = ResolveSlotDefinitions();
             _board = slotDefs != null
                 ? new BoardState(slotDefs)
                 : new BoardState(config.boardSlotCount);
@@ -116,6 +114,16 @@ namespace CardsUnity
 
             deck.Initialize(shuffledCards);
             return deck;
+        }
+
+        private SlotDefinition[] ResolveSlotDefinitions()
+        {
+            if (boardView != null && boardView.HasAnySceneSlotDefinitions())
+                return boardView.GetSceneSlotDefinitions();
+
+            return config.slotDefinitions != null && config.slotDefinitions.Count > 0
+                ? config.slotDefinitions.ToArray()
+                : null;
         }
 
         private void BeginTurn()

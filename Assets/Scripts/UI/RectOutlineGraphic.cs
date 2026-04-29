@@ -4,6 +4,7 @@ using UnityEngine.UI;
 
 namespace CardsUnity.UI
 {
+    [ExecuteAlways]
     [AddComponentMenu("UI/Rect Outline Graphic")]
     [RequireComponent(typeof(CanvasRenderer))]
     public class RectOutlineGraphic : MaskableGraphic
@@ -32,6 +33,8 @@ namespace CardsUnity.UI
         [SerializeField] private float dashOffset;
 
         private Material _runtimeMaterial;
+        private Rect _lastPixelAdjustedRect;
+        private float _lastCanvasScaleFactor = -1f;
 
         public float LineThickness
         {
@@ -44,6 +47,7 @@ namespace CardsUnity.UI
 
                 lineThickness = value;
                 SetVerticesDirty();
+                SetMaterialDirty();
             }
         }
 
@@ -160,6 +164,21 @@ namespace CardsUnity.UI
         {
             base.OnRectTransformDimensionsChange();
             SetVerticesDirty();
+            SetMaterialDirty();
+        }
+
+        protected override void OnCanvasHierarchyChanged()
+        {
+            base.OnCanvasHierarchyChanged();
+            SetVerticesDirty();
+            SetMaterialDirty();
+        }
+
+        protected override void OnTransformParentChanged()
+        {
+            base.OnTransformParentChanged();
+            SetVerticesDirty();
+            SetMaterialDirty();
         }
 
 #if UNITY_EDITOR
@@ -260,6 +279,30 @@ namespace CardsUnity.UI
             _runtimeMaterial.SetFloat("_LineThickness", thickness);
             _runtimeMaterial.SetFloat("_CornerRadius", radius);
             _runtimeMaterial.SetVector("_RectSize", new Vector4(rect.width, rect.height, 0f, 0f));
+            CacheCanvasState(rect);
+        }
+
+        private void LateUpdate()
+        {
+            if (!isActiveAndEnabled)
+                return;
+
+            var rect = GetPixelAdjustedRect();
+            float canvasScaleFactor = canvas != null ? canvas.scaleFactor : 1f;
+            if (rect == _lastPixelAdjustedRect && Mathf.Approximately(canvasScaleFactor, _lastCanvasScaleFactor))
+                return;
+
+            SetVerticesDirty();
+            SetMaterialDirty();
+            CacheCanvasState(rect, canvasScaleFactor);
+        }
+
+        private void CacheCanvasState(Rect rect, float canvasScaleFactor = -1f)
+        {
+            _lastPixelAdjustedRect = rect;
+            _lastCanvasScaleFactor = canvasScaleFactor >= 0f
+                ? canvasScaleFactor
+                : canvas != null ? canvas.scaleFactor : 1f;
         }
 
         private void DestroyRuntimeMaterial()
