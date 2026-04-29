@@ -14,6 +14,7 @@ namespace CardsUnity.UI
         [SerializeField] private TextMeshProUGUI flavorText;
         [SerializeField] private Image artworkImage;
         [SerializeField] private Image cardBackground;
+        [SerializeField] private float exhaustedRotationAngle = -18f;
 
         public static readonly Color[] TypeColors =
         {
@@ -31,9 +32,11 @@ namespace CardsUnity.UI
         private Canvas _rootCanvas;
         private CanvasGroup _canvasGroup;
         private bool _draggable = true;
+        private Quaternion _baseLocalRotation;
 
         private void Awake()
         {
+            _baseLocalRotation = transform.localRotation;
             EnsureDragDependencies();
         }
 
@@ -60,6 +63,8 @@ namespace CardsUnity.UI
 
             if (card == null)
             {
+                ApplyExhaustedVisual(false);
+
                 if (titleText) titleText.text = string.Empty;
                 if (valueText) valueText.text = string.Empty;
                 if (typeText) typeText.text = string.Empty;
@@ -89,6 +94,8 @@ namespace CardsUnity.UI
                 int index = Mathf.Clamp((int)card.type, 0, TypeColors.Length - 1);
                 cardBackground.color = TypeColors[index];
             }
+
+            ApplyExhaustedVisual(false);
         }
 
         public void SetCardInstance(CardInstance card)
@@ -102,6 +109,7 @@ namespace CardsUnity.UI
             SetCard(card.Definition);
             if (valueText)
                 valueText.text = card.CurrentValue.ToString();
+            ApplyExhaustedVisual(card.IsExhausted);
         }
 
         public void OnBeginDrag(PointerEventData eventData)
@@ -149,6 +157,13 @@ namespace CardsUnity.UI
 
             _canvasGroup.blocksRaycasts = true;
             OnDragEnd?.Invoke(this);
+        }
+
+        private void ApplyExhaustedVisual(bool isExhausted)
+        {
+            transform.localRotation = isExhausted
+                ? _baseLocalRotation * Quaternion.Euler(0f, 0f, exhaustedRotationAngle)
+                : _baseLocalRotation;
         }
     }
 }

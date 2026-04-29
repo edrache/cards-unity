@@ -410,6 +410,7 @@ MonoBehaviour:
   flavorText: {fileID: 4403405800689116529}
   artworkImage: {fileID: 9083303787651883450}
   cardBackground: {fileID: 926526389834393687}
+  exhaustedRotationAngle: -18
 --- !u!1 &3980268041226884967
 GameObject:
   m_ObjectHideFlags: 0

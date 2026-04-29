@@ -3,6 +3,7 @@
     "rootNamespace": "CardsUnity.Tests",
     "references": [
         "CardsUnity.Runtime",
+        "Unity.TextMeshPro",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

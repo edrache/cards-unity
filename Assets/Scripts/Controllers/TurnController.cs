@@ -12,6 +12,7 @@ namespace CardsUnity
         private readonly ClockState _opponentClock;
         private readonly int _draftValue;
         private readonly Random _rng;
+        private bool _turnEndedByEffect;
 
         public TurnController(
             DeckState playerDeck,
@@ -55,6 +56,8 @@ namespace CardsUnity
 
         public void PlayCard(CardDefinition card, int slotIndex)
         {
+            _turnEndedByEffect = false;
+
             if (card == null)
                 throw new ArgumentNullException(nameof(card));
 
@@ -72,6 +75,7 @@ namespace CardsUnity
                 return;
 
             slot.PlayerCard = new CardInstance(card);
+            slot.PlayerCard.IsExhausted = true;
 
             if (slot.HasOpponentCard)
                 ResolveSlotCombat(slot);
@@ -93,6 +97,13 @@ namespace CardsUnity
             }
 
             PlaceOpponentCards();
+        }
+
+        public bool ConsumeTurnEndedByEffect()
+        {
+            bool result = _turnEndedByEffect;
+            _turnEndedByEffect = false;
+            return result;
         }
 
         private void ResolveSlotCombat(SlotState slot)
@@ -184,6 +195,10 @@ namespace CardsUnity
                     break;
                 case SlotEffectAction.DrawToHandLimit:
                     DrawPlayerCardsToHandLimit();
+                    break;
+                case SlotEffectAction.TurnEnd:
+                    EndTurn();
+                    _turnEndedByEffect = true;
                     break;
             }
         }

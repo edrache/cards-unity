@@ -135,6 +135,18 @@ namespace CardsUnity
         private void OnCardPlayed(CardDefinition card, int slotIndex)
         {
             _turn.PlayCard(card, slotIndex);
+
+            if (_turn.ConsumeTurnEndedByEffect())
+            {
+                RefreshUI();
+                CheckEndCondition();
+
+                if (!IsGameOver())
+                    BeginTurn();
+
+                return;
+            }
+
             RefreshUI();
             CheckEndCondition();
         }

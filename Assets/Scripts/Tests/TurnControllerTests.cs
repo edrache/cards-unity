@@ -77,6 +77,17 @@ namespace CardsUnity.Tests
         }
 
         [Test]
+        public void PlayCard_marks_player_card_as_exhausted()
+        {
+            _turn.StartTurn();
+            var card = _playerHand.Cards[0];
+
+            _turn.PlayCard(card, slotIndex: 0);
+
+            Assert.IsTrue(_board.Slots[0].PlayerCard.IsExhausted);
+        }
+
+        [Test]
         public void PlayCard_to_occupied_slot_deals_full_damage_on_win()
         {
             _turn.StartTurn();
@@ -349,6 +360,48 @@ namespace CardsUnity.Tests
 
             Assert.That(_playerHand.Cards, Does.Contain(card));
             Assert.IsNull(board.Slots[0].PlayerCard);
+        }
+
+        [Test]
+        public void PlayCard_TurnEnd_returns_player_cards_and_places_opponent_cards()
+        {
+            var turnEndSlotDef = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnCardPlayed,
+                SlotEffectAction.TurnEnd);
+            var board = new BoardState(new SlotDefinition[] { null, null, turnEndSlotDef });
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+            var firstCard = _playerHand.Cards[0];
+            var triggerCard = _playerHand.Cards[1];
+            turn.PlayCard(firstCard, slotIndex: 0);
+
+            turn.PlayCard(triggerCard, slotIndex: 2);
+
+            Assert.IsTrue(turn.ConsumeTurnEndedByEffect());
+            Assert.IsNull(board.Slots[0].PlayerCard);
+            Assert.IsNull(board.Slots[2].PlayerCard);
+            Assert.That(_playerHand.Cards, Does.Contain(firstCard));
+            Assert.That(_playerHand.Cards, Does.Contain(triggerCard));
+            Assert.Greater(board.Slots.Count(s => s.HasOpponentCard), 0);
+        }
+
+        [Test]
+        public void ConsumeTurnEndedByEffect_returns_false_after_state_is_consumed()
+        {
+            var turnEndSlotDef = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnCardPlayed,
+                SlotEffectAction.TurnEnd);
+            var board = new BoardState(new SlotDefinition[] { null, null, turnEndSlotDef });
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+            turn.PlayCard(_playerHand.Cards[0], slotIndex: 2);
+
+            Assert.IsTrue(turn.ConsumeTurnEndedByEffect());
+            Assert.IsFalse(turn.ConsumeTurnEndedByEffect());
         }
     }
 }

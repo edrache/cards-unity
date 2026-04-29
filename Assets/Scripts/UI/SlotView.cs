@@ -119,6 +119,12 @@ namespace CardsUnity.UI
                 if (effect == null)
                     continue;
 
+                if (effect.trigger == SlotEffectTrigger.OnCardPlayed)
+                {
+                    ApplyEffectLabel(noPlayerCardEffectLabel, effect.description);
+                    continue;
+                }
+
                 switch (effect.context)
                 {
                     case SlotEffectContext.NoOpponentCard:

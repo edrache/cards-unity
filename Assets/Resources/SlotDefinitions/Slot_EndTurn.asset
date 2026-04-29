@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 34baa5a695af14346b1f1b68d47e4b00, type: 3}
-  m_Name: Slot_DrawCard
+  m_Name: Slot_EndTurn
   m_EditorClassIdentifier: CardsUnity.Runtime::CardsUnity.SlotDefinition
   hasOpponentCardSpot: 0
   hasPlayerCardSpot: 1
   effects:
-  - {fileID: 11400000, guid: fb21b09a102de474d848b9b34e08ca98, type: 2}
+  - {fileID: 11400000, guid: 81d69b7856d5042749e189874eaa10d5, type: 2}

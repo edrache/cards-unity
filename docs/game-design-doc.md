@@ -42,6 +42,7 @@ Every element added to the game must serve at least one of these:
 |---|---|---|
 | `Definition` | `CardDefinition` | Immutable reference |
 | `CurrentValue` | `int` | Mutable — reduced by damage |
+| `IsExhausted` | `bool` | True when the card has been used this turn and is shown rotated in UI |
 
 **Planned addition:** `MaxValue` — the ceiling `CurrentValue` resets to. Upgradable between challenges. When a card enters discard (or returns to deck — open question), `CurrentValue` resets to `MaxValue`.
 
@@ -141,6 +142,7 @@ When a card's `CurrentValue` reaches `0`:
 - Drag a card from hand onto any empty player slot.
 - If the slot has an opponent card → combat resolves immediately.
 - If the slot is empty → card sits there until End Turn.
+- A player card placed on the board becomes **Exhausted** and is displayed using the prefab-configured exhausted rotation angle.
 
 #### End Turn (`TurnController.EndTurn`)
 - All surviving player board cards return to hand as `CardDefinition` (full health restored).
@@ -263,7 +265,7 @@ These tags exist on `CardDefinition.effects` but **are not evaluated** by any ru
 **Slot effects** — `SlotEffectDefinition` (ScriptableObject) fields:
 - `context` — `SlotEffectContext`: `NoOpponentCard`, `NoPlayerCard`, `Passive`
 - `trigger` — `SlotEffectTrigger`: `OnPlayerTurnStart`, `OnCardPlayed`
-- `action` — `SlotEffectAction`: `DrawOpponentCard`, `AddToClock`, `ReturnCardsFromSlots`, `DrawToHandLimit`
+- `action` — `SlotEffectAction`: `DrawOpponentCard`, `AddToClock`, `ReturnCardsFromSlots`, `DrawToHandLimit`, `TurnEnd`
 - `actionValue` — `int` used by `AddToClock`
 - `clockTarget` — `ClockTarget`: `PlayerClock`, `OpponentClock`
 - `description` — `string` shown in `SlotView`
@@ -276,6 +278,7 @@ Slot effects **are evaluated at runtime** by `TurnController`.
 | `AddToClock` | `OnPlayerTurnStart` | `NoPlayerCard` | Increment the selected clock by `actionValue` |
 | `ReturnCardsFromSlots` | `OnCardPlayed` | `Passive` | Return all player cards currently on the board to hand |
 | `DrawToHandLimit` | `OnCardPlayed` | `Passive` | Draw from the player deck until hand reaches `draftValue` |
+| `TurnEnd` | `OnCardPlayed` | `Passive` | Run the full end-turn sequence immediately: return player cards, clear player slots, and refill opponent slots |
 
 ### Planned: Trigger + Action Structure
 
@@ -393,7 +396,7 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 - ScriptableObject-based card and config data
 - Full test coverage for combat, deck, and turn logic
 - Slot effect system: `SlotEffectDefinition` and `SlotDefinition` ScriptableObjects with runtime evaluation in `TurnController`
-- Slot effect actions implemented: `DrawOpponentCard`, `AddToClock`, `ReturnCardsFromSlots`, `DrawToHandLimit`
+- Slot effect actions implemented: `DrawOpponentCard`, `AddToClock`, `ReturnCardsFromSlots`, `DrawToHandLimit`, `TurnEnd`
 - Slot UI effect descriptions via `TextMeshProUGUI` labels in `SlotView`
 - Reusable UI outline renderer for `Canvas` elements via `RectOutlineGraphic` (`MaskableGraphic` + shader) with configurable thickness, color, rounded corners, solid/dashed mode, dash length, gap length, dash offset, and fixed vs edge-fitted dash distribution
 
@@ -431,3 +434,5 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | 2026-04-26 | Added `RectOutlineGraphic` for UI `RectTransform` borders with configurable rounded solid and dashed shader-driven outlines |
 | 2026-04-26 | Slot effect system implemented: `SlotEffectDefinition` and `SlotDefinition`, four runtime actions, slot spot gating, and `SlotView` TMP effect descriptions |
 | 2026-04-29 | Board slots can now serialize `SlotDefinition` directly in scene `SlotView` objects, with `ChallengeController` preferring scene layout over `GameConfig.slotDefinitions` |
+| 2026-04-29 | Added `TurnEnd` slot effect action, which triggers the full end-turn flow and advances play when activated on card play |
+| 2026-04-29 | Added `IsExhausted` to `CardInstance`; played player cards are marked Exhausted and `CardView` rotates them using a prefab-configured angle |
