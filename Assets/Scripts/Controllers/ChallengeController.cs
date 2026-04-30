@@ -204,6 +204,7 @@ namespace CardsUnity
         {
             if (_storyDeck == null || _storyDeck.ActiveCard == null) return;
             _storyDeck.ActiveCardClock.Increment(amount);
+            // Overflow is intentional: excess points are discarded, not carried to the next card.
             if (_storyDeck.ActiveCardClock.IsFull)
                 _storyDeck.AdvanceCard();
         }

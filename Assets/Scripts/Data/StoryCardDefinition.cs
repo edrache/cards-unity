@@ -10,6 +10,6 @@ namespace CardsUnity
         [TextArea] public string content;
         public Sprite artwork;
         public List<CardEffectTag> effects;
-        public int clockMaxValue;
+        [Min(1)] public int clockMaxValue;
     }
 }

@@ -13,6 +13,7 @@ namespace CardsUnity
 
         public StoryDeckState(StoryDeckDefinition definition, System.Random rng = null)
         {
+            if (definition == null) throw new System.ArgumentNullException(nameof(definition));
             Definition = definition;
             _sequence = new List<StoryCardDefinition>(definition.cards ?? new List<StoryCardDefinition>());
 

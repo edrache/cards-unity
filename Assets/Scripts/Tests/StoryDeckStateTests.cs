@@ -158,5 +158,20 @@ namespace CardsUnity.Tests
 
             Assert.IsNull(state.ActiveCard);
         }
+
+        [Test]
+        public void AdvanceCard_after_large_increment_does_not_carry_overflow_to_next_clock()
+        {
+            var card1 = MakeCard("A", 3);
+            var card2 = MakeCard("B", 5);
+            var deckDef = MakeDeck(StoryDrawMode.Sequential, card1, card2);
+            var state = new StoryDeckState(deckDef);
+
+            state.ActiveCardClock.Increment(10); // overfill: 10 > 3
+            state.AdvanceCard();
+
+            Assert.AreEqual(0, state.ActiveCardClock.CurrentValue);
+            Assert.AreEqual(5, state.ActiveCardClock.MaxValue);
+        }
     }
 }
