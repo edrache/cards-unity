@@ -16,5 +16,5 @@ MonoBehaviour:
   type: 0
   value: 3
   effects: []
-  artwork: {fileID: 0}
+  artwork: {fileID: 21300000, guid: 8df7bd0aefad64ed4b27414736f45f99, type: 3}
   flavorText: Too many signs, too many faces, too many directions at once.

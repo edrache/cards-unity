@@ -16,6 +16,6 @@ MonoBehaviour:
   type: 0
   value: 3
   effects: []
-  artwork: {fileID: 0}
+  artwork: {fileID: 21300000, guid: f75be9409db474db59249bd00d5c9f7e, type: 3}
   flavorText: Voices, engines, signals, sirens. The city drowns out what matters
     most.

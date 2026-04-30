@@ -25,11 +25,16 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ec61f295d39d9462c8fda0b42b302269, type: 2}
   - {fileID: 11400000, guid: ec61f295d39d9462c8fda0b42b302269, type: 2}
   opponentDeck:
-  - {fileID: 11400000, guid: ec61f295d39d9462c8fda0b42b302269, type: 2}
-  - {fileID: 11400000, guid: ec61f295d39d9462c8fda0b42b302269, type: 2}
-  - {fileID: 11400000, guid: ec61f295d39d9462c8fda0b42b302269, type: 2}
-  - {fileID: 11400000, guid: 6bcb47d6119fe44d6b727ee7296ff729, type: 2}
-  - {fileID: 11400000, guid: ce44d6269510744bb8a2f09cd61c28cc, type: 2}
+  - {fileID: 11400000, guid: f6d52067748af45dbb745a73b203f7b6, type: 2}
+  - {fileID: 11400000, guid: 66453f5b94a794d60b1195509b79963f, type: 2}
+  - {fileID: 11400000, guid: 32deaf8b1988a4668a41e8d497cc6fb2, type: 2}
+  - {fileID: 11400000, guid: c43a8d1b1fa0948bb9c6cc925698c7d0, type: 2}
+  - {fileID: 11400000, guid: 4909ec15dd5534d0c8622a6b029cf072, type: 2}
+  - {fileID: 11400000, guid: b5f85020422c34ae1a312c11777db9e8, type: 2}
+  - {fileID: 11400000, guid: ab7adda5f1967402ab84a975c9b30c39, type: 2}
+  - {fileID: 11400000, guid: 91bf518ef8fd046ca9b1b967c6e5eabe, type: 2}
+  - {fileID: 11400000, guid: 8011c6150a0b7492d8da0970c9a1ce58, type: 2}
+  - {fileID: 11400000, guid: 39c6b835cbde64276925eb467e00b0a3, type: 2}
   slotDefinitions:
   - {fileID: 11400000, guid: e6f2009613bf040d29d9372b7ddfd875, type: 2}
   - {fileID: 11400000, guid: 5b1a32838738a44ecb407f77113733d6, type: 2}

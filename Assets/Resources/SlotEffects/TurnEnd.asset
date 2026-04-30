@@ -17,4 +17,6 @@ MonoBehaviour:
   action: 4
   actionValue: 0
   clockTarget: 0
-  description: End Turn
+  description: 'End Turn
+
+    Automatic if no card in Hand'

@@ -16,6 +16,6 @@ MonoBehaviour:
   type: 0
   value: 3
   effects: []
-  artwork: {fileID: 0}
+  artwork: {fileID: 21300000, guid: 95e6da3f8de1848e1b3ade5237f08caa, type: 3}
   flavorText: When time feels short, even the right choice can look like the wrong
     one.

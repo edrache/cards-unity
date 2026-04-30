@@ -14,5 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: CardsUnity.Runtime::CardsUnity.SlotDefinition
   hasOpponentCardSpot: 1
   hasPlayerCardSpot: 1
+  contributesToGlobalPlayedCardCounts: 1
+  playedCardCountMode: 0
+  fixedPlayedCardCountValue: 1
   effects:
   - {fileID: 11400000, guid: 238d8680d67f4474eba45266591df005, type: 2}
