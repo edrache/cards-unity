@@ -15,8 +15,6 @@ namespace CardsUnity
         private readonly Random _rng;
         private bool _turnEndedByEffect;
 
-        public event Action OnCardDestroyed;
-
         public TurnController(
             DeckState playerDeck,
             HandState playerHand,
@@ -121,14 +119,12 @@ namespace CardsUnity
             {
                 _opponentClock.Increment();
                 slot.OpponentCard = null;
-                OnCardDestroyed?.Invoke();
             }
 
             if (result.SecondResult.Destroyed)
             {
                 _playerClock.Increment();
                 slot.PlayerCard = null;
-                OnCardDestroyed?.Invoke();
             }
         }
 

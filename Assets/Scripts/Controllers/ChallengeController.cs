@@ -76,7 +76,6 @@ namespace CardsUnity
             handView.OnCardDragStart += _cardDragStartHandler;
             handView.OnCardDragEnd += _cardDragEndHandler;
             endTurnButton.OnClicked += OnEndTurn;
-            _turn.OnCardDestroyed += OnCardDestroyed;
 
             if (winPanel != null)
                 winPanel.SetActive(false);
@@ -107,9 +106,6 @@ namespace CardsUnity
 
             if (endTurnButton != null)
                 endTurnButton.OnClicked -= OnEndTurn;
-
-            if (_turn != null)
-                _turn.OnCardDestroyed -= OnCardDestroyed;
         }
 
         private static DeckState BuildDeck(List<CardDefinition> cards, System.Random rng)
@@ -145,8 +141,6 @@ namespace CardsUnity
             _turn.StartTurn();
             RefreshUI();
         }
-
-        private void OnCardDestroyed() => IncrementStoryClock(1);
 
         private void OnCardPlayed(CardInstance card, int slotIndex)
         {
