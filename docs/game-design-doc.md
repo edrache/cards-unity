@@ -145,7 +145,7 @@ When a card's `CurrentValue` reaches `0`:
 - A player card placed on the board becomes **Exhausted** and is displayed using the prefab-configured exhausted rotation angle.
 
 #### End Turn (`TurnController.EndTurn`)
-- All surviving player board cards return to hand as `CardDefinition` (full health restored).
+- All surviving player board cards return to hand as their existing `CardInstance` (current damage is preserved).
 - All player slots cleared.
 - Opponent draws to fill empty opponent slots.
 
@@ -436,3 +436,4 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | 2026-04-29 | Board slots can now serialize `SlotDefinition` directly in scene `SlotView` objects, with `ChallengeController` preferring scene layout over `GameConfig.slotDefinitions` |
 | 2026-04-29 | Added `TurnEnd` slot effect action, which triggers the full end-turn flow and advances play when activated on card play |
 | 2026-04-29 | Added `IsExhausted` to `CardInstance`; played player cards are marked Exhausted and `CardView` rotates them using a prefab-configured angle |
+| 2026-04-30 | Player cards returning from board to hand now keep their damaged `CurrentValue` instead of resetting to base value |

@@ -23,7 +23,7 @@ namespace CardsUnity.UI
             new Color(0.3f, 0.85f, 0.5f),
         };
 
-        public CardDefinition Card { get; private set; }
+        public CardInstance Card { get; private set; }
         public System.Action<CardView> OnDragStart;
         public System.Action<CardView> OnDragEnd;
 
@@ -59,8 +59,28 @@ namespace CardsUnity.UI
 
         public void SetCard(CardDefinition card)
         {
+            Card = card == null ? null : new CardInstance(card);
+            ApplyCardDefinitionVisuals(card);
+        }
+
+        public void SetCardInstance(CardInstance card)
+        {
             Card = card;
 
+            if (card == null)
+            {
+                ApplyCardDefinitionVisuals(null);
+                return;
+            }
+
+            ApplyCardDefinitionVisuals(card.Definition);
+            if (valueText)
+                valueText.text = card.CurrentValue.ToString();
+            ApplyExhaustedVisual(card.IsExhausted);
+        }
+
+        private void ApplyCardDefinitionVisuals(CardDefinition card)
+        {
             if (card == null)
             {
                 ApplyExhaustedVisual(false);
@@ -96,20 +116,6 @@ namespace CardsUnity.UI
             }
 
             ApplyExhaustedVisual(false);
-        }
-
-        public void SetCardInstance(CardInstance card)
-        {
-            if (card == null)
-            {
-                SetCard((CardDefinition)null);
-                return;
-            }
-
-            SetCard(card.Definition);
-            if (valueText)
-                valueText.text = card.CurrentValue.ToString();
-            ApplyExhaustedVisual(card.IsExhausted);
         }
 
         public void OnBeginDrag(PointerEventData eventData)

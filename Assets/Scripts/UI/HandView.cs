@@ -32,7 +32,7 @@ namespace CardsUnity.UI
             {
                 var view = Instantiate(cardPrefab, cardContainer);
                 view.SetDraggable(true);
-                view.SetCard(card);
+                view.SetCardInstance(card);
                 view.OnDragStart += HandleDragStart;
                 view.OnDragEnd += HandleDragEnd;
                 _views.Add(view);

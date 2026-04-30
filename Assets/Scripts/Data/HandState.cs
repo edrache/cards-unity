@@ -4,12 +4,12 @@ namespace CardsUnity
 {
     public class HandState
     {
-        private readonly List<CardDefinition> _cards = new();
+        private readonly List<CardInstance> _cards = new();
 
-        public IReadOnlyList<CardDefinition> Cards => _cards;
+        public IReadOnlyList<CardInstance> Cards => _cards;
 
-        public void Add(CardDefinition card) => _cards.Add(card);
-        public bool Remove(CardDefinition card) => _cards.Remove(card);
+        public void Add(CardInstance card) => _cards.Add(card);
+        public bool Remove(CardInstance card) => _cards.Remove(card);
         public void Clear() => _cards.Clear();
     }
 }

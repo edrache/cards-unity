@@ -132,7 +132,7 @@ namespace CardsUnity
             RefreshUI();
         }
 
-        private void OnCardPlayed(CardDefinition card, int slotIndex)
+        private void OnCardPlayed(CardInstance card, int slotIndex)
         {
             _turn.PlayCard(card, slotIndex);
 

@@ -48,13 +48,13 @@ namespace CardsUnity
 
                 var card = _playerDeck.Draw();
                 if (card != null)
-                    _playerHand.Add(card);
+                    _playerHand.Add(new CardInstance(card));
             }
 
             EvaluateSlotEffects(SlotEffectTrigger.OnPlayerTurnStart);
         }
 
-        public void PlayCard(CardDefinition card, int slotIndex)
+        public void PlayCard(CardInstance card, int slotIndex)
         {
             _turnEndedByEffect = false;
 
@@ -74,7 +74,7 @@ namespace CardsUnity
             if (!_playerHand.Remove(card))
                 return;
 
-            slot.PlayerCard = new CardInstance(card);
+            slot.PlayerCard = card;
             slot.PlayerCard.IsExhausted = true;
 
             if (slot.HasOpponentCard)
@@ -92,7 +92,8 @@ namespace CardsUnity
                 if (slot.PlayerCard == null)
                     continue;
 
-                _playerHand.Add(slot.PlayerCard.Definition);
+                slot.PlayerCard.IsExhausted = false;
+                _playerHand.Add(slot.PlayerCard);
                 slot.PlayerCard = null;
             }
 
@@ -231,7 +232,8 @@ namespace CardsUnity
                 if (slot.PlayerCard == null)
                     continue;
 
-                _playerHand.Add(slot.PlayerCard.Definition);
+                slot.PlayerCard.IsExhausted = false;
+                _playerHand.Add(slot.PlayerCard);
                 slot.PlayerCard = null;
             }
         }
@@ -249,7 +251,7 @@ namespace CardsUnity
 
                 var card = _playerDeck.Draw();
                 if (card != null)
-                    _playerHand.Add(card);
+                    _playerHand.Add(new CardInstance(card));
             }
         }
 

@@ -9,7 +9,7 @@ namespace CardsUnity.UI
         [SerializeField] private SlotView[] slotViews;
         [SerializeField] private CardView opponentCardPrefab;
 
-        public Action<CardDefinition, int> OnCardPlayed;
+        public Action<CardInstance, int> OnCardPlayed;
 
         private void Awake()
         {

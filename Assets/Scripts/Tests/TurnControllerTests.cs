@@ -43,7 +43,7 @@ namespace CardsUnity.Tests
         [Test]
         public void StartTurn_does_not_exceed_draft_value_when_hand_already_has_cards()
         {
-            _playerHand.Add(ScriptableObject.CreateInstance<CardDefinition>());
+            _playerHand.Add(new CardInstance(ScriptableObject.CreateInstance<CardDefinition>()));
             _turn.StartTurn();
             Assert.AreEqual(3, _playerHand.Cards.Count);
         }
@@ -64,7 +64,7 @@ namespace CardsUnity.Tests
             _turn.StartTurn();
             var card = _playerHand.Cards[0];
             _turn.PlayCard(card, slotIndex: 0);
-            Assert.AreEqual(card, _board.Slots[0].PlayerCard?.Definition);
+            Assert.AreSame(card, _board.Slots[0].PlayerCard);
         }
 
         [Test]
@@ -94,7 +94,7 @@ namespace CardsUnity.Tests
             var opponentCard = new CardInstance(MakeCardDef(CardType.Appeal, value: 10));
             _board.Slots[1].OpponentCard = opponentCard;
 
-            var playerCard = _playerHand.Cards.First(c => c.type == CardType.Pressure);
+            var playerCard = _playerHand.Cards.First(c => c.Definition.type == CardType.Pressure);
             _turn.PlayCard(playerCard, slotIndex: 1);
 
             Assert.AreEqual(7, opponentCard.CurrentValue);
@@ -106,7 +106,7 @@ namespace CardsUnity.Tests
             _turn.StartTurn();
             _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Appeal, value: 1));
 
-            var playerCard = _playerHand.Cards.First(c => c.type == CardType.Pressure);
+            var playerCard = _playerHand.Cards.First(c => c.Definition.type == CardType.Pressure);
             _turn.PlayCard(playerCard, slotIndex: 0);
 
             Assert.AreEqual(1, _opponentClock.CurrentValue);
@@ -118,7 +118,7 @@ namespace CardsUnity.Tests
             _turn.StartTurn();
             _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Positioning, value: 1));
 
-            var playerCard = _playerHand.Cards.First(c => c.type == CardType.Pressure);
+            var playerCard = _playerHand.Cards.First(c => c.Definition.type == CardType.Pressure);
             _turn.PlayCard(playerCard, slotIndex: 0);
 
             Assert.AreEqual(2, _board.Slots[0].PlayerCard?.CurrentValue);
@@ -130,7 +130,7 @@ namespace CardsUnity.Tests
             _turn.StartTurn();
             _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Positioning, value: 10));
 
-            var playerCard = _playerHand.Cards.First(c => c.type == CardType.Pressure);
+            var playerCard = _playerHand.Cards.First(c => c.Definition.type == CardType.Pressure);
             _turn.PlayCard(playerCard, slotIndex: 0);
 
             Assert.AreEqual(1, _playerClock.CurrentValue);
@@ -146,6 +146,23 @@ namespace CardsUnity.Tests
             _turn.EndTurn();
 
             Assert.IsTrue(_playerHand.Cards.Contains(card));
+        }
+
+        [Test]
+        public void EndTurn_preserves_current_value_for_returned_player_cards()
+        {
+            _turn.StartTurn();
+            _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Positioning, value: 1));
+
+            var card = _playerHand.Cards.First(c => c.Definition.type == CardType.Pressure);
+            _turn.PlayCard(card, slotIndex: 0);
+
+            Assert.AreEqual(2, card.CurrentValue);
+
+            _turn.EndTurn();
+
+            Assert.That(_playerHand.Cards, Does.Contain(card));
+            Assert.AreEqual(2, card.CurrentValue);
         }
 
         [Test]
