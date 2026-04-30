@@ -13,16 +13,20 @@ namespace CardsUnity
         [SerializeField] private HandView handView;
         [SerializeField] private ClockView playerClockView;
         [SerializeField] private ClockView opponentClockView;
+        [SerializeField] private PlayedCardCounterView playedCardCounterView;
         [SerializeField] private EndTurnButton endTurnButton;
         [SerializeField] private GameObject winPanel;
         [SerializeField] private GameObject losePanel;
+        [SerializeField] private StoryDeckDefinition storyDeck;
 
         private TurnController _turn;
         private HandState _hand;
         private BoardState _board;
         private ClockState _playerClock;
         private ClockState _opponentClock;
+        private PlayedCardCounterState _playedCardCounters;
         private System.Random _rng;
+        private StoryDeckState _storyDeck;
         private Action<CardView> _cardDragStartHandler;
         private Action<CardView> _cardDragEndHandler;
 
@@ -48,6 +52,7 @@ namespace CardsUnity
                 : new BoardState(config.boardSlotCount);
             _playerClock = new ClockState(config.startingDeck != null ? config.startingDeck.Count : 0);
             _opponentClock = new ClockState(config.opponentDeck != null ? config.opponentDeck.Count : 0);
+            _playedCardCounters = new PlayedCardCounterState();
 
             _turn = new TurnController(
                 playerDeck,
@@ -56,8 +61,12 @@ namespace CardsUnity
                 _board,
                 _playerClock,
                 _opponentClock,
+                _playedCardCounters,
                 config.draftValue,
                 _rng);
+
+            if (storyDeck != null)
+                _storyDeck = new StoryDeckState(storyDeck, _rng);
 
             _cardDragStartHandler = _ => boardView.SetHighlightAll(true);
             _cardDragEndHandler = _ => boardView.SetHighlightAll(false);
@@ -167,6 +176,9 @@ namespace CardsUnity
             boardView.Refresh(_board);
             playerClockView.Refresh(_playerClock);
             opponentClockView.Refresh(_opponentClock);
+
+            if (playedCardCounterView != null)
+                playedCardCounterView.Refresh(_playedCardCounters);
         }
 
         private void CheckEndCondition()
@@ -186,6 +198,14 @@ namespace CardsUnity
         public void Restart()
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+
+        public void IncrementStoryClock(int amount)
+        {
+            if (_storyDeck == null || _storyDeck.ActiveCard == null) return;
+            _storyDeck.ActiveCardClock.Increment(amount);
+            if (_storyDeck.ActiveCardClock.IsFull)
+                _storyDeck.AdvanceCard();
         }
     }
 }
