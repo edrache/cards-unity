@@ -1,7 +1,7 @@
 # Game Design Document
 
 *This is the single source of truth for all game design decisions.*
-*Last updated: 2026-04-29*
+*Last updated: 2026-04-30*
 
 Any change to mechanics — adding, modifying, or removing a rule, system, or data model — must be reflected here. Append an entry to the [Changelog](#changelog) at the bottom.
 
@@ -197,6 +197,14 @@ Each `SlotState` may also hold an optional `SlotDefinition` (ScriptableObject). 
 - `SlotView` can serialize its own `SlotDefinition` directly on the scene object, and `ChallengeController` will use scene slot definitions before falling back to `GameConfig.slotDefinitions`.
 
 Slots with no `SlotDefinition` use the legacy default behaviour: both anchors are available and opponent cards are auto-placed at end of turn by `PlaceOpponentCards()`.
+
+Slots can also opt into contributing to one shared global tally of played card values. This tally has one running total per card type: `Pressure`, `Appeal`, and `Positioning`.
+
+Only cards played directly into a contributing slot affect the tally. Each such slot decides how much value it sends into the global counter:
+- `UseCardValue` — add the played card's current runtime `CurrentValue`
+- `UseFixedValue` — add one fixed slot-defined value, regardless of the card's own value
+
+The played card's type determines which global bucket is incremented. Example: a `Pressure` card played into a contributing slot increases only the global `Pressure` total.
 
 ### Planned: Slot Types
 
@@ -416,6 +424,7 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 - Slot effect actions implemented: `DrawOpponentCard`, `AddToClock`, `ReturnCardsFromSlots`, `DrawToHandLimit`, `TurnEnd`
 - Slot UI effect descriptions via `TextMeshProUGUI` labels in `SlotView`
 - Reusable UI outline renderer for `Canvas` elements via `RectOutlineGraphic` (`MaskableGraphic` + shader) with configurable thickness, color, rounded corners, solid/dashed mode, dash length, gap length, dash offset, and fixed vs edge-fitted dash distribution
+- Story card data model: `StoryCardDefinition`, `StoryDeckDefinition` ScriptableObjects with `StoryDrawMode` (Sequential/Random); `StoryDeckState` runtime class with clock-driven `AdvanceCard()`; `ChallengeController.IncrementStoryClock(int)` entry point
 
 ### Defined but Not Evaluated
 
@@ -429,7 +438,8 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | Fatigue mechanic | Cards stay on slots, become fatigued |
 | Draw slot | Special slot to return cards + draw |
 | Zone clocks | Per-group clocks with type tracking |
-| Story cards | Global rule-change cards tied to narrative |
+| Story cards — UI | Display active story card (title, content, artwork, clock bar) |
+| Story cards — clock wiring | Connect existing cards/effects to IncrementStoryClock |
 | `MaxValue` and upgrades | Separate current vs max value on `CardInstance` |
 | Discard for destroyed board cards | Currently only deck-level discard exists |
 | Challenge slot groups | Encounter scripting and rewards |
@@ -454,4 +464,6 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | 2026-04-29 | Added `TurnEnd` slot effect action, which triggers the full end-turn flow and advances play when activated on card play |
 | 2026-04-29 | Added `IsExhausted` to `CardInstance`; played player cards are marked Exhausted and `CardView` rotates them using a prefab-configured angle |
 | 2026-04-30 | Player cards returning from board to hand now keep their damaged `CurrentValue` instead of resetting to base value |
+| 2026-04-30 | Added global played-card counters gated by slot configuration, using either `CardInstance.CurrentValue` or a slot-defined fixed value per played card |
 | 2026-04-30 | Added 10 `CardDefinition` prototype assets for the `1_Chase` city-search encounter set under `Assets/Resources/Cards/1_Chase/` |
+| 2026-04-30 | Added story card data model: StoryCardDefinition SO, StoryDeckDefinition SO, StoryDeckState runtime class with Sequential/Random draw and per-card ClockState; ChallengeController exposes IncrementStoryClock(int) |
