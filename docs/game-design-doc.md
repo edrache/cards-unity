@@ -56,6 +56,23 @@ Every element added to the game must serve at least one of these:
 
 These are prototype assets for validating the loop, not final content.
 
+### Chase Encounter Prototype Cards
+
+`Assets/Resources/Cards/1_Chase/` contains a first pass of encounter card definitions for a contemporary city search scenario. These cards represent universal urban friction rather than named characters or bespoke narrative beats.
+
+| Title | Type | Value |
+|---|---|---|
+| Crowd | Positioning | 3 |
+| Noise | Pressure | 3 |
+| Rush | Pressure | 3 |
+| Interruption | Appeal | 3 |
+| Confusion | Pressure | 3 |
+| Traffic | Positioning | 3 |
+| Mistake | Pressure | 3 |
+| Distrust | Appeal | 3 |
+| Distraction | Appeal | 3 |
+| Blind Spot | Positioning | 3 |
+
 ### Card Value Lifecycle
 
 ```
@@ -437,3 +454,4 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | 2026-04-29 | Added `TurnEnd` slot effect action, which triggers the full end-turn flow and advances play when activated on card play |
 | 2026-04-29 | Added `IsExhausted` to `CardInstance`; played player cards are marked Exhausted and `CardView` rotates them using a prefab-configured angle |
 | 2026-04-30 | Player cards returning from board to hand now keep their damaged `CurrentValue` instead of resetting to base value |
+| 2026-04-30 | Added 10 `CardDefinition` prototype assets for the `1_Chase` city-search encounter set under `Assets/Resources/Cards/1_Chase/` |
