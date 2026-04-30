@@ -14,7 +14,7 @@ namespace CardsUnity
         public StoryDeckState(StoryDeckDefinition definition, System.Random rng = null)
         {
             Definition = definition;
-            _sequence = new List<StoryCardDefinition>(definition.cards);
+            _sequence = new List<StoryCardDefinition>(definition.cards ?? new List<StoryCardDefinition>());
 
             if (definition.drawMode == StoryDrawMode.Random)
             {
@@ -32,6 +32,7 @@ namespace CardsUnity
 
         public void AdvanceCard()
         {
+            if (ActiveCard == null) return;
             _currentIndex++;
             SetActiveCard(_currentIndex < _sequence.Count ? _sequence[_currentIndex] : null);
         }

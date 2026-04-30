@@ -133,5 +133,30 @@ namespace CardsUnity.Tests
 
             Assert.IsNull(state.ActiveCard);
         }
+
+        [Test]
+        public void AdvanceCard_is_idempotent_when_deck_is_exhausted()
+        {
+            var card = MakeCard("A", 3);
+            var deckDef = MakeDeck(StoryDrawMode.Sequential, card);
+            var state = new StoryDeckState(deckDef);
+            state.AdvanceCard(); // exhaust
+
+            state.AdvanceCard(); // should be safe
+
+            Assert.IsNull(state.ActiveCard);
+        }
+
+        [Test]
+        public void Constructor_with_null_cards_list_sets_active_card_null()
+        {
+            var deckDef = ScriptableObject.CreateInstance<StoryDeckDefinition>();
+            deckDef.drawMode = StoryDrawMode.Sequential;
+            deckDef.cards = null; // simulates uninitialized SO
+
+            var state = new StoryDeckState(deckDef);
+
+            Assert.IsNull(state.ActiveCard);
+        }
     }
 }
