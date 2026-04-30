@@ -10,6 +10,7 @@ namespace CardsUnity
         private readonly BoardState _board;
         private readonly ClockState _playerClock;
         private readonly ClockState _opponentClock;
+        private readonly PlayedCardCounterState _playedCardCounters;
         private readonly int _draftValue;
         private readonly Random _rng;
         private bool _turnEndedByEffect;
@@ -21,6 +22,7 @@ namespace CardsUnity
             BoardState board,
             ClockState playerClock,
             ClockState opponentClock,
+            PlayedCardCounterState playedCardCounters,
             int draftValue,
             Random rng)
         {
@@ -30,6 +32,7 @@ namespace CardsUnity
             _board = board;
             _playerClock = playerClock;
             _opponentClock = opponentClock;
+            _playedCardCounters = playedCardCounters;
             _draftValue = draftValue;
             _rng = rng ?? throw new ArgumentNullException(nameof(rng));
         }
@@ -76,6 +79,7 @@ namespace CardsUnity
 
             slot.PlayerCard = card;
             slot.PlayerCard.IsExhausted = true;
+            RegisterPlayedCard(slot, card);
 
             if (slot.HasOpponentCard)
                 ResolveSlotCombat(slot);
@@ -263,6 +267,21 @@ namespace CardsUnity
         private static bool CanHostOpponentCard(SlotState slot)
         {
             return slot?.Definition == null || slot.Definition.hasOpponentCardSpot;
+        }
+
+        private void RegisterPlayedCard(SlotState slot, CardInstance card)
+        {
+            if (_playedCardCounters == null || slot?.Definition == null || card?.Definition == null)
+                return;
+
+            if (!slot.Definition.contributesToGlobalPlayedCardCounts)
+                return;
+
+            int amount = slot.Definition.playedCardCountMode == PlayedCardCountMode.UseFixedValue
+                ? slot.Definition.fixedPlayedCardCountValue
+                : card.CurrentValue;
+
+            _playedCardCounters.Add(card.Definition.type, amount);
         }
     }
 }

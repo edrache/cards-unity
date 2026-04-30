@@ -14,6 +14,7 @@ namespace CardsUnity.Tests
         private BoardState _board;
         private ClockState _playerClock;
         private ClockState _opponentClock;
+        private PlayedCardCounterState _playedCardCounters;
 
         [SetUp]
         public void SetUp()
@@ -24,11 +25,12 @@ namespace CardsUnity.Tests
             _board = new BoardState(slotCount: 3);
             _playerClock = new ClockState(maxValue: 6);
             _opponentClock = new ClockState(maxValue: 4);
+            _playedCardCounters = new PlayedCardCounterState();
 
             _turn = new TurnController(
                 _playerDeck, _playerHand,
                 _opponentDeck, _board,
-                _playerClock, _opponentClock,
+                _playerClock, _opponentClock, _playedCardCounters,
                 draftValue: 3,
                 rng: new System.Random(42));
         }
@@ -223,9 +225,68 @@ namespace CardsUnity.Tests
             return new TurnController(
                 _playerDeck, _playerHand,
                 _opponentDeck, board,
-                _playerClock, _opponentClock,
+                _playerClock, _opponentClock, _playedCardCounters,
                 draftValue: 3,
                 rng: new System.Random(42));
+        }
+
+        [Test]
+        public void PlayCard_adds_current_value_to_global_counter_when_slot_uses_card_value_mode()
+        {
+            var def = ScriptableObject.CreateInstance<SlotDefinition>();
+            def.contributesToGlobalPlayedCardCounts = true;
+            def.playedCardCountMode = PlayedCardCountMode.UseCardValue;
+            var board = new BoardState(new[] { def, null, null });
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+            var card = _playerHand.Cards.First();
+            card.CurrentValue = 7;
+
+            turn.PlayCard(card, slotIndex: 0);
+
+            Assert.AreEqual(7, _playedCardCounters.Pressure);
+            Assert.AreEqual(0, _playedCardCounters.Appeal);
+            Assert.AreEqual(0, _playedCardCounters.Positioning);
+        }
+
+        [Test]
+        public void PlayCard_adds_fixed_value_to_matching_global_counter_when_slot_uses_fixed_value_mode()
+        {
+            var def = ScriptableObject.CreateInstance<SlotDefinition>();
+            def.contributesToGlobalPlayedCardCounts = true;
+            def.playedCardCountMode = PlayedCardCountMode.UseFixedValue;
+            def.fixedPlayedCardCountValue = 3;
+            var board = new BoardState(new[] { def, null, null });
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+            var appealCard = new CardInstance(MakeCardDef(CardType.Appeal, 5));
+            _playerHand.Add(appealCard);
+
+            turn.PlayCard(appealCard, slotIndex: 0);
+
+            Assert.AreEqual(3, _playedCardCounters.Appeal);
+            Assert.AreEqual(0, _playedCardCounters.Pressure);
+            Assert.AreEqual(0, _playedCardCounters.Positioning);
+        }
+
+        [Test]
+        public void PlayCard_does_not_add_to_global_counter_when_slot_does_not_contribute()
+        {
+            var def = ScriptableObject.CreateInstance<SlotDefinition>();
+            def.contributesToGlobalPlayedCardCounts = false;
+            var board = new BoardState(new[] { def, null, null });
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+            var card = _playerHand.Cards.First();
+
+            turn.PlayCard(card, slotIndex: 0);
+
+            Assert.AreEqual(0, _playedCardCounters.Pressure);
+            Assert.AreEqual(0, _playedCardCounters.Appeal);
+            Assert.AreEqual(0, _playedCardCounters.Positioning);
         }
 
         [Test]

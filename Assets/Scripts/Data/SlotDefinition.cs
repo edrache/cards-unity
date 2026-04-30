@@ -10,6 +10,12 @@ namespace CardsUnity
         public bool hasOpponentCardSpot = true;
         [Tooltip("If true, the player can drag a card onto this slot.")]
         public bool hasPlayerCardSpot = true;
+        [Tooltip("If true, cards played into this slot contribute to the global played-card counters.")]
+        public bool contributesToGlobalPlayedCardCounts;
+        [Tooltip("Controls whether this slot contributes the card's current value or a fixed value to the global played-card counters.")]
+        public PlayedCardCountMode playedCardCountMode = PlayedCardCountMode.UseCardValue;
+        [Tooltip("When using a fixed contribution mode, every card played into this slot adds this value to the matching global type counter.")]
+        public int fixedPlayedCardCountValue = 1;
         public List<SlotEffectDefinition> effects = new List<SlotEffectDefinition>();
     }
 }
