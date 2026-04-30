@@ -11,6 +11,7 @@ namespace CardsUnity.UI
         [SerializeField] private Image artworkImage;
         [SerializeField] private Image clockFillImage;
         [SerializeField] private TextMeshProUGUI clockLabel;
+        [SerializeField] private TextMeshProUGUI effectsText;
 
         public void Refresh(StoryCardDefinition card, ClockState clock)
         {
@@ -36,6 +37,24 @@ namespace CardsUnity.UI
 
             if (clockLabel != null)
                 clockLabel.text = clock != null ? $"{clock.CurrentValue} / {clock.MaxValue}" : string.Empty;
+
+            if (effectsText != null)
+            {
+                if (card.effects == null || card.effects.Count == 0)
+                {
+                    effectsText.text = string.Empty;
+                }
+                else
+                {
+                    var sb = new System.Text.StringBuilder();
+                    foreach (var effect in card.effects)
+                    {
+                        if (effect != null && !string.IsNullOrEmpty(effect.description))
+                            sb.AppendLine(effect.description);
+                    }
+                    effectsText.text = sb.ToString().TrimEnd();
+                }
+            }
         }
     }
 }
