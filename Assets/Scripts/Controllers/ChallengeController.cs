@@ -76,6 +76,8 @@ namespace CardsUnity
             handView.OnCardDragStart += _cardDragStartHandler;
             handView.OnCardDragEnd += _cardDragEndHandler;
             endTurnButton.OnClicked += OnEndTurn;
+            _turn.OnOpponentCardDestroyed += HandleOpponentCardDestroyed;
+            _turn.OnPlayerCardDestroyed += HandlePlayerCardDestroyed;
 
             if (winPanel != null)
                 winPanel.SetActive(false);
@@ -106,6 +108,12 @@ namespace CardsUnity
 
             if (endTurnButton != null)
                 endTurnButton.OnClicked -= OnEndTurn;
+
+            if (_turn != null)
+            {
+                _turn.OnOpponentCardDestroyed -= HandleOpponentCardDestroyed;
+                _turn.OnPlayerCardDestroyed -= HandlePlayerCardDestroyed;
+            }
         }
 
         private static DeckState BuildDeck(List<CardDefinition> cards, System.Random rng)
@@ -159,6 +167,26 @@ namespace CardsUnity
 
             RefreshUI();
             CheckEndCondition();
+        }
+
+        private void HandleOpponentCardDestroyed() => EvaluateStoryEffects(StoryEffectTrigger.OnOpponentCardDestroyed);
+        private void HandlePlayerCardDestroyed() => EvaluateStoryEffects(StoryEffectTrigger.OnPlayerCardDestroyed);
+
+        private void EvaluateStoryEffects(StoryEffectTrigger trigger)
+        {
+            if (_storyDeck?.ActiveCard?.effects == null) return;
+
+            foreach (var effect in _storyDeck.ActiveCard.effects)
+            {
+                if (effect == null || effect.trigger != trigger) continue;
+
+                switch (effect.action)
+                {
+                    case StoryEffectAction.IncrementStoryClock:
+                        IncrementStoryClock(effect.actionValue);
+                        break;
+                }
+            }
         }
 
         private void OnEndTurn()

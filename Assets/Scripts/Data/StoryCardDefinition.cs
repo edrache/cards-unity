@@ -9,7 +9,7 @@ namespace CardsUnity
         public string title;
         [TextArea] public string content;
         public Sprite artwork;
-        public List<CardEffectTag> effects;
+        public List<StoryEffectDefinition> effects;
         [Min(1)] public int clockMaxValue;
     }
 }
