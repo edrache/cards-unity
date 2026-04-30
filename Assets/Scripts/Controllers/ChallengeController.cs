@@ -18,6 +18,7 @@ namespace CardsUnity
         [SerializeField] private GameObject winPanel;
         [SerializeField] private GameObject losePanel;
         [SerializeField] private StoryDeckDefinition storyDeck;
+        [SerializeField] private StoryCardView storyCardView;
 
         private TurnController _turn;
         private HandState _hand;
@@ -179,6 +180,9 @@ namespace CardsUnity
 
             if (playedCardCounterView != null)
                 playedCardCounterView.Refresh(_playedCardCounters);
+
+            if (storyCardView != null)
+                storyCardView.Refresh(_storyDeck?.ActiveCard, _storyDeck?.ActiveCardClock);
         }
 
         private void CheckEndCondition()
