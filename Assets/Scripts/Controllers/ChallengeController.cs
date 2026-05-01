@@ -239,8 +239,9 @@ namespace CardsUnity
 
         private void CheckEndCondition()
         {
-            if (_opponentClock.IsFull && winPanel != null)
-                winPanel.SetActive(true);
+            // Opponent clock no longer ends the run in the current prototype.
+            // if (_opponentClock.IsFull && winPanel != null)
+            //     winPanel.SetActive(true);
 
             if (_playerClock.IsFull && losePanel != null)
                 losePanel.SetActive(true);
@@ -248,7 +249,8 @@ namespace CardsUnity
 
         private bool IsGameOver()
         {
-            return _playerClock.IsFull || _opponentClock.IsFull;
+            // return _playerClock.IsFull || _opponentClock.IsFull;
+            return _playerClock.IsFull;
         }
 
         public void Restart()

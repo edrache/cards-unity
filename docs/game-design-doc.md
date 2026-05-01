@@ -276,7 +276,9 @@ To re-engage with a fatigued card, the player must return it to hand and play it
 
 ### Current Implementation
 
-`ClockState` tracks `CurrentValue` and `MaxValue`. `IsFull` triggers win/loss. Clock max = deck size (player or opponent).
+`ClockState` tracks `CurrentValue` and `MaxValue`. Clock max = deck size (player or opponent).
+
+Current prototype note: only the player clock currently ends the run. The opponent clock still fills for progression feedback, but its win-condition hook is temporarily disabled.
 
 - Destroying an opponent card → `_opponentClock.Increment(1)`
 - Losing a player card → `_playerClock.Increment(1)`
@@ -505,3 +507,4 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | 2026-05-01 | Added `IncreaseOpponentCardsOfTypeValue` slot effect action with `targetCardType` filtering for buffing matching opponent cards already on the board |
 | 2026-05-01 | Added `OnOpponentCardPlaced` slot-effect trigger and `IncreaseAppearingOpponentCardOfTypeValue` for one-time buffs applied only to the newly spawned matching opponent card |
 | 2026-05-01 | Updated `SlotView` to concatenate multiple effect descriptions from the same context into one multi-line label instead of overwriting earlier text |
+| 2026-05-01 | Disabled the prototype win-condition hook for a full opponent clock so only the player clock ends the run for now |
