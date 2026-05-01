@@ -6,6 +6,8 @@ namespace CardsUnity
         AddToClock,
         ReturnCardsFromSlots,
         DrawToHandLimit,
-        TurnEnd
+        TurnEnd,
+        IncreaseOpponentCardsOfTypeValue,
+        IncreaseAppearingOpponentCardOfTypeValue
     }
 }

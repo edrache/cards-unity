@@ -178,22 +178,29 @@ namespace CardsUnity
 
                 var card = _opponentDeck.Draw();
                 if (card != null)
+                {
                     slot.OpponentCard = new CardInstance(card);
+                    EvaluateSlotEffects(SlotEffectTrigger.OnOpponentCardPlaced, slot, slot.OpponentCard);
+                }
             }
         }
 
-        private void EvaluateSlotEffects(SlotEffectTrigger trigger)
+        private void EvaluateSlotEffects(SlotEffectTrigger trigger, SlotState triggeredSlot = null, CardInstance triggeringOpponentCard = null)
         {
             foreach (var slot in _board.Slots)
             {
                 if (!slot.IsActive)
                     continue;
 
-                EvaluateSlotEffectsForSlot(slot, trigger);
+                EvaluateSlotEffectsForSlot(slot, trigger, triggeredSlot, triggeringOpponentCard);
             }
         }
 
-        private void EvaluateSlotEffectsForSlot(SlotState slot, SlotEffectTrigger trigger)
+        private void EvaluateSlotEffectsForSlot(
+            SlotState slot,
+            SlotEffectTrigger trigger,
+            SlotState triggeredSlot = null,
+            CardInstance triggeringOpponentCard = null)
         {
             if (slot.Definition?.effects == null)
                 return;
@@ -206,7 +213,7 @@ namespace CardsUnity
                 if (!IsContextConditionMet(effect.context, slot))
                     continue;
 
-                ExecuteSlotEffect(effect, slot);
+                ExecuteSlotEffect(effect, slot, triggeredSlot, triggeringOpponentCard);
             }
         }
 
@@ -221,7 +228,11 @@ namespace CardsUnity
             };
         }
 
-        private void ExecuteSlotEffect(SlotEffectDefinition effect, SlotState slot)
+        private void ExecuteSlotEffect(
+            SlotEffectDefinition effect,
+            SlotState slot,
+            SlotState triggeredSlot = null,
+            CardInstance triggeringOpponentCard = null)
         {
             switch (effect.action)
             {
@@ -242,6 +253,12 @@ namespace CardsUnity
                     EndTurn();
                     _turnEndedByEffect = true;
                     break;
+                case SlotEffectAction.IncreaseOpponentCardsOfTypeValue:
+                    IncreaseOpponentCardsOfTypeValue(effect.targetCardType, effect.actionValue);
+                    break;
+                case SlotEffectAction.IncreaseAppearingOpponentCardOfTypeValue:
+                    IncreaseAppearingOpponentCardOfTypeValue(triggeringOpponentCard, effect.targetCardType, effect.actionValue);
+                    break;
             }
         }
 
@@ -261,7 +278,10 @@ namespace CardsUnity
 
             var card = _opponentDeck.Draw();
             if (card != null)
+            {
                 slot.OpponentCard = new CardInstance(card);
+                EvaluateSlotEffects(SlotEffectTrigger.OnOpponentCardPlaced, slot, slot.OpponentCard);
+            }
         }
 
         // Intentionally includes the slot that triggered this effect: if a draw slot
@@ -297,6 +317,34 @@ namespace CardsUnity
                 if (card != null)
                     _playerHand.Add(new CardInstance(card));
             }
+        }
+
+        private void IncreaseOpponentCardsOfTypeValue(CardType targetCardType, int amount)
+        {
+            if (amount == 0)
+                return;
+
+            foreach (var boardSlot in _board.Slots)
+            {
+                if (!boardSlot.IsActive || boardSlot.OpponentCard?.Definition == null)
+                    continue;
+
+                if (boardSlot.OpponentCard.Definition.type != targetCardType)
+                    continue;
+
+                boardSlot.OpponentCard.CurrentValue += amount;
+            }
+        }
+
+        private static void IncreaseAppearingOpponentCardOfTypeValue(CardInstance card, CardType targetCardType, int amount)
+        {
+            if (card?.Definition == null || amount == 0)
+                return;
+
+            if (card.Definition.type != targetCardType)
+                return;
+
+            card.CurrentValue += amount;
         }
 
         private static bool CanHostPlayerCard(SlotState slot)

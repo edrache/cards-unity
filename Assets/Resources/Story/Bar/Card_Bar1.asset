@@ -19,5 +19,6 @@ MonoBehaviour:
     the table where information changes hands.'
   artwork: {fileID: 21300000, guid: ed93332a1a370474c8212f6be8c8684c, type: 3}
   effects:
+  - {fileID: 11400000, guid: 1b6fd90cac4e94e1da5033d82fb89870, type: 2}
   - {fileID: 11400000, guid: 175925f0d956e48babe067539bd7effb, type: 2}
   clockMaxValue: 3

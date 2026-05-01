@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CardsUnity;
 using UnityEngine;
 
@@ -7,81 +8,93 @@ namespace CardsUnity.UI
     public class BoardView : MonoBehaviour
     {
         [SerializeField] private SlotView[] slotViews;
+        [SerializeField] private Transform mainSlotContainer;
+        [SerializeField] private Transform passiveSlotContainer;
+        [SerializeField] private SlotView slotPrefab;
         [SerializeField] private CardView opponentCardPrefab;
 
         public Action<CardInstance, int> OnCardPlayed;
 
+        private readonly List<SlotView> _runtimeSlotViews = new();
+
         private void Awake()
         {
-            if (slotViews == null)
-                return;
+            if (mainSlotContainer == null)
+                mainSlotContainer = transform;
 
-            for (int i = 0; i < slotViews.Length; i++)
-            {
-                var slotView = slotViews[i];
-                if (slotView == null)
-                    continue;
-
-                int slotIndex = i;
-                slotView.SlotIndex = slotIndex;
-                slotView.ApplyDefinition(slotView.Definition);
-                slotView.OnCardDropped += (cardView, droppedSlotIndex) =>
-                    OnCardPlayed?.Invoke(cardView.Card, droppedSlotIndex);
-            }
+            RegisterAllSlotViews();
         }
 
         public void Refresh(BoardState board)
         {
-            if (slotViews == null || board == null || board.Slots == null)
+            if (board == null || board.Slots == null)
                 return;
 
-            int count = Math.Min(slotViews.Length, board.Slots.Length);
+            RegisterAllSlotViews();
+            int count = Math.Min(_runtimeSlotViews.Count, board.Slots.Length);
             for (int i = 0; i < count; i++)
             {
+                var slotView = _runtimeSlotViews[i];
                 var slot = board.Slots[i];
-                if (slot == null)
+                if (slotView == null || slot == null)
                     continue;
 
-                slotViews[i].gameObject.SetActive(slot.IsActive);
+                slotView.gameObject.SetActive(slot.IsActive);
                 if (!slot.IsActive)
                 {
-                    slotViews[i].ClearPlayerCard();
-                    slotViews[i].ClearOpponentCard();
+                    slotView.ClearPlayerCard();
+                    slotView.ClearOpponentCard();
                     continue;
                 }
 
-                slotViews[i].ApplyDefinition(slot.Definition);
-                slotViews[i].SetHighlight(false);
+                slotView.ApplyDefinition(slot.Definition);
+                slotView.SetHighlight(false);
 
                 if (slot.HasPlayerCard)
-                    slotViews[i].ShowPlayerCard(slot.PlayerCard, opponentCardPrefab);
+                    slotView.ShowPlayerCard(slot.PlayerCard, opponentCardPrefab);
                 else
-                    slotViews[i].ClearPlayerCard();
+                    slotView.ClearPlayerCard();
 
                 if (slot.HasOpponentCard)
-                    slotViews[i].ShowOpponentCard(slot.OpponentCard, opponentCardPrefab);
+                    slotView.ShowOpponentCard(slot.OpponentCard, opponentCardPrefab);
                 else
-                    slotViews[i].ClearOpponentCard();
+                    slotView.ClearOpponentCard();
             }
 
-            for (int i = count; i < slotViews.Length; i++)
+            for (int i = count; i < _runtimeSlotViews.Count; i++)
             {
-                if (slotViews[i] == null)
+                if (_runtimeSlotViews[i] == null)
                     continue;
 
-                slotViews[i].gameObject.SetActive(false);
-                slotViews[i].SetHighlight(false);
-                slotViews[i].ClearPlayerCard();
-                slotViews[i].ClearOpponentCard();
+                _runtimeSlotViews[i].gameObject.SetActive(false);
+                _runtimeSlotViews[i].SetHighlight(false);
+                _runtimeSlotViews[i].ClearPlayerCard();
+                _runtimeSlotViews[i].ClearOpponentCard();
             }
+        }
+
+        public int CreateRuntimeSlot(SlotDefinition definition)
+        {
+            if (slotPrefab == null)
+            {
+                Debug.LogError("BoardView is missing a slotPrefab reference.");
+                return -1;
+            }
+
+            var parent = ResolveContainer(definition);
+            var slotView = Instantiate(slotPrefab, parent);
+            slotView.name = definition != null ? $"Slot_Runtime_{definition.name}" : "Slot_Runtime";
+            slotView.gameObject.SetActive(true);
+            slotView.ApplyDefinition(definition);
+            RegisterSlotView(slotView);
+            return slotView.SlotIndex;
         }
 
         public void SetHighlightAll(bool active)
         {
-            if (slotViews == null)
-                return;
+            RegisterAllSlotViews();
 
-            foreach (var slotView in slotViews)
+            foreach (var slotView in _runtimeSlotViews)
             {
                 if (slotView != null)
                     slotView.SetHighlight(active);
@@ -90,52 +103,49 @@ namespace CardsUnity.UI
 
         public void ConfigureSlots(SlotDefinition[] definitions)
         {
-            if (slotViews == null)
-                return;
+            RegisterAllSlotViews();
 
             if (definitions == null)
             {
-                for (int i = 0; i < slotViews.Length; i++)
+                for (int i = 0; i < _runtimeSlotViews.Count; i++)
                 {
-                    if (slotViews[i] != null)
-                        slotViews[i].ApplyDefinition(null);
+                    if (_runtimeSlotViews[i] != null)
+                        _runtimeSlotViews[i].ApplyDefinition(null);
                 }
 
                 return;
             }
 
-            int count = Math.Min(slotViews.Length, definitions.Length);
+            int count = Math.Min(_runtimeSlotViews.Count, definitions.Length);
             for (int i = 0; i < count; i++)
             {
-                if (slotViews[i] != null)
-                    slotViews[i].ApplyDefinition(definitions[i]);
+                if (_runtimeSlotViews[i] != null)
+                    _runtimeSlotViews[i].ApplyDefinition(definitions[i]);
             }
 
-            for (int i = count; i < slotViews.Length; i++)
+            for (int i = count; i < _runtimeSlotViews.Count; i++)
             {
-                if (slotViews[i] != null)
-                    slotViews[i].ApplyDefinition(null);
+                if (_runtimeSlotViews[i] != null)
+                    _runtimeSlotViews[i].ApplyDefinition(null);
             }
         }
 
         public SlotDefinition[] GetSceneSlotDefinitions()
         {
-            if (slotViews == null)
-                return Array.Empty<SlotDefinition>();
+            RegisterAllSlotViews();
 
-            var definitions = new SlotDefinition[slotViews.Length];
-            for (int i = 0; i < slotViews.Length; i++)
-                definitions[i] = slotViews[i] != null ? slotViews[i].Definition : null;
+            var definitions = new SlotDefinition[_runtimeSlotViews.Count];
+            for (int i = 0; i < _runtimeSlotViews.Count; i++)
+                definitions[i] = _runtimeSlotViews[i] != null ? _runtimeSlotViews[i].Definition : null;
 
             return definitions;
         }
 
         public bool HasAnySceneSlotDefinitions()
         {
-            if (slotViews == null)
-                return false;
+            RegisterAllSlotViews();
 
-            foreach (var slotView in slotViews)
+            foreach (var slotView in _runtimeSlotViews)
             {
                 if (slotView != null && slotView.Definition != null)
                     return true;
@@ -146,14 +156,69 @@ namespace CardsUnity.UI
 
         public bool[] GetSceneSlotActiveStates()
         {
-            if (slotViews == null)
-                return Array.Empty<bool>();
+            RegisterAllSlotViews();
 
-            var activeStates = new bool[slotViews.Length];
-            for (int i = 0; i < slotViews.Length; i++)
-                activeStates[i] = slotViews[i] != null && slotViews[i].StartsActiveInBoard;
+            var activeStates = new bool[_runtimeSlotViews.Count];
+            for (int i = 0; i < _runtimeSlotViews.Count; i++)
+                activeStates[i] = _runtimeSlotViews[i] != null && _runtimeSlotViews[i].StartsActiveInBoard;
 
             return activeStates;
+        }
+
+        private Transform ResolveContainer(SlotDefinition definition)
+        {
+            if (definition != null && definition.spawnInPassiveContainer && passiveSlotContainer != null)
+                return passiveSlotContainer;
+
+            return mainSlotContainer != null ? mainSlotContainer : transform;
+        }
+
+        private void RegisterAllSlotViews()
+        {
+            _runtimeSlotViews.Clear();
+
+            if (slotViews != null)
+            {
+                foreach (var slotView in slotViews)
+                {
+                    if (slotView != null)
+                        _runtimeSlotViews.Add(slotView);
+                }
+            }
+
+            var discoveredViews = GetComponentsInChildren<SlotView>(true);
+            foreach (var slotView in discoveredViews)
+            {
+                if (slotView == null || _runtimeSlotViews.Contains(slotView))
+                    continue;
+
+                _runtimeSlotViews.Add(slotView);
+            }
+
+            for (int i = 0; i < _runtimeSlotViews.Count; i++)
+                WireSlotView(_runtimeSlotViews[i], i);
+        }
+
+        private void RegisterSlotView(SlotView slotView)
+        {
+            if (slotView == null)
+                return;
+
+            RegisterAllSlotViews();
+            int index = _runtimeSlotViews.IndexOf(slotView);
+            if (index >= 0)
+                WireSlotView(slotView, index);
+        }
+
+        private void WireSlotView(SlotView slotView, int index)
+        {
+            if (slotView == null)
+                return;
+
+            slotView.SlotIndex = index;
+            slotView.ApplyDefinition(slotView.Definition);
+            slotView.OnCardDropped = (cardView, droppedSlotIndex) =>
+                OnCardPlayed?.Invoke(cardView.Card, droppedSlotIndex);
         }
     }
 }

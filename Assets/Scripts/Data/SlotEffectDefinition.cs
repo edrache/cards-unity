@@ -9,6 +9,7 @@ namespace CardsUnity
         public SlotEffectTrigger trigger;
         public SlotEffectAction action;
         public int actionValue;
+        public CardType targetCardType;
         public ClockTarget clockTarget;
         [TextArea] public string description;
     }

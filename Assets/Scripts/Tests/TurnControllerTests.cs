@@ -421,6 +421,111 @@ namespace CardsUnity.Tests
         }
 
         [Test]
+        public void StartTurn_IncreaseOpponentCardsOfTypeValue_increases_only_matching_opponent_cards()
+        {
+            var def = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnPlayerTurnStart,
+                SlotEffectAction.IncreaseOpponentCardsOfTypeValue,
+                actionValue: 2);
+            def.effects[0].targetCardType = CardType.Presence;
+
+            var board = new BoardState(new SlotDefinition[] { def, null, null });
+            board.Slots[1].OpponentCard = new CardInstance(MakeCardDef(CardType.Presence, 4));
+            board.Slots[2].OpponentCard = new CardInstance(MakeCardDef(CardType.Wit, 5));
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+
+            Assert.AreEqual(6, board.Slots[1].OpponentCard.CurrentValue);
+            Assert.AreEqual(5, board.Slots[2].OpponentCard.CurrentValue);
+        }
+
+        [Test]
+        public void StartTurn_IncreaseOpponentCardsOfTypeValue_increases_matching_card_on_effect_slot_too()
+        {
+            var def = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnPlayerTurnStart,
+                SlotEffectAction.IncreaseOpponentCardsOfTypeValue,
+                actionValue: 3);
+            def.effects[0].targetCardType = CardType.Presence;
+
+            var board = new BoardState(new SlotDefinition[] { def, null, null });
+            board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Presence, 2));
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+
+            Assert.AreEqual(5, board.Slots[0].OpponentCard.CurrentValue);
+        }
+
+        [Test]
+        public void EndTurn_IncreaseAppearingOpponentCardOfTypeValue_buffs_only_newly_placed_matching_card()
+        {
+            var effectSlotDef = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnOpponentCardPlaced,
+                SlotEffectAction.IncreaseAppearingOpponentCardOfTypeValue,
+                actionValue: 2);
+            effectSlotDef.effects[0].targetCardType = CardType.Presence;
+
+            var board = new BoardState(new SlotDefinition[] { effectSlotDef, null, null });
+            var existingCard = new CardInstance(MakeCardDef(CardType.Presence, 7));
+            board.Slots[0].OpponentCard = existingCard;
+            var turn = MakeTurnWithBoard(board);
+
+            turn.EndTurn();
+
+            Assert.AreEqual(7, board.Slots[0].OpponentCard.CurrentValue);
+            Assert.AreEqual(6, board.Slots[1].OpponentCard.CurrentValue);
+            Assert.AreEqual(6, board.Slots[2].OpponentCard.CurrentValue);
+        }
+
+        [Test]
+        public void StartTurn_DrawOpponentCard_can_trigger_IncreaseAppearingOpponentCardOfTypeValue_once()
+        {
+            var drawSlotDef = MakeSlotDefinition(
+                SlotEffectContext.NoOpponentCard,
+                SlotEffectTrigger.OnPlayerTurnStart,
+                SlotEffectAction.DrawOpponentCard);
+            drawSlotDef.hasOpponentCardSpot = true;
+
+            var passiveBuffSlotDef = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnOpponentCardPlaced,
+                SlotEffectAction.IncreaseAppearingOpponentCardOfTypeValue,
+                actionValue: 3);
+            passiveBuffSlotDef.effects[0].targetCardType = CardType.Presence;
+
+            var board = new BoardState(new SlotDefinition[] { drawSlotDef, passiveBuffSlotDef, null });
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+
+            Assert.AreEqual(7, board.Slots[0].OpponentCard.CurrentValue);
+        }
+
+        [Test]
+        public void EndTurn_IncreaseAppearingOpponentCardOfTypeValue_does_not_buff_non_matching_card()
+        {
+            var effectSlotDef = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnOpponentCardPlaced,
+                SlotEffectAction.IncreaseAppearingOpponentCardOfTypeValue,
+                actionValue: 2);
+            effectSlotDef.effects[0].targetCardType = CardType.Force;
+
+            var board = new BoardState(new SlotDefinition[] { effectSlotDef, null, null });
+            var turn = MakeTurnWithBoard(board);
+
+            turn.EndTurn();
+
+            Assert.AreEqual(4, board.Slots[1].OpponentCard.CurrentValue);
+            Assert.AreEqual(4, board.Slots[2].OpponentCard.CurrentValue);
+        }
+
+        [Test]
         public void PlayCard_does_not_place_card_on_slot_without_player_spot()
         {
             var def = MakeSlotDefinition(

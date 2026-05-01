@@ -4,7 +4,7 @@ namespace CardsUnity
 {
     public class BoardState
     {
-        public SlotState[] Slots { get; }
+        public SlotState[] Slots { get; private set; }
 
         public BoardState(int slotCount)
         {
@@ -32,6 +32,16 @@ namespace CardsUnity
                 bool isActive = activeStates == null || i >= activeStates.Length || activeStates[i];
                 Slots[i] = new SlotState(definitions[i], isActive);
             }
+        }
+
+        public int AddSlot(SlotDefinition definition, bool isActive = true)
+        {
+            int newIndex = Slots.Length;
+            var resizedSlots = Slots;
+            Array.Resize(ref resizedSlots, newIndex + 1);
+            resizedSlots[newIndex] = new SlotState(definition, isActive);
+            Slots = resizedSlots;
+            return newIndex;
         }
     }
 }

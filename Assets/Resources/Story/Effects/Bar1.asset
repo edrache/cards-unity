@@ -19,7 +19,11 @@ MonoBehaviour:
   description: Each defeated opponent card fills the story clock
   forceOutcome:
     deckMutations: []
-    slotMutations: []
+    slotMutations:
+    - mode: 1
+      slotIndex: 0
+      active: 0
+      slotDefinition: {fileID: 11400000, guid: 0b8db634a92ad4fb699e9e73ab05b01a, type: 2}
   presenceOutcome:
     deckMutations: []
     slotMutations: []

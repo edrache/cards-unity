@@ -24,6 +24,12 @@ namespace CardsUnity
         DiscardPile,
     }
 
+    public enum StoryEffectSlotMutationMode
+    {
+        UpdateExisting,
+        Add,
+    }
+
     [Serializable]
     public class StoryEffectDeckMutation
     {
@@ -35,6 +41,7 @@ namespace CardsUnity
     [Serializable]
     public class StoryEffectSlotMutation
     {
+        public StoryEffectSlotMutationMode mode;
         [Min(0)] public int slotIndex;
         public bool active = true;
         public SlotDefinition slotDefinition;

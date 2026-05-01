@@ -306,11 +306,12 @@ These tags exist on `CardDefinition.effects` but **are not evaluated** by any ru
 
 **Slot effects** — `SlotEffectDefinition` (ScriptableObject) fields:
 - `context` — `SlotEffectContext`: `NoOpponentCard`, `NoPlayerCard`, `Passive`
-- `trigger` — `SlotEffectTrigger`: `OnPlayerTurnStart`, `OnCardPlayed`
-- `action` — `SlotEffectAction`: `DrawOpponentCard`, `AddToClock`, `ReturnCardsFromSlots`, `DrawToHandLimit`, `TurnEnd`
+- `trigger` — `SlotEffectTrigger`: `OnPlayerTurnStart`, `OnCardPlayed`, `OnOpponentCardPlaced`
+- `action` — `SlotEffectAction`: `DrawOpponentCard`, `AddToClock`, `ReturnCardsFromSlots`, `DrawToHandLimit`, `TurnEnd`, `IncreaseOpponentCardsOfTypeValue`, `IncreaseAppearingOpponentCardOfTypeValue`
 - `actionValue` — `int` used by `AddToClock`
+- `targetCardType` — `CardType` used by `IncreaseOpponentCardsOfTypeValue` and `IncreaseAppearingOpponentCardOfTypeValue`
 - `clockTarget` — `ClockTarget`: `PlayerClock`, `OpponentClock`
-- `description` — `string` shown in `SlotView`
+- `description` — `string` shown in `SlotView`; multiple effects in the same context are concatenated into one multi-line label
 
 Slot effects **are evaluated at runtime** by `TurnController`.
 
@@ -321,6 +322,8 @@ Slot effects **are evaluated at runtime** by `TurnController`.
 | `ReturnCardsFromSlots` | `OnCardPlayed` | `Passive` | Return all player cards currently on the board to hand |
 | `DrawToHandLimit` | `OnCardPlayed` | `Passive` | Draw from the player deck until hand reaches `draftValue` |
 | `TurnEnd` | `OnCardPlayed` | `Passive` | Run the full end-turn sequence immediately: return player cards, clear player slots, and refill opponent slots |
+| `IncreaseOpponentCardsOfTypeValue` | `OnPlayerTurnStart` or `OnCardPlayed` | `Passive` | Increase `CurrentValue` by `actionValue` for every opponent card on the board whose `CardType` matches `targetCardType` |
+| `IncreaseAppearingOpponentCardOfTypeValue` | `OnOpponentCardPlaced` | `Passive` | Increase `CurrentValue` by `actionValue` only for the opponent card that has just been placed, if its `CardType` matches `targetCardType` |
 
 ### Planned: Trigger + Action Structure
 
@@ -443,6 +446,7 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 - Reusable UI outline renderer for `Canvas` elements via `RectOutlineGraphic` (`MaskableGraphic` + shader) with configurable thickness, color, rounded corners, solid/dashed mode, dash length, gap length, dash offset, and fixed vs edge-fitted dash distribution
 - Story card data model: `StoryCardDefinition`, `StoryDeckDefinition` ScriptableObjects with `StoryDrawMode` (Sequential/Random); `StoryDeckState` runtime class with clock-driven `AdvanceCard()`; `ChallengeController.IncrementStoryClock(int)` entry point
 - Story card effects can resolve on story-clock completion from global played-card counters, use RPS to break two-way ties, use a dedicated full-tie branch, optionally hide from the story-card UI, and mutate decks or passive board slots
+- Runtime-spawned story slots can now be instantiated directly from story effects; `SlotDefinition.spawnInPassiveContainer` routes them into `BoardView.passiveSlotContainer` for passive-effect layout separation
 
 ### Current Story Content
 
@@ -497,3 +501,7 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | 2026-05-01 | Added 10 `CardDefinition` prototype assets for the `Bar` tavern information-gathering encounter set under `Assets/Resources/Cards/Bar/` |
 | 2026-05-01 | Added three `StoryCardDefinition` prototype assets for the `Bar` encounter and assigned them sequentially in `Assets/Resources/Story/Bar/Story_Bar.asset` |
 | 2026-05-01 | Expanded `StoryEffectDefinition` with story-clock completion resolution, played-card counter dominance, RPS tiebreaks, a full-tie branch, optional story-card visibility, and deck/slot mutations for passive story slots |
+| 2026-05-01 | Added runtime story-slot spawning via `StoryEffectSlotMutationMode.Add`, plus `SlotDefinition.spawnInPassiveContainer` and `BoardView.passiveSlotContainer` support for passive-slot placement |
+| 2026-05-01 | Added `IncreaseOpponentCardsOfTypeValue` slot effect action with `targetCardType` filtering for buffing matching opponent cards already on the board |
+| 2026-05-01 | Added `OnOpponentCardPlaced` slot-effect trigger and `IncreaseAppearingOpponentCardOfTypeValue` for one-time buffs applied only to the newly spawned matching opponent card |
+| 2026-05-01 | Updated `SlotView` to concatenate multiple effect descriptions from the same context into one multi-line label instead of overwriting earlier text |

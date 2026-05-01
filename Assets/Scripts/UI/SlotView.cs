@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CardsUnity;
 using TMPro;
 using UnityEngine;
@@ -109,37 +110,46 @@ namespace CardsUnity.UI
             EnsureEffectLabels();
             ApplySpotAvailability();
 
-            ApplyEffectLabel(noOpponentCardEffectLabel, null);
-            ApplyEffectLabel(noPlayerCardEffectLabel, null);
-            ApplyEffectLabel(passiveEffectLabel, null);
-
             if (definition?.effects == null)
+            {
+                ApplyEffectLabel(noOpponentCardEffectLabel, null);
+                ApplyEffectLabel(noPlayerCardEffectLabel, null);
+                ApplyEffectLabel(passiveEffectLabel, null);
                 return;
+            }
+
+            var noOpponentDescriptions = new List<string>();
+            var noPlayerDescriptions = new List<string>();
+            var passiveDescriptions = new List<string>();
 
             foreach (var effect in definition.effects)
             {
-                if (effect == null)
+                if (effect == null || string.IsNullOrWhiteSpace(effect.description))
                     continue;
 
                 if (effect.trigger == SlotEffectTrigger.OnCardPlayed)
                 {
-                    ApplyEffectLabel(noPlayerCardEffectLabel, effect.description);
+                    noPlayerDescriptions.Add(effect.description);
                     continue;
                 }
 
                 switch (effect.context)
                 {
                     case SlotEffectContext.NoOpponentCard:
-                        ApplyEffectLabel(noOpponentCardEffectLabel, effect.description);
+                        noOpponentDescriptions.Add(effect.description);
                         break;
                     case SlotEffectContext.NoPlayerCard:
-                        ApplyEffectLabel(noPlayerCardEffectLabel, effect.description);
+                        noPlayerDescriptions.Add(effect.description);
                         break;
                     case SlotEffectContext.Passive:
-                        ApplyEffectLabel(passiveEffectLabel, effect.description);
+                        passiveDescriptions.Add(effect.description);
                         break;
                 }
             }
+
+            ApplyEffectLabel(noOpponentCardEffectLabel, JoinEffectDescriptions(noOpponentDescriptions));
+            ApplyEffectLabel(noPlayerCardEffectLabel, JoinEffectDescriptions(noPlayerDescriptions));
+            ApplyEffectLabel(passiveEffectLabel, JoinEffectDescriptions(passiveDescriptions));
         }
 
         public void ApplyDefinition(SlotDefinition definition)
@@ -165,6 +175,14 @@ namespace CardsUnity.UI
 
             label.text = text ?? string.Empty;
             label.gameObject.SetActive(!string.IsNullOrEmpty(text));
+        }
+
+        private static string JoinEffectDescriptions(List<string> descriptions)
+        {
+            if (descriptions == null || descriptions.Count == 0)
+                return null;
+
+            return string.Join("\n", descriptions);
         }
 
         private void ApplySpotAvailability()
@@ -208,8 +226,8 @@ namespace CardsUnity.UI
 
             var label = labelObject.GetComponent<TextMeshProUGUI>();
             label.fontSize = 11f;
-            label.textWrappingMode = TextWrappingModes.NoWrap;
-            label.overflowMode = TextOverflowModes.Ellipsis;
+            label.textWrappingMode = TextWrappingModes.Normal;
+            label.overflowMode = TextOverflowModes.Overflow;
             label.alignment = TextAlignmentOptions.Center;
             label.color = new Color(0.91f, 0.89f, 0.83f, 0.92f);
             label.raycastTarget = false;

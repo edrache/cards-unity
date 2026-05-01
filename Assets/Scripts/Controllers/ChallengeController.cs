@@ -306,6 +306,12 @@ namespace CardsUnity
             if (slotMutation == null || _board?.Slots == null)
                 return;
 
+            if (slotMutation.mode == StoryEffectSlotMutationMode.Add)
+            {
+                AddRuntimeStorySlot(slotMutation.slotDefinition);
+                return;
+            }
+
             if (slotMutation.slotIndex < 0 || slotMutation.slotIndex >= _board.Slots.Length)
                 return;
 
@@ -327,6 +333,20 @@ namespace CardsUnity
 
             if (slot.HasOpponentCard && slot.Definition != null && !slot.Definition.hasOpponentCardSpot)
                 slot.OpponentCard = null;
+        }
+
+        private void AddRuntimeStorySlot(SlotDefinition definition)
+        {
+            if (definition == null)
+                return;
+
+            int slotIndex = _board.AddSlot(definition);
+            if (boardView == null)
+                return;
+
+            int createdIndex = boardView.CreateRuntimeSlot(definition);
+            if (createdIndex >= 0 && createdIndex != slotIndex)
+                Debug.LogWarning($"Runtime slot index mismatch. BoardState={slotIndex}, BoardView={createdIndex}.");
         }
 
         private void ReturnPlayerCardToHand(SlotState slot)

@@ -10,6 +10,8 @@ namespace CardsUnity
         public bool hasOpponentCardSpot = true;
         [Tooltip("If true, the player can drag a card onto this slot.")]
         public bool hasPlayerCardSpot = true;
+        [Tooltip("If true, runtime-spawned instances of this slot are parented under BoardView.passiveSlotContainer instead of the main board container.")]
+        public bool spawnInPassiveContainer;
         [Tooltip("If true, cards played into this slot contribute to the global played-card counters.")]
         public bool contributesToGlobalPlayedCardCounts;
         [Tooltip("Controls whether this slot contributes the card's current value or a fixed value to the global played-card counters.")]
