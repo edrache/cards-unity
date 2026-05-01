@@ -10,9 +10,9 @@ The prototype is intentionally narrow in scope. It exists to validate the core c
 
 The player navigates a sequence of abstract confrontations using cards that represent tactical approaches rather than literal attacks. Each card belongs to one of three strategic archetypes:
 
-- `Pressure`
-- `Appeal`
-- `Positioning`
+- `Force`
+- `Presence`
+- `Wit`
 
 These archetypes form the core identity of the game. They create readable matchups, support prediction and counterplay, and make even a small deck feel expressive.
 
@@ -48,9 +48,9 @@ Runtime cards are represented as instances with mutable `CurrentValue`, which al
 
 The repository currently includes three sample card definitions:
 
-- `Bold Move` (`Pressure`, value `4`)
-- `Sweet Talk` (`Appeal`, value `3`)
-- `Maneuver` (`Positioning`, value `5`)
+- `Bold Move` (`Force`, value `4`)
+- `Sweet Talk` (`Presence`, value `3`)
+- `Maneuver` (`Wit`, value `5`)
 
 These are starter prototype assets used to validate the loop rather than a final content set.
 
@@ -58,9 +58,9 @@ These are starter prototype assets used to validate the loop rather than a final
 
 The game uses a rock-paper-scissors relationship:
 
-- `Pressure` beats `Appeal`
-- `Appeal` beats `Positioning`
-- `Positioning` beats `Pressure`
+- `Force` beats `Presence`
+- `Presence` beats `Wit`
+- `Wit` beats `Force`
 - Matching types result in a draw
 
 This relationship is the main source of deterministic advantage in combat.

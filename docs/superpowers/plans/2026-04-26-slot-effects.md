@@ -405,7 +405,7 @@ public void StartTurn_DrawOpponentCard_does_not_replace_existing_opponent_card()
         SlotEffectTrigger.OnPlayerTurnStart,
         SlotEffectAction.DrawOpponentCard);
     var board = new BoardState(new SlotDefinition[] { def, null, null });
-    var existing = new CardInstance(MakeCardDef(CardType.Appeal, 5));
+    var existing = new CardInstance(MakeCardDef(CardType.Presence, 5));
     board.Slots[0].OpponentCard = existing;
     var turn = MakeTurnWithBoard(board);
 
@@ -449,7 +449,7 @@ public void StartTurn_AddToClock_does_not_fire_when_player_card_present()
         actionValue: 2,
         clockTarget: ClockTarget.PlayerClock);
     var board = new BoardState(new SlotDefinition[] { def, null, null });
-    board.Slots[0].PlayerCard = new CardInstance(MakeCardDef(CardType.Pressure, 3));
+    board.Slots[0].PlayerCard = new CardInstance(MakeCardDef(CardType.Force, 3));
     var turn = MakeTurnWithBoard(board);
 
     turn.StartTurn();
@@ -470,7 +470,7 @@ public void PlayCard_ReturnCardsFromSlots_returns_all_board_cards_to_hand()
         SlotEffectAction.ReturnCardsFromSlots);
     var board = new BoardState(new SlotDefinition[] { null, null, drawSlotDef });
     // manually place a card in slot 0 (simulating a card already on board)
-    board.Slots[0].PlayerCard = new CardInstance(MakeCardDef(CardType.Pressure, 3));
+    board.Slots[0].PlayerCard = new CardInstance(MakeCardDef(CardType.Force, 3));
     var turn = MakeTurnWithBoard(board);
 
     turn.StartTurn(); // draws 3 cards

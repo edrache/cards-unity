@@ -2,9 +2,9 @@ namespace CardsUnity
 {
     public class PlayedCardCounterState
     {
-        public int Pressure { get; private set; }
-        public int Appeal { get; private set; }
-        public int Positioning { get; private set; }
+        public int Force { get; private set; }
+        public int Presence { get; private set; }
+        public int Wit { get; private set; }
 
         public void Add(CardType type, int amount)
         {
@@ -13,14 +13,14 @@ namespace CardsUnity
 
             switch (type)
             {
-                case CardType.Pressure:
-                    Pressure += amount;
+                case CardType.Force:
+                    Force += amount;
                     break;
-                case CardType.Appeal:
-                    Appeal += amount;
+                case CardType.Presence:
+                    Presence += amount;
                     break;
-                case CardType.Positioning:
-                    Positioning += amount;
+                case CardType.Wit:
+                    Wit += amount;
                     break;
             }
         }
@@ -29,18 +29,18 @@ namespace CardsUnity
         {
             return type switch
             {
-                CardType.Pressure => Pressure,
-                CardType.Appeal => Appeal,
-                CardType.Positioning => Positioning,
+                CardType.Force => Force,
+                CardType.Presence => Presence,
+                CardType.Wit => Wit,
                 _ => 0
             };
         }
 
         public void Reset()
         {
-            Pressure = 0;
-            Appeal = 0;
-            Positioning = 0;
+            Force = 0;
+            Presence = 0;
+            Wit = 0;
         }
     }
 }

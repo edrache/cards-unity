@@ -1,6 +1,6 @@
 # Card Game Design Summary
 
-*Last updated: 2026-04-25*
+*Last updated: 2026-05-01*
 
 ---
 
@@ -28,14 +28,14 @@ Each card belongs to one of three archetypes, which form a rock-paper-scissors c
 
 | Type | Description |
 |---|---|
-| `Pressure` | Force-based solutions |
-| `Appeal` | Charisma, charm, appearance |
-| `Positioning` | Planning, thinking, outmaneuvering |
+| `Force` | Direct, force-based solutions |
+| `Presence` | Social impact, charm, intimidation, and relational pressure |
+| `Wit` | Planning, thinking, and outmaneuvering |
 
 Matchup cycle:
-- `Pressure` beats `Appeal`
-- `Appeal` beats `Positioning`
-- `Positioning` beats `Pressure`
+- `Force` beats `Presence`
+- `Presence` beats `Wit`
+- `Wit` beats `Force`
 - Matching types result in a draw
 
 A potential fourth type is under consideration: a **typeless** type that always loses matchups. This would serve as a penalty card or story-driven downgrade.
@@ -172,7 +172,7 @@ Cards are divided into two categories:
 **Starter cards** — general-purpose actions that work across most situations (e.g., a generic Strike, Charm, or Scheme). These make up the player's initial deck.
 
 **Story cards** — cards that impose a global rule change on the entire table. Examples:
-- Pressure cards cannot be played until a specific clock fills or a specific opponent card is defeated.
+- Force cards cannot be played until a specific clock fills or a specific opponent card is defeated.
 - All cards of a given type are treated as a different type for the rest of the run.
 
 Story cards appear as consequences of gameplay events — things the player failed to prevent, or caused to happen. They carry narrative justification tied to those prior events.
@@ -282,7 +282,7 @@ Open question: does upgrading a card mean adding a new trigger+action entry, or 
 | Player starting deck size | 9 |
 | Opponent deck size | 5 |
 
-Sample player cards: `Bold Move` (Pressure, 4), `Sweet Talk` (Appeal, 3), `Maneuver` (Positioning, 5).
+Sample player cards: `Bold Move` (Force, 4), `Sweet Talk` (Presence, 3), `Maneuver` (Wit, 5).
 
 ---
 

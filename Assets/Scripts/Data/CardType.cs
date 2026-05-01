@@ -2,8 +2,8 @@ namespace CardsUnity
 {
     public enum CardType
     {
-        Pressure,
-        Appeal,
-        Positioning
+        Force,
+        Presence,
+        Wit
     }
 }

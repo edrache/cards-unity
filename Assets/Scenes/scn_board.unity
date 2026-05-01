@@ -268,7 +268,7 @@ GameObject:
   - component: {fileID: 98190911}
   - component: {fileID: 98190910}
   m_Layer: 5
-  m_Name: Pressure
+  m_Name: Force
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -314,7 +314,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Pressure
+  m_text: Force
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: b159a80a92873405cbbabe10e52dea44, type: 2}
   m_sharedMaterial: {fileID: -6323969258716915235, guid: b159a80a92873405cbbabe10e52dea44, type: 2}
@@ -1303,7 +1303,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 133.24, y: 0}
+  m_AnchoredPosition: {x: 113.15, y: 0}
   m_SizeDelta: {x: 136.3, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &358281149
@@ -1497,7 +1497,7 @@ GameObject:
   - component: {fileID: 397718843}
   - component: {fileID: 397718842}
   m_Layer: 5
-  m_Name: Positioning
+  m_Name: Wit
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1543,7 +1543,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Positioning
+  m_text: Wit
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: b159a80a92873405cbbabe10e52dea44, type: 2}
   m_sharedMaterial: {fileID: -6323969258716915235, guid: b159a80a92873405cbbabe10e52dea44, type: 2}
@@ -4109,7 +4109,7 @@ GameObject:
   - component: {fileID: 1418232602}
   - component: {fileID: 1418232601}
   m_Layer: 5
-  m_Name: Appeal
+  m_Name: Presence
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4155,7 +4155,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Appeal
+  m_text: Presence
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: b159a80a92873405cbbabe10e52dea44, type: 2}
   m_sharedMaterial: {fileID: -6323969258716915235, guid: b159a80a92873405cbbabe10e52dea44, type: 2}
@@ -4344,7 +4344,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 118.9, y: 0}
+  m_AnchoredPosition: {x: 138.9, y: 0}
   m_SizeDelta: {x: 136.3, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1460321475
@@ -4530,8 +4530,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -144.01564, y: -99.4}
-  m_SizeDelta: {x: 359.9707, y: 100}
+  m_AnchoredPosition: {x: -175.54366, y: -99.4}
+  m_SizeDelta: {x: 296.9147, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1586670363
 MonoBehaviour:
@@ -4571,9 +4571,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2fb493fb5f1304e19b68f177c4310175, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CardsUnity.Runtime::CardsUnity.UI.PlayedCardCounterView
-  pressureValueLabel: {fileID: 358281149}
-  appealValueLabel: {fileID: 1460321475}
-  positioningValueLabel: {fileID: 2019852002}
+  forceValueLabel: {fileID: 358281149}
+  presenceValueLabel: {fileID: 1460321475}
+  witValueLabel: {fileID: 2019852002}
 --- !u!1 &1595086513
 GameObject:
   m_ObjectHideFlags: 0
@@ -5398,7 +5398,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 147.7, y: 0}
+  m_AnchoredPosition: {x: 98.2, y: 0}
   m_SizeDelta: {x: 136.3, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2019852002

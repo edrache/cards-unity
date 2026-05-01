@@ -1,19 +1,23 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CardsUnity.UI
 {
     public class PlayedCardCounterView : MonoBehaviour
     {
-        [SerializeField] private TextMeshProUGUI pressureValueLabel;
-        [SerializeField] private TextMeshProUGUI appealValueLabel;
-        [SerializeField] private TextMeshProUGUI positioningValueLabel;
+        [FormerlySerializedAs("pressureValueLabel")]
+        [SerializeField] private TextMeshProUGUI forceValueLabel;
+        [FormerlySerializedAs("appealValueLabel")]
+        [SerializeField] private TextMeshProUGUI presenceValueLabel;
+        [FormerlySerializedAs("positioningValueLabel")]
+        [SerializeField] private TextMeshProUGUI witValueLabel;
 
         public void Refresh(PlayedCardCounterState state)
         {
-            SetLabel(pressureValueLabel, state?.Pressure ?? 0);
-            SetLabel(appealValueLabel, state?.Appeal ?? 0);
-            SetLabel(positioningValueLabel, state?.Positioning ?? 0);
+            SetLabel(forceValueLabel, state?.Force ?? 0);
+            SetLabel(presenceValueLabel, state?.Presence ?? 0);
+            SetLabel(witValueLabel, state?.Wit ?? 0);
         }
 
         private static void SetLabel(TextMeshProUGUI label, int value)

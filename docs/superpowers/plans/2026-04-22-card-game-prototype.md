@@ -164,9 +164,9 @@ namespace CardsUnity
 {
     public enum CardType
     {
-        Pressure,
-        Appeal,
-        Positioning
+        Force,
+        Presence,
+        Wit
     }
 }
 ```
@@ -267,26 +267,26 @@ namespace CardsUnity.Tests
 {
     public class CombatResolverTests
     {
-        [Test] public void Pressure_vs_Appeal_returns_Win() =>
-            Assert.AreEqual(BattleOutcome.Win, CombatResolver.DetermineOutcome(CardType.Pressure, CardType.Appeal));
+        [Test] public void Force_vs_Presence_returns_Win() =>
+            Assert.AreEqual(BattleOutcome.Win, CombatResolver.DetermineOutcome(CardType.Force, CardType.Presence));
 
-        [Test] public void Appeal_vs_Positioning_returns_Win() =>
-            Assert.AreEqual(BattleOutcome.Win, CombatResolver.DetermineOutcome(CardType.Appeal, CardType.Positioning));
+        [Test] public void Presence_vs_Wit_returns_Win() =>
+            Assert.AreEqual(BattleOutcome.Win, CombatResolver.DetermineOutcome(CardType.Presence, CardType.Wit));
 
-        [Test] public void Positioning_vs_Pressure_returns_Win() =>
-            Assert.AreEqual(BattleOutcome.Win, CombatResolver.DetermineOutcome(CardType.Positioning, CardType.Pressure));
+        [Test] public void Wit_vs_Force_returns_Win() =>
+            Assert.AreEqual(BattleOutcome.Win, CombatResolver.DetermineOutcome(CardType.Wit, CardType.Force));
 
-        [Test] public void Pressure_vs_Positioning_returns_Lose() =>
-            Assert.AreEqual(BattleOutcome.Lose, CombatResolver.DetermineOutcome(CardType.Pressure, CardType.Positioning));
+        [Test] public void Force_vs_Wit_returns_Lose() =>
+            Assert.AreEqual(BattleOutcome.Lose, CombatResolver.DetermineOutcome(CardType.Force, CardType.Wit));
 
-        [Test] public void Pressure_vs_Pressure_returns_Draw() =>
-            Assert.AreEqual(BattleOutcome.Draw, CombatResolver.DetermineOutcome(CardType.Pressure, CardType.Pressure));
+        [Test] public void Force_vs_Force_returns_Draw() =>
+            Assert.AreEqual(BattleOutcome.Draw, CombatResolver.DetermineOutcome(CardType.Force, CardType.Force));
 
         [Test]
         public void Win_deals_full_card_value_as_damage()
         {
-            var attacker = MakeCard(CardType.Pressure, value: 5);
-            var defender = MakeCard(CardType.Appeal, value: 10);
+            var attacker = MakeCard(CardType.Force, value: 5);
+            var defender = MakeCard(CardType.Presence, value: 10);
             var result = CombatResolver.ResolveCombat(attacker, defender, new System.Random(0));
             Assert.AreEqual(5, result.DamageDealt);
         }
@@ -296,8 +296,8 @@ namespace CardsUnity.Tests
         {
             for (int seed = 0; seed < 20; seed++)
             {
-                var a = MakeCard(CardType.Pressure, value: 6);
-                var d = MakeCard(CardType.Positioning, value: 10);
+                var a = MakeCard(CardType.Force, value: 6);
+                var d = MakeCard(CardType.Wit, value: 10);
                 var result = CombatResolver.ResolveCombat(a, d, new System.Random(seed));
                 Assert.GreaterOrEqual(result.DamageDealt, 1);
                 Assert.LessOrEqual(result.DamageDealt, 6);
@@ -307,8 +307,8 @@ namespace CardsUnity.Tests
         [Test]
         public void Combat_reduces_defender_CurrentValue()
         {
-            var attacker = MakeCard(CardType.Pressure, value: 5);
-            var defender = MakeCard(CardType.Appeal, value: 10);
+            var attacker = MakeCard(CardType.Force, value: 5);
+            var defender = MakeCard(CardType.Presence, value: 10);
             CombatResolver.ResolveCombat(attacker, defender, new System.Random(0));
             Assert.AreEqual(5, defender.CurrentValue);
         }
@@ -317,8 +317,8 @@ namespace CardsUnity.Tests
         public void Combat_sets_Destroyed_when_defender_value_reaches_zero()
         {
             var result = CombatResolver.ResolveCombat(
-                MakeCard(CardType.Pressure, value: 10),
-                MakeCard(CardType.Appeal, value: 5),
+                MakeCard(CardType.Force, value: 10),
+                MakeCard(CardType.Presence, value: 5),
                 new System.Random(0));
             Assert.IsTrue(result.Destroyed);
         }
@@ -327,8 +327,8 @@ namespace CardsUnity.Tests
         public void Combat_does_not_set_Destroyed_when_defender_survives()
         {
             var result = CombatResolver.ResolveCombat(
-                MakeCard(CardType.Pressure, value: 3),
-                MakeCard(CardType.Appeal, value: 10),
+                MakeCard(CardType.Force, value: 3),
+                MakeCard(CardType.Presence, value: 10),
                 new System.Random(0));
             Assert.IsFalse(result.Destroyed);
         }
@@ -393,8 +393,8 @@ namespace CardsUnity
 {
     public static class CombatResolver
     {
-        // Pressure(0) > Appeal(1) > Positioning(2) > Pressure(0)
-        private static readonly CardType[] Beats = { CardType.Appeal, CardType.Positioning, CardType.Pressure };
+        // Force(0) > Presence(1) > Wit(2) > Force(0)
+        private static readonly CardType[] Beats = { CardType.Presence, CardType.Wit, CardType.Force };
 
         public static BattleOutcome DetermineOutcome(CardType attacker, CardType defender)
         {
@@ -704,9 +704,9 @@ namespace CardsUnity.Tests
         [SetUp]
         public void SetUp()
         {
-            _playerDeck = MakeDeck(6, CardType.Pressure, value: 3);
+            _playerDeck = MakeDeck(6, CardType.Force, value: 3);
             _playerHand = new HandState();
-            _opponentDeck = MakeDeck(4, CardType.Appeal, value: 4);
+            _opponentDeck = MakeDeck(4, CardType.Presence, value: 4);
             _board = new BoardState(slotCount: 3);
             _playerClock = new ClockState(maxValue: 6);
             _opponentClock = new ClockState(maxValue: 4);
@@ -764,13 +764,13 @@ namespace CardsUnity.Tests
         public void PlayCard_to_occupied_slot_deals_full_damage_on_win()
         {
             _turn.StartTurn();
-            var opponentCard = new CardInstance(MakeCardDef(CardType.Appeal, value: 10));
+            var opponentCard = new CardInstance(MakeCardDef(CardType.Presence, value: 10));
             _board.Slots[1].OpponentCard = opponentCard;
 
-            var playerCard = _playerHand.Cards.First(c => c.type == CardType.Pressure);
+            var playerCard = _playerHand.Cards.First(c => c.type == CardType.Force);
             _turn.PlayCard(playerCard, slotIndex: 1);
 
-            // Pressure beats Appeal → full damage = 3 → 10 - 3 = 7
+            // Force beats Presence → full damage = 3 → 10 - 3 = 7
             Assert.AreEqual(7, opponentCard.CurrentValue);
         }
 
@@ -778,8 +778,8 @@ namespace CardsUnity.Tests
         public void PlayCard_increments_opponent_clock_when_card_destroyed()
         {
             _turn.StartTurn();
-            _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Appeal, value: 1));
-            var playerCard = _playerHand.Cards.First(c => c.type == CardType.Pressure);
+            _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Presence, value: 1));
+            var playerCard = _playerHand.Cards.First(c => c.type == CardType.Force);
             _turn.PlayCard(playerCard, slotIndex: 0);
             Assert.AreEqual(1, _opponentClock.CurrentValue);
         }
@@ -1013,9 +1013,9 @@ namespace CardsUnity.UI
 
         public static readonly Color[] TypeColors =
         {
-            new Color(0.85f, 0.3f, 0.3f),  // Pressure
-            new Color(0.3f, 0.7f, 0.85f),  // Appeal
-            new Color(0.3f, 0.85f, 0.5f),  // Positioning
+            new Color(0.85f, 0.3f, 0.3f),  // Force
+            new Color(0.3f, 0.7f, 0.85f),  // Presence
+            new Color(0.3f, 0.85f, 0.5f),  // Wit
         };
 
         public CardDefinition Card { get; private set; }
@@ -1423,9 +1423,9 @@ Right-click → Create → CardsUnity → Card Definition:
 
 | Asset name | title | type | value | flavorText |
 |---|---|---|---|---|
-| `Card_Pressure_01` | "Bold Move" | Pressure | 4 | "Go in hard." |
-| `Card_Appeal_01` | "Sweet Talk" | Appeal | 3 | "Charm wins." |
-| `Card_Positioning_01` | "Maneuver" | Positioning | 5 | "Stay sharp." |
+| `Card_Force_01` | "Bold Move" | Force | 4 | "Go in hard." |
+| `Card_Presence_01` | "Sweet Talk" | Presence | 3 | "Charm wins." |
+| `Card_Wit_01` | "Maneuver" | Wit | 5 | "Stay sharp." |
 
 Create 2–3 copies of each (duplicate with Ctrl+D, adjust names/values slightly) for deck variety.
 

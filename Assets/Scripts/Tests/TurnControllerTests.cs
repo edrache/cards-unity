@@ -19,9 +19,9 @@ namespace CardsUnity.Tests
         [SetUp]
         public void SetUp()
         {
-            _playerDeck = MakeDeck(6, CardType.Pressure, value: 3);
+            _playerDeck = MakeDeck(6, CardType.Force, value: 3);
             _playerHand = new HandState();
-            _opponentDeck = MakeDeck(4, CardType.Appeal, value: 4);
+            _opponentDeck = MakeDeck(4, CardType.Presence, value: 4);
             _board = new BoardState(slotCount: 3);
             _playerClock = new ClockState(maxValue: 6);
             _opponentClock = new ClockState(maxValue: 4);
@@ -93,10 +93,10 @@ namespace CardsUnity.Tests
         public void PlayCard_to_occupied_slot_deals_full_damage_on_win()
         {
             _turn.StartTurn();
-            var opponentCard = new CardInstance(MakeCardDef(CardType.Appeal, value: 10));
+            var opponentCard = new CardInstance(MakeCardDef(CardType.Presence, value: 10));
             _board.Slots[1].OpponentCard = opponentCard;
 
-            var playerCard = _playerHand.Cards.First(c => c.Definition.type == CardType.Pressure);
+            var playerCard = _playerHand.Cards.First(c => c.Definition.type == CardType.Force);
             _turn.PlayCard(playerCard, slotIndex: 1);
 
             Assert.AreEqual(7, opponentCard.CurrentValue);
@@ -106,9 +106,9 @@ namespace CardsUnity.Tests
         public void PlayCard_increments_opponent_clock_when_card_destroyed()
         {
             _turn.StartTurn();
-            _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Appeal, value: 1));
+            _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Presence, value: 1));
 
-            var playerCard = _playerHand.Cards.First(c => c.Definition.type == CardType.Pressure);
+            var playerCard = _playerHand.Cards.First(c => c.Definition.type == CardType.Force);
             _turn.PlayCard(playerCard, slotIndex: 0);
 
             Assert.AreEqual(1, _opponentClock.CurrentValue);
@@ -118,9 +118,9 @@ namespace CardsUnity.Tests
         public void PlayCard_applies_counter_damage_to_player_card()
         {
             _turn.StartTurn();
-            _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Positioning, value: 1));
+            _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Wit, value: 1));
 
-            var playerCard = _playerHand.Cards.First(c => c.Definition.type == CardType.Pressure);
+            var playerCard = _playerHand.Cards.First(c => c.Definition.type == CardType.Force);
             _turn.PlayCard(playerCard, slotIndex: 0);
 
             Assert.AreEqual(2, _board.Slots[0].PlayerCard?.CurrentValue);
@@ -130,9 +130,9 @@ namespace CardsUnity.Tests
         public void PlayCard_increments_player_clock_when_player_card_is_destroyed_by_counterattack()
         {
             _turn.StartTurn();
-            _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Positioning, value: 10));
+            _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Wit, value: 10));
 
-            var playerCard = _playerHand.Cards.First(c => c.Definition.type == CardType.Pressure);
+            var playerCard = _playerHand.Cards.First(c => c.Definition.type == CardType.Force);
             _turn.PlayCard(playerCard, slotIndex: 0);
 
             Assert.AreEqual(1, _playerClock.CurrentValue);
@@ -154,9 +154,9 @@ namespace CardsUnity.Tests
         public void EndTurn_preserves_current_value_for_returned_player_cards()
         {
             _turn.StartTurn();
-            _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Positioning, value: 1));
+            _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Wit, value: 1));
 
-            var card = _playerHand.Cards.First(c => c.Definition.type == CardType.Pressure);
+            var card = _playerHand.Cards.First(c => c.Definition.type == CardType.Force);
             _turn.PlayCard(card, slotIndex: 0);
 
             Assert.AreEqual(2, card.CurrentValue);
@@ -245,9 +245,9 @@ namespace CardsUnity.Tests
 
             turn.PlayCard(card, slotIndex: 0);
 
-            Assert.AreEqual(7, _playedCardCounters.Pressure);
-            Assert.AreEqual(0, _playedCardCounters.Appeal);
-            Assert.AreEqual(0, _playedCardCounters.Positioning);
+            Assert.AreEqual(7, _playedCardCounters.Force);
+            Assert.AreEqual(0, _playedCardCounters.Presence);
+            Assert.AreEqual(0, _playedCardCounters.Wit);
         }
 
         [Test]
@@ -261,14 +261,14 @@ namespace CardsUnity.Tests
             var turn = MakeTurnWithBoard(board);
 
             turn.StartTurn();
-            var appealCard = new CardInstance(MakeCardDef(CardType.Appeal, 5));
-            _playerHand.Add(appealCard);
+            var presenceCard = new CardInstance(MakeCardDef(CardType.Presence, 5));
+            _playerHand.Add(presenceCard);
 
-            turn.PlayCard(appealCard, slotIndex: 0);
+            turn.PlayCard(presenceCard, slotIndex: 0);
 
-            Assert.AreEqual(3, _playedCardCounters.Appeal);
-            Assert.AreEqual(0, _playedCardCounters.Pressure);
-            Assert.AreEqual(0, _playedCardCounters.Positioning);
+            Assert.AreEqual(3, _playedCardCounters.Presence);
+            Assert.AreEqual(0, _playedCardCounters.Force);
+            Assert.AreEqual(0, _playedCardCounters.Wit);
         }
 
         [Test]
@@ -284,9 +284,9 @@ namespace CardsUnity.Tests
 
             turn.PlayCard(card, slotIndex: 0);
 
-            Assert.AreEqual(0, _playedCardCounters.Pressure);
-            Assert.AreEqual(0, _playedCardCounters.Appeal);
-            Assert.AreEqual(0, _playedCardCounters.Positioning);
+            Assert.AreEqual(0, _playedCardCounters.Force);
+            Assert.AreEqual(0, _playedCardCounters.Presence);
+            Assert.AreEqual(0, _playedCardCounters.Wit);
         }
 
         [Test]
@@ -312,7 +312,7 @@ namespace CardsUnity.Tests
                 SlotEffectTrigger.OnPlayerTurnStart,
                 SlotEffectAction.DrawOpponentCard);
             var board = new BoardState(new SlotDefinition[] { def, null, null });
-            var existing = new CardInstance(MakeCardDef(CardType.Appeal, 5));
+            var existing = new CardInstance(MakeCardDef(CardType.Presence, 5));
             board.Slots[0].OpponentCard = existing;
             var turn = MakeTurnWithBoard(board);
 
@@ -364,7 +364,7 @@ namespace CardsUnity.Tests
                 actionValue: 2,
                 clockTarget: ClockTarget.PlayerClock);
             var board = new BoardState(new SlotDefinition[] { def, null, null });
-            board.Slots[0].PlayerCard = new CardInstance(MakeCardDef(CardType.Pressure, 3));
+            board.Slots[0].PlayerCard = new CardInstance(MakeCardDef(CardType.Force, 3));
             var turn = MakeTurnWithBoard(board);
 
             turn.StartTurn();
@@ -381,7 +381,7 @@ namespace CardsUnity.Tests
                 SlotEffectAction.ReturnCardsFromSlots);
             var board = new BoardState(new SlotDefinition[] { null, null, drawSlotDef });
             // manually place a card in slot 0 (simulating a card already on board)
-            board.Slots[0].PlayerCard = new CardInstance(MakeCardDef(CardType.Pressure, 3));
+            board.Slots[0].PlayerCard = new CardInstance(MakeCardDef(CardType.Force, 3));
             var turn = MakeTurnWithBoard(board);
 
             turn.StartTurn(); // draws 3 cards

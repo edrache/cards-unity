@@ -1,7 +1,7 @@
 # Game Design Document
 
 *This is the single source of truth for all game design decisions.*
-*Last updated: 2026-04-30*
+*Last updated: 2026-05-01*
 
 Any change to mechanics — adding, modifying, or removing a rule, system, or data model — must be reflected here. Append an entry to the [Changelog](#changelog) at the bottom.
 
@@ -50,9 +50,9 @@ Every element added to the game must serve at least one of these:
 
 | Title | Type | Value |
 |---|---|---|
-| Bold Move | Pressure | 4 |
-| Sweet Talk | Appeal | 3 |
-| Maneuver | Positioning | 5 |
+| Bold Move | Force | 4 |
+| Sweet Talk | Presence | 3 |
+| Maneuver | Wit | 5 |
 
 These are prototype assets for validating the loop, not final content.
 
@@ -62,16 +62,16 @@ These are prototype assets for validating the loop, not final content.
 
 | Title | Type | Value |
 |---|---|---|
-| Crowd | Positioning | 3 |
-| Noise | Pressure | 3 |
-| Rush | Pressure | 3 |
-| Interruption | Appeal | 3 |
-| Confusion | Pressure | 3 |
-| Traffic | Positioning | 3 |
-| Mistake | Pressure | 3 |
-| Distrust | Appeal | 3 |
-| Distraction | Appeal | 3 |
-| Blind Spot | Positioning | 3 |
+| Crowd | Wit | 3 |
+| Noise | Force | 3 |
+| Rush | Force | 3 |
+| Interruption | Presence | 3 |
+| Confusion | Force | 3 |
+| Traffic | Wit | 3 |
+| Mistake | Force | 3 |
+| Distrust | Presence | 3 |
+| Distraction | Presence | 3 |
+| Blind Spot | Wit | 3 |
 
 ### Card Value Lifecycle
 
@@ -85,21 +85,21 @@ This loop is a mechanical resource. Effects can reference any transition point.
 
 **Starter cards** — general-purpose actions (e.g., Strike, Charm, Scheme). These form the player's initial deck and work in any slot.
 
-**Story cards** *(planned)* — impose a global rule change on the entire table (e.g., "Pressure cards cannot be played until a specific clock fills"). They appear as consequences of game events — things the player failed to prevent or caused to happen. Their narrative justification is tied to those prior events. Each story card has a removal condition.
+**Story cards** *(planned)* — impose a global rule change on the entire table (e.g., "Force cards cannot be played until a specific clock fills"). They appear as consequences of game events — things the player failed to prevent or caused to happen. Their narrative justification is tied to those prior events. Each story card has a removal condition.
 
 ---
 
 ## Card Types and Matchups
 
-Enum: `CardType` — values: `Pressure`, `Appeal`, `Positioning`
+Enum: `CardType` — values: `Force`, `Presence`, `Wit`
 
 Rock-paper-scissors cycle:
 
 | Attacker | Defender | Result |
 |---|---|---|
-| Pressure | Appeal | Win |
-| Appeal | Positioning | Win |
-| Positioning | Pressure | Win |
+| Force | Presence | Win |
+| Presence | Wit | Win |
+| Wit | Force | Win |
 | Any | Same type | Draw |
 | Any | Superior type | Lose |
 
@@ -198,13 +198,13 @@ Each `SlotState` may also hold an optional `SlotDefinition` (ScriptableObject). 
 
 Slots with no `SlotDefinition` use the legacy default behaviour: both anchors are available and opponent cards are auto-placed at end of turn by `PlaceOpponentCards()`.
 
-Slots can also opt into contributing to one shared global tally of played card values. This tally has one running total per card type: `Pressure`, `Appeal`, and `Positioning`.
+Slots can also opt into contributing to one shared global tally of played card values. This tally has one running total per card type: `Force`, `Presence`, and `Wit`.
 
 Only cards played directly into a contributing slot affect the tally. Each such slot decides how much value it sends into the global counter:
 - `UseCardValue` — add the played card's current runtime `CurrentValue`
 - `UseFixedValue` — add one fixed slot-defined value, regardless of the card's own value
 
-The played card's type determines which global bucket is incremented. Example: a `Pressure` card played into a contributing slot increases only the global `Pressure` total.
+The played card's type determines which global bucket is incremented. Example: a `Force` card played into a contributing slot increases only the global `Force` total.
 
 ### Planned: Slot Types
 
@@ -467,3 +467,4 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | 2026-04-30 | Added global played-card counters gated by slot configuration, using either `CardInstance.CurrentValue` or a slot-defined fixed value per played card |
 | 2026-04-30 | Added 10 `CardDefinition` prototype assets for the `1_Chase` city-search encounter set under `Assets/Resources/Cards/1_Chase/` |
 | 2026-04-30 | Added story card data model: StoryCardDefinition SO, StoryDeckDefinition SO, StoryDeckState runtime class with Sequential/Random draw and per-card ClockState; ChallengeController exposes IncrementStoryClock(int) |
+| 2026-05-01 | Renamed the three card archetypes across the project from `Pressure` / `Appeal` / `Positioning` to `Force` / `Presence` / `Wit` |

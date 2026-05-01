@@ -8,40 +8,40 @@ namespace CardsUnity.Tests
     public class CombatResolverTests
     {
         [Test]
-        public void Pressure_vs_Appeal_returns_Win()
+        public void Force_vs_Presence_returns_Win()
         {
-            Assert.AreEqual(BattleOutcome.Win, CombatResolver.DetermineOutcome(CardType.Pressure, CardType.Appeal));
+            Assert.AreEqual(BattleOutcome.Win, CombatResolver.DetermineOutcome(CardType.Force, CardType.Presence));
         }
 
         [Test]
-        public void Appeal_vs_Positioning_returns_Win()
+        public void Presence_vs_Wit_returns_Win()
         {
-            Assert.AreEqual(BattleOutcome.Win, CombatResolver.DetermineOutcome(CardType.Appeal, CardType.Positioning));
+            Assert.AreEqual(BattleOutcome.Win, CombatResolver.DetermineOutcome(CardType.Presence, CardType.Wit));
         }
 
         [Test]
-        public void Positioning_vs_Pressure_returns_Win()
+        public void Wit_vs_Force_returns_Win()
         {
-            Assert.AreEqual(BattleOutcome.Win, CombatResolver.DetermineOutcome(CardType.Positioning, CardType.Pressure));
+            Assert.AreEqual(BattleOutcome.Win, CombatResolver.DetermineOutcome(CardType.Wit, CardType.Force));
         }
 
         [Test]
-        public void Pressure_vs_Positioning_returns_Lose()
+        public void Force_vs_Wit_returns_Lose()
         {
-            Assert.AreEqual(BattleOutcome.Lose, CombatResolver.DetermineOutcome(CardType.Pressure, CardType.Positioning));
+            Assert.AreEqual(BattleOutcome.Lose, CombatResolver.DetermineOutcome(CardType.Force, CardType.Wit));
         }
 
         [Test]
-        public void Pressure_vs_Pressure_returns_Draw()
+        public void Force_vs_Force_returns_Draw()
         {
-            Assert.AreEqual(BattleOutcome.Draw, CombatResolver.DetermineOutcome(CardType.Pressure, CardType.Pressure));
+            Assert.AreEqual(BattleOutcome.Draw, CombatResolver.DetermineOutcome(CardType.Force, CardType.Force));
         }
 
         [Test]
         public void Win_deals_full_card_value_as_damage()
         {
-            var attacker = MakeCard(CardType.Pressure, value: 5);
-            var defender = MakeCard(CardType.Appeal, value: 10);
+            var attacker = MakeCard(CardType.Force, value: 5);
+            var defender = MakeCard(CardType.Presence, value: 10);
             var result = CombatResolver.ResolveCombat(attacker, defender, new System.Random(0));
             Assert.AreEqual(5, result.DamageDealt);
         }
@@ -51,8 +51,8 @@ namespace CardsUnity.Tests
         {
             for (var seed = 0; seed < 20; seed++)
             {
-                var attacker = MakeCard(CardType.Pressure, value: 6);
-                var defender = MakeCard(CardType.Positioning, value: 10);
+                var attacker = MakeCard(CardType.Force, value: 6);
+                var defender = MakeCard(CardType.Wit, value: 10);
                 var result = CombatResolver.ResolveCombat(attacker, defender, new System.Random(seed));
                 Assert.GreaterOrEqual(result.DamageDealt, 1);
                 Assert.LessOrEqual(result.DamageDealt, 6);
@@ -62,8 +62,8 @@ namespace CardsUnity.Tests
         [Test]
         public void Combat_reduces_defender_CurrentValue()
         {
-            var attacker = MakeCard(CardType.Pressure, value: 5);
-            var defender = MakeCard(CardType.Appeal, value: 10);
+            var attacker = MakeCard(CardType.Force, value: 5);
+            var defender = MakeCard(CardType.Presence, value: 10);
             CombatResolver.ResolveCombat(attacker, defender, new System.Random(0));
             Assert.AreEqual(5, defender.CurrentValue);
         }
@@ -72,8 +72,8 @@ namespace CardsUnity.Tests
         public void Combat_sets_Destroyed_when_defender_value_reaches_zero()
         {
             var result = CombatResolver.ResolveCombat(
-                MakeCard(CardType.Pressure, value: 10),
-                MakeCard(CardType.Appeal, value: 5),
+                MakeCard(CardType.Force, value: 10),
+                MakeCard(CardType.Presence, value: 5),
                 new System.Random(0));
 
             Assert.IsTrue(result.Destroyed);
@@ -83,8 +83,8 @@ namespace CardsUnity.Tests
         public void Combat_does_not_set_Destroyed_when_defender_survives()
         {
             var result = CombatResolver.ResolveCombat(
-                MakeCard(CardType.Pressure, value: 3),
-                MakeCard(CardType.Appeal, value: 10),
+                MakeCard(CardType.Force, value: 3),
+                MakeCard(CardType.Presence, value: 10),
                 new System.Random(0));
 
             Assert.IsFalse(result.Destroyed);
@@ -93,8 +93,8 @@ namespace CardsUnity.Tests
         [Test]
         public void ResolveExchange_applies_damage_to_both_cards()
         {
-            var player = MakeCard(CardType.Pressure, value: 5);
-            var opponent = MakeCard(CardType.Positioning, value: 4);
+            var player = MakeCard(CardType.Force, value: 5);
+            var opponent = MakeCard(CardType.Wit, value: 4);
 
             var result = CombatResolver.ResolveExchange(player, opponent, new System.Random(0));
 
@@ -107,8 +107,8 @@ namespace CardsUnity.Tests
         [Test]
         public void ResolveExchange_uses_simultaneous_damage_when_both_cards_destroy_each_other()
         {
-            var player = MakeCard(CardType.Pressure, value: 1);
-            var opponent = MakeCard(CardType.Pressure, value: 1);
+            var player = MakeCard(CardType.Force, value: 1);
+            var opponent = MakeCard(CardType.Force, value: 1);
 
             var result = CombatResolver.ResolveExchange(player, opponent, new System.Random(0));
 

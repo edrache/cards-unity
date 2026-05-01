@@ -6,9 +6,9 @@ namespace CardsUnity
     {
         private static readonly CardType[] Beats =
         {
-            CardType.Appeal,
-            CardType.Positioning,
-            CardType.Pressure
+            CardType.Presence,
+            CardType.Wit,
+            CardType.Force
         };
 
         public static BattleOutcome DetermineOutcome(CardType attacker, CardType defender)
