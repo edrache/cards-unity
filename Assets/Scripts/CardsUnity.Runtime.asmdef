@@ -2,6 +2,7 @@
     "name": "CardsUnity.Runtime",
     "rootNamespace": "CardsUnity",
     "references": [
+        "MoreMountains.Tools",
         "UnityEngine.UI",
         "Unity.TextMeshPro"
     ],

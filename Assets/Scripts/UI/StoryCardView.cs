@@ -9,6 +9,7 @@ namespace CardsUnity.UI
         [SerializeField] private TextMeshProUGUI titleText;
         [SerializeField] private TextMeshProUGUI contentText;
         [SerializeField] private Image artworkImage;
+        [SerializeField] private ClockView clockView;
         [SerializeField] private Image clockFillImage;
         [SerializeField] private TextMeshProUGUI clockLabel;
         [SerializeField] private TextMeshProUGUI effectsText;
@@ -32,11 +33,18 @@ namespace CardsUnity.UI
                 artworkImage.enabled = card.artwork != null;
             }
 
-            if (clockFillImage != null)
-                clockFillImage.fillAmount = clock != null ? clock.Progress : 0f;
+            if (clockView != null)
+            {
+                clockView.Refresh(clock);
+            }
+            else
+            {
+                if (clockFillImage != null)
+                    clockFillImage.fillAmount = clock != null ? clock.Progress : 0f;
 
-            if (clockLabel != null)
-                clockLabel.text = clock != null ? $"{clock.CurrentValue} / {clock.MaxValue}" : string.Empty;
+                if (clockLabel != null)
+                    clockLabel.text = clock != null ? $"{clock.CurrentValue} / {clock.MaxValue}" : string.Empty;
+            }
 
             if (effectsText != null)
             {

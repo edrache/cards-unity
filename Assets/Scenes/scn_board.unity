@@ -1109,6 +1109,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a16fd31647fe54a399c9f083c48e71d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CardsUnity.Runtime::CardsUnity.UI.ClockView
+  progressBar: {fileID: 0}
   fillImage: {fileID: 355399428}
   label: {fileID: 848075151}
 --- !u!1 &358281147
@@ -3359,6 +3360,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a16fd31647fe54a399c9f083c48e71d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CardsUnity.Runtime::CardsUnity.UI.ClockView
+  progressBar: {fileID: 0}
   fillImage: {fileID: 1315932072}
   label: {fileID: 143835511}
 --- !u!224 &1334085566 stripped
