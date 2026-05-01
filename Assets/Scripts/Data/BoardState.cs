@@ -21,5 +21,17 @@ namespace CardsUnity
             for (int i = 0; i < definitions.Length; i++)
                 Slots[i] = new SlotState(definitions[i]);
         }
+
+        public BoardState(SlotDefinition[] definitions, bool[] activeStates)
+        {
+            if (definitions == null) throw new ArgumentNullException(nameof(definitions));
+            Slots = new SlotState[definitions.Length];
+
+            for (int i = 0; i < definitions.Length; i++)
+            {
+                bool isActive = activeStates == null || i >= activeStates.Length || activeStates[i];
+                Slots[i] = new SlotState(definitions[i], isActive);
+            }
+        }
     }
 }

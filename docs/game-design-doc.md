@@ -73,6 +73,23 @@ These are prototype assets for validating the loop, not final content.
 | Distraction | Presence | 3 |
 | Blind Spot | Wit | 3 |
 
+### Bar Encounter Prototype Cards
+
+`Assets/Resources/Cards/Bar/` contains a first pass of encounter card definitions for a tavern information-gathering scenario. These cards represent social pressure, physical disruption, and misleading leads that get in the way of finding the truth.
+
+| Title | Type | Value |
+|---|---|---|
+| Distrust | Presence | 3 |
+| Provocation | Presence | 3 |
+| Brawl | Force | 3 |
+| Rumor | Wit | 3 |
+| Confusion | Force | 3 |
+| Locked Door | Wit | 3 |
+| Crash | Force | 3 |
+| Suspicion | Presence | 3 |
+| Debt | Wit | 3 |
+| Interruption | Presence | 3 |
+
 ### Card Value Lifecycle
 
 ```
@@ -425,6 +442,15 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 - Slot UI effect descriptions via `TextMeshProUGUI` labels in `SlotView`
 - Reusable UI outline renderer for `Canvas` elements via `RectOutlineGraphic` (`MaskableGraphic` + shader) with configurable thickness, color, rounded corners, solid/dashed mode, dash length, gap length, dash offset, and fixed vs edge-fitted dash distribution
 - Story card data model: `StoryCardDefinition`, `StoryDeckDefinition` ScriptableObjects with `StoryDrawMode` (Sequential/Random); `StoryDeckState` runtime class with clock-driven `AdvanceCard()`; `ChallengeController.IncrementStoryClock(int)` entry point
+- Story card effects can resolve on story-clock completion from global played-card counters, use RPS to break two-way ties, use a dedicated full-tie branch, optionally hide from the story-card UI, and mutate decks or passive board slots
+
+### Current Story Content
+
+- `Bar` story deck: a three-card sequential investigation arc stored under `Assets/Resources/Story/Bar/`
+- `Card_Bar1` — `Smoke and Rumors`: the player enters the bar and must identify where information about the ancient god's idol is being traded
+- `Card_Bar2` — `The Informant's Wall`: the player locates the informant, but a protective group blocks access
+- `Card_Bar3` — `The Price of a Name`: the player must convince the informant to reveal who currently possesses the figurine of the ancient god
+- Current prototype pacing: each bar story card uses a `clockMaxValue` of `3` and advances through the shared `IncrementCardDestroyed` story effect
 
 ### Defined but Not Evaluated
 
@@ -468,3 +494,6 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | 2026-04-30 | Added 10 `CardDefinition` prototype assets for the `1_Chase` city-search encounter set under `Assets/Resources/Cards/1_Chase/` |
 | 2026-04-30 | Added story card data model: StoryCardDefinition SO, StoryDeckDefinition SO, StoryDeckState runtime class with Sequential/Random draw and per-card ClockState; ChallengeController exposes IncrementStoryClock(int) |
 | 2026-05-01 | Renamed the three card archetypes across the project from `Pressure` / `Appeal` / `Positioning` to `Force` / `Presence` / `Wit` |
+| 2026-05-01 | Added 10 `CardDefinition` prototype assets for the `Bar` tavern information-gathering encounter set under `Assets/Resources/Cards/Bar/` |
+| 2026-05-01 | Added three `StoryCardDefinition` prototype assets for the `Bar` encounter and assigned them sequentially in `Assets/Resources/Story/Bar/Story_Bar.asset` |
+| 2026-05-01 | Expanded `StoryEffectDefinition` with story-clock completion resolution, played-card counter dominance, RPS tiebreaks, a full-tie branch, optional story-card visibility, and deck/slot mutations for passive story slots |

@@ -71,7 +71,7 @@ namespace CardsUnity
                 throw new ArgumentOutOfRangeException(nameof(slotIndex));
 
             var slot = _board.Slots[slotIndex];
-            if (slot.PlayerCard != null)
+            if (!slot.IsActive || slot.PlayerCard != null)
                 return;
 
             if (!CanHostPlayerCard(slot))
@@ -96,6 +96,9 @@ namespace CardsUnity
         {
             foreach (var slot in _board.Slots)
             {
+                if (!slot.IsActive)
+                    continue;
+
                 if (slot.PlayerCard == null)
                     continue;
 
@@ -112,6 +115,27 @@ namespace CardsUnity
             bool result = _turnEndedByEffect;
             _turnEndedByEffect = false;
             return result;
+        }
+
+        public void AddCardsToDeck(
+            System.Collections.Generic.IEnumerable<CardDefinition> cards,
+            StoryEffectDeckTarget targetDeck,
+            StoryEffectDeckPlacement placement)
+        {
+            var deck = targetDeck == StoryEffectDeckTarget.Player ? _playerDeck : _opponentDeck;
+            if (deck == null || cards == null)
+                return;
+
+            foreach (var card in cards)
+            {
+                if (card == null)
+                    continue;
+
+                if (placement == StoryEffectDeckPlacement.DrawPile)
+                    deck.AddToDrawPile(card);
+                else
+                    deck.AddToDiscardPile(card);
+            }
         }
 
         private void ResolveSlotCombat(SlotState slot)
@@ -137,6 +161,9 @@ namespace CardsUnity
         {
             foreach (var slot in _board.Slots)
             {
+                if (!slot.IsActive)
+                    continue;
+
                 if (slot.HasOpponentCard)
                     continue;
 
@@ -158,7 +185,12 @@ namespace CardsUnity
         private void EvaluateSlotEffects(SlotEffectTrigger trigger)
         {
             foreach (var slot in _board.Slots)
+            {
+                if (!slot.IsActive)
+                    continue;
+
                 EvaluateSlotEffectsForSlot(slot, trigger);
+            }
         }
 
         private void EvaluateSlotEffectsForSlot(SlotState slot, SlotEffectTrigger trigger)
@@ -238,6 +270,9 @@ namespace CardsUnity
         {
             foreach (var slot in _board.Slots)
             {
+                if (!slot.IsActive)
+                    continue;
+
                 if (slot.PlayerCard == null)
                     continue;
 

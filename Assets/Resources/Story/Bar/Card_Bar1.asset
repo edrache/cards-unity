@@ -10,11 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f8c5566dc104b44e8ad37c01aed6b041, type: 3}
-  m_Name: NewStoryCard1
+  m_Name: Card_Bar1
   m_EditorClassIdentifier: CardsUnity.Runtime::CardsUnity.StoryCardDefinition
-  title: Story 1
-  content: "to jest pierwsza cz\u0119\u015B\u0107 story"
-  artwork: {fileID: 21300000, guid: f75be9409db474db59249bd00d5c9f7e, type: 3}
+  title: Smoke and Rumors
+  content: 'The bar is loud, smoky, and full of people who know better than to speak
+    first. Somewhere inside is the name you need: who currently holds the idol of
+    the ancient god. To get the answer, you first need to read the room and find
+    the table where information changes hands.'
+  artwork: {fileID: 21300000, guid: ed93332a1a370474c8212f6be8c8684c, type: 3}
   effects:
   - {fileID: 11400000, guid: 175925f0d956e48babe067539bd7effb, type: 2}
   clockMaxValue: 3

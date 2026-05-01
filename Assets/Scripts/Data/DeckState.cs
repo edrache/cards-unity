@@ -29,6 +29,18 @@ namespace CardsUnity
             return card;
         }
 
+        public void AddToDrawPile(CardDefinition card)
+        {
+            if (card != null)
+                _drawPile.Add(card);
+        }
+
+        public void AddToDiscardPile(CardDefinition card)
+        {
+            if (card != null)
+                _discardPile.Add(card);
+        }
+
         public void Discard(CardDefinition card) => _discardPile.Add(card);
 
         public void ShuffleDiscardIntoDrawPile(Random rng)

@@ -4,5 +4,6 @@ namespace CardsUnity
     {
         OnOpponentCardDestroyed,
         OnPlayerCardDestroyed,
+        OnStoryClockCompleted,
     }
 }

@@ -42,6 +42,15 @@ namespace CardsUnity.UI
                 if (slot == null)
                     continue;
 
+                slotViews[i].gameObject.SetActive(slot.IsActive);
+                if (!slot.IsActive)
+                {
+                    slotViews[i].ClearPlayerCard();
+                    slotViews[i].ClearOpponentCard();
+                    continue;
+                }
+
+                slotViews[i].ApplyDefinition(slot.Definition);
                 slotViews[i].SetHighlight(false);
 
                 if (slot.HasPlayerCard)
@@ -60,6 +69,7 @@ namespace CardsUnity.UI
                 if (slotViews[i] == null)
                     continue;
 
+                slotViews[i].gameObject.SetActive(false);
                 slotViews[i].SetHighlight(false);
                 slotViews[i].ClearPlayerCard();
                 slotViews[i].ClearOpponentCard();
@@ -132,6 +142,18 @@ namespace CardsUnity.UI
             }
 
             return false;
+        }
+
+        public bool[] GetSceneSlotActiveStates()
+        {
+            if (slotViews == null)
+                return Array.Empty<bool>();
+
+            var activeStates = new bool[slotViews.Length];
+            for (int i = 0; i < slotViews.Length; i++)
+                activeStates[i] = slotViews[i] != null && slotViews[i].StartsActiveInBoard;
+
+            return activeStates;
         }
     }
 }

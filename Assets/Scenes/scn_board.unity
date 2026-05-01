@@ -3051,7 +3051,7 @@ MonoBehaviour:
   endTurnButton: {fileID: 1158999993}
   winPanel: {fileID: 1708667799}
   losePanel: {fileID: 1595086513}
-  storyDeck: {fileID: 11400000, guid: 5f0e3bcfa0f5a43468964cfe56ae24b6, type: 2}
+  storyDeck: {fileID: 11400000, guid: 04e233de798864dcb8a3f09ccd2a9d9d, type: 2}
   storyCardView: {fileID: 1637828319656950576}
 --- !u!4 &1099912336
 Transform:
@@ -6015,7 +6015,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2963222595764409467, guid: f17c2460ee3a34018b6ab826e56a39f1, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 239.672
+      value: 414.94
       objectReference: {fileID: 0}
     - target: {fileID: 2963222595764409467, guid: f17c2460ee3a34018b6ab826e56a39f1, type: 3}
       propertyPath: m_LocalPosition.x
@@ -6051,7 +6051,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2963222595764409467, guid: f17c2460ee3a34018b6ab826e56a39f1, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -2.836
+      value: -0.001503
       objectReference: {fileID: 0}
     - target: {fileID: 2963222595764409467, guid: f17c2460ee3a34018b6ab826e56a39f1, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

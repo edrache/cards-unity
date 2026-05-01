@@ -15,6 +15,7 @@ namespace CardsUnity.UI
         [SerializeField] private GameObject playerCardSpotVisual;
         [SerializeField] private GameObject opponentCardSpotVisual;
         [SerializeField] private SlotDefinition slotDefinition;
+        [SerializeField] private bool startsActiveInBoard = true;
         [SerializeField] private TextMeshProUGUI noOpponentCardEffectLabel;
         [SerializeField] private TextMeshProUGUI noPlayerCardEffectLabel;
         [SerializeField] private TextMeshProUGUI passiveEffectLabel;
@@ -22,6 +23,7 @@ namespace CardsUnity.UI
         public int SlotIndex { get; set; }
         public Action<CardView, int> OnCardDropped;
         public SlotDefinition Definition => slotDefinition;
+        public bool StartsActiveInBoard => startsActiveInBoard;
 
         private SlotDefinition _definition;
         private CardView _playerView;

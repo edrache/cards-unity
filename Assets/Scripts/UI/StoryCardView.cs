@@ -49,7 +49,7 @@ namespace CardsUnity.UI
                     var sb = new System.Text.StringBuilder();
                     foreach (var effect in card.effects)
                     {
-                        if (effect != null && !string.IsNullOrEmpty(effect.description))
+                        if (effect != null && effect.showOnStoryCard && !string.IsNullOrEmpty(effect.description))
                             sb.AppendLine(effect.description);
                     }
                     effectsText.text = sb.ToString().TrimEnd();

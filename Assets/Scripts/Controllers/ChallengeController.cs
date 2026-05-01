@@ -48,8 +48,9 @@ namespace CardsUnity
 
             _hand = new HandState();
             var slotDefs = ResolveSlotDefinitions();
+            var slotActiveStates = ResolveSlotActiveStates(slotDefs);
             _board = slotDefs != null
-                ? new BoardState(slotDefs)
+                ? new BoardState(slotDefs, slotActiveStates)
                 : new BoardState(config.boardSlotCount);
             _playerClock = new ClockState(config.startingDeck != null ? config.startingDeck.Count : 0);
             _opponentClock = new ClockState(config.opponentDeck != null ? config.opponentDeck.Count : 0);
@@ -144,6 +145,25 @@ namespace CardsUnity
                 : null;
         }
 
+        private bool[] ResolveSlotActiveStates(SlotDefinition[] slotDefinitions)
+        {
+            if (slotDefinitions == null)
+                return null;
+
+            if (boardView != null)
+            {
+                var sceneActiveStates = boardView.GetSceneSlotActiveStates();
+                if (sceneActiveStates != null && sceneActiveStates.Length == slotDefinitions.Length)
+                    return sceneActiveStates;
+            }
+
+            var activeStates = new bool[slotDefinitions.Length];
+            for (int i = 0; i < activeStates.Length; i++)
+                activeStates[i] = true;
+
+            return activeStates;
+        }
+
         private void BeginTurn()
         {
             _turn.StartTurn();
@@ -172,11 +192,12 @@ namespace CardsUnity
         private void HandleOpponentCardDestroyed() => EvaluateStoryEffects(StoryEffectTrigger.OnOpponentCardDestroyed);
         private void HandlePlayerCardDestroyed() => EvaluateStoryEffects(StoryEffectTrigger.OnPlayerCardDestroyed);
 
-        private void EvaluateStoryEffects(StoryEffectTrigger trigger)
+        private void EvaluateStoryEffects(StoryEffectTrigger trigger, StoryCardDefinition sourceCard = null)
         {
-            if (_storyDeck?.ActiveCard?.effects == null) return;
+            var card = sourceCard ?? _storyDeck?.ActiveCard;
+            if (card?.effects == null) return;
 
-            foreach (var effect in _storyDeck.ActiveCard.effects)
+            foreach (var effect in card.effects)
             {
                 if (effect == null || effect.trigger != trigger) continue;
 
@@ -184,6 +205,9 @@ namespace CardsUnity
                 {
                     case StoryEffectAction.IncrementStoryClock:
                         IncrementStoryClock(effect.actionValue);
+                        break;
+                    case StoryEffectAction.ResolvePlayedCardCounters:
+                        ExecutePlayedCardCounterStoryEffect(effect);
                         break;
                 }
             }
@@ -235,10 +259,84 @@ namespace CardsUnity
         public void IncrementStoryClock(int amount)
         {
             if (_storyDeck == null || _storyDeck.ActiveCard == null) return;
+            var completedCard = _storyDeck.ActiveCard;
             _storyDeck.ActiveCardClock.Increment(amount);
             // Overflow is intentional: excess points are discarded, not carried to the next card.
             if (_storyDeck.ActiveCardClock.IsFull)
+            {
+                EvaluateStoryEffects(StoryEffectTrigger.OnStoryClockCompleted, completedCard);
                 _storyDeck.AdvanceCard();
+            }
+        }
+
+        private void ExecutePlayedCardCounterStoryEffect(StoryEffectDefinition effect)
+        {
+            if (effect == null)
+                return;
+
+            var resolution = PlayedCardCounterDominanceResolver.Resolve(_playedCardCounters);
+            ApplyStoryEffectOutcome(effect.GetOutcome(resolution));
+        }
+
+        private void ApplyStoryEffectOutcome(StoryEffectOutcome outcome)
+        {
+            if (outcome == null)
+                return;
+
+            if (outcome.deckMutations != null)
+            {
+                foreach (var deckMutation in outcome.deckMutations)
+                {
+                    if (deckMutation == null || deckMutation.cards == null)
+                        continue;
+
+                    _turn.AddCardsToDeck(deckMutation.cards, deckMutation.targetDeck, deckMutation.placement);
+                }
+            }
+
+            if (outcome.slotMutations == null)
+                return;
+
+            foreach (var slotMutation in outcome.slotMutations)
+                ApplySlotMutation(slotMutation);
+        }
+
+        private void ApplySlotMutation(StoryEffectSlotMutation slotMutation)
+        {
+            if (slotMutation == null || _board?.Slots == null)
+                return;
+
+            if (slotMutation.slotIndex < 0 || slotMutation.slotIndex >= _board.Slots.Length)
+                return;
+
+            var slot = _board.Slots[slotMutation.slotIndex];
+            if (slot == null)
+                return;
+
+            if (!slotMutation.active)
+            {
+                ReturnPlayerCardToHand(slot);
+                slot.OpponentCard = null;
+            }
+
+            slot.SetDefinition(slotMutation.slotDefinition);
+            slot.SetActive(slotMutation.active);
+
+            if (slot.HasPlayerCard && slot.Definition != null && !slot.Definition.hasPlayerCardSpot)
+                ReturnPlayerCardToHand(slot);
+
+            if (slot.HasOpponentCard && slot.Definition != null && !slot.Definition.hasOpponentCardSpot)
+                slot.OpponentCard = null;
+        }
+
+        private void ReturnPlayerCardToHand(SlotState slot)
+        {
+            if (slot?.PlayerCard == null)
+                return;
+
+            slot.PlayerCard.IsExhausted = false;
+            _hand.Add(slot.PlayerCard);
+            slot.PlayerCard = null;
         }
     }
 }
