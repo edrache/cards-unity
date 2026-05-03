@@ -17,6 +17,7 @@ namespace CardsUnity.Tests
         private ClockState _opponentClock;
         private ProgressionState _progression;
         private PlayedCardCounterState _playedCardCounters;
+        private StatusCollection _statusCollection;
 
         [SetUp]
         public void SetUp()
@@ -29,11 +30,13 @@ namespace CardsUnity.Tests
             _opponentClock = new ClockState(maxValue: 4);
             _progression = new ProgressionState(xpCap: 100);
             _playedCardCounters = new PlayedCardCounterState();
+            _statusCollection = new StatusCollection();
 
             _turn = new TurnController(
                 _playerDeck, _playerHand,
                 _opponentDeck, _board,
                 _threatState, _opponentClock, _progression, _playedCardCounters,
+                _statusCollection,
                 draftValue: 3,
                 rng: new System.Random(42));
         }
@@ -156,6 +159,22 @@ namespace CardsUnity.Tests
         }
 
         [Test]
+        public void PlayCard_player_card_destroyed_moves_card_to_player_discard()
+        {
+            _turn.StartTurn();
+            _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Wit, value: 10));
+
+            var playerCard = _playerHand.Cards.First(c => c.Definition.type == CardType.Force);
+            int discardCountBefore = _playerDeck.DiscardCount;
+
+            _turn.PlayCard(playerCard, slotIndex: 0);
+
+            Assert.IsFalse(_playerHand.Cards.Contains(playerCard));
+            Assert.IsNull(_board.Slots[0].PlayerCard);
+            Assert.AreEqual(discardCountBefore + 1, _playerDeck.DiscardCount);
+        }
+
+        [Test]
         public void EndTurn_returns_player_cards_to_hand()
         {
             _turn.StartTurn();
@@ -256,6 +275,7 @@ namespace CardsUnity.Tests
                 _playerDeck, _playerHand,
                 _opponentDeck, board,
                 _threatState, _opponentClock, _progression, _playedCardCounters,
+                _statusCollection,
                 draftValue: 3,
                 rng: new System.Random(42));
         }
@@ -382,6 +402,24 @@ namespace CardsUnity.Tests
             turn.StartTurn();
 
             Assert.AreEqual(7, _threatState.GetBar(CardType.Force).Segments[0].CurrentValue);
+        }
+
+        [Test]
+        public void StartTurn_active_DamageToThreat_status_drains_matching_threat_bar()
+        {
+            var definition = ScriptableObject.CreateInstance<StatusDefinition>();
+            definition.durationType = StatusDurationType.Turns;
+            definition.durationTurns = 2;
+            definition.action = SlotEffectAction.DamageToThreat;
+            definition.targetCardType = SlotEffectTargetCardType.Force;
+            definition.actionValue = 3;
+
+            _statusCollection.Add(definition);
+
+            _turn.StartTurn();
+
+            var bar = _threatState.GetBar(CardType.Force);
+            Assert.AreEqual(7, bar.Segments[0].CurrentValue);
         }
 
         [Test]
@@ -635,6 +673,110 @@ namespace CardsUnity.Tests
 
             Assert.AreEqual(4, board.Slots[1].OpponentCard.CurrentValue);
             Assert.AreEqual(4, board.Slots[2].OpponentCard.CurrentValue);
+        }
+
+        [Test]
+        public void PlayCard_ModifyPlayerCardsOfTypeValue_changes_matching_player_cards_in_hand_and_on_board()
+        {
+            var effectSlotDef = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnCardPlayed,
+                SlotEffectAction.ModifyPlayerCardsOfTypeValue,
+                actionValue: -1);
+            effectSlotDef.effects[0].targetCardType = SlotEffectTargetCardType.Force;
+
+            var board = new BoardState(new SlotDefinition[] { null, effectSlotDef, null });
+            var turn = MakeTurnWithBoard(board);
+
+            var boardForceCard = new CardInstance(MakeCardDef(CardType.Force, 6));
+            var boardPresenceCard = new CardInstance(MakeCardDef(CardType.Presence, 8));
+            board.Slots[0].PlayerCard = boardForceCard;
+            board.Slots[2].PlayerCard = boardPresenceCard;
+
+            var triggeringForceCard = new CardInstance(MakeCardDef(CardType.Force, 5));
+            var handForceCard = new CardInstance(MakeCardDef(CardType.Force, 4));
+            var handWitCard = new CardInstance(MakeCardDef(CardType.Wit, 7));
+            _playerHand.Add(triggeringForceCard);
+            _playerHand.Add(handForceCard);
+            _playerHand.Add(handWitCard);
+
+            turn.PlayCard(triggeringForceCard, slotIndex: 1);
+
+            Assert.AreEqual(5, boardForceCard.CurrentValue);
+            Assert.AreEqual(4, board.Slots[1].PlayerCard.CurrentValue);
+            Assert.AreEqual(3, handForceCard.CurrentValue);
+            Assert.AreEqual(8, boardPresenceCard.CurrentValue);
+            Assert.AreEqual(7, handWitCard.CurrentValue);
+        }
+
+        [Test]
+        public void PlayCard_ModifyPlayerCardsOfTypeValue_discards_matching_player_cards_that_reach_zero()
+        {
+            var effectSlotDef = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnCardPlayed,
+                SlotEffectAction.ModifyPlayerCardsOfTypeValue,
+                actionValue: -2);
+            effectSlotDef.effects[0].targetCardType = SlotEffectTargetCardType.Force;
+
+            var board = new BoardState(new SlotDefinition[] { null, effectSlotDef, null });
+            var turn = MakeTurnWithBoard(board);
+
+            var boardForceCard = new CardInstance(MakeCardDef(CardType.Force, 2));
+            var survivingPresenceCard = new CardInstance(MakeCardDef(CardType.Presence, 5));
+            board.Slots[0].PlayerCard = boardForceCard;
+            board.Slots[2].PlayerCard = survivingPresenceCard;
+
+            var triggeringForceCard = new CardInstance(MakeCardDef(CardType.Force, 2));
+            var handForceCard = new CardInstance(MakeCardDef(CardType.Force, 1));
+            var handWitCard = new CardInstance(MakeCardDef(CardType.Wit, 6));
+            _playerHand.Add(triggeringForceCard);
+            _playerHand.Add(handForceCard);
+            _playerHand.Add(handWitCard);
+
+            int discardCountBefore = _playerDeck.DiscardCount;
+
+            turn.PlayCard(triggeringForceCard, slotIndex: 1);
+
+            Assert.AreEqual(discardCountBefore + 3, _playerDeck.DiscardCount);
+            Assert.IsNull(board.Slots[0].PlayerCard);
+            Assert.IsNull(board.Slots[1].PlayerCard);
+            Assert.That(_playerHand.Cards, Has.No.Member(handForceCard));
+            Assert.That(_playerHand.Cards, Has.Member(handWitCard));
+            Assert.AreSame(survivingPresenceCard, board.Slots[2].PlayerCard);
+        }
+
+        [Test]
+        public void EndTurn_ModifyPlayerCardsOfTypeValue_changes_matching_player_cards_before_returning_them_to_hand()
+        {
+            var effectSlotDef = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnRoundEnd,
+                SlotEffectAction.ModifyPlayerCardsOfTypeValue,
+                actionValue: 2);
+            effectSlotDef.effects[0].targetCardType = SlotEffectTargetCardType.Force;
+
+            var board = new BoardState(new SlotDefinition[] { effectSlotDef, null, null });
+            var turn = MakeTurnWithBoard(board);
+
+            var boardForceCard = new CardInstance(MakeCardDef(CardType.Force, 3));
+            var boardWitCard = new CardInstance(MakeCardDef(CardType.Wit, 9));
+            board.Slots[0].PlayerCard = boardForceCard;
+            board.Slots[1].PlayerCard = boardWitCard;
+
+            var handForceCard = new CardInstance(MakeCardDef(CardType.Force, 4));
+            var handPresenceCard = new CardInstance(MakeCardDef(CardType.Presence, 6));
+            _playerHand.Add(handForceCard);
+            _playerHand.Add(handPresenceCard);
+
+            turn.EndTurn();
+
+            Assert.AreEqual(5, boardForceCard.CurrentValue);
+            Assert.AreEqual(6, handForceCard.CurrentValue);
+            Assert.AreEqual(9, boardWitCard.CurrentValue);
+            Assert.AreEqual(6, handPresenceCard.CurrentValue);
+            Assert.That(_playerHand.Cards, Does.Contain(boardForceCard));
+            Assert.That(_playerHand.Cards, Does.Contain(boardWitCard));
         }
 
         [Test]

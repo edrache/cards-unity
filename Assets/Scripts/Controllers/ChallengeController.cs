@@ -16,6 +16,7 @@ namespace CardsUnity
         [SerializeField] private ThreatBarView witThreatBarView;
         [SerializeField] private ThreatBarView presenceThreatBarView;
         [SerializeField] private ProgressionView progressionView;
+        [SerializeField] private StatusView statusView;
         [SerializeField] private PlayedCardCounterView playedCardCounterView;
         [SerializeField] private EndTurnButton endTurnButton;
         [SerializeField] private GameObject winPanel;
@@ -30,6 +31,7 @@ namespace CardsUnity
         private ThreatState _threatState;
         private ProgressionState _progression;
         private PlayedCardCounterState _playedCardCounters;
+        private StatusCollection _statusCollection;
         private System.Random _rng;
         private StoryDeckState _storyDeck;
         private Action<CardView> _cardDragStartHandler;
@@ -60,6 +62,7 @@ namespace CardsUnity
             _threatState = BuildThreatState();
             _progression = new ProgressionState(config.progressionXpCap);
             _playedCardCounters = new PlayedCardCounterState();
+            _statusCollection = new StatusCollection();
 
             _turn = new TurnController(
                 playerDeck,
@@ -70,6 +73,7 @@ namespace CardsUnity
                 _opponentClock,
                 _progression,
                 _playedCardCounters,
+                _statusCollection,
                 config.draftValue,
                 _rng);
 
@@ -162,9 +166,20 @@ namespace CardsUnity
             if (tiers == null || tierIndex < 0 || tierIndex >= tiers.Count)
                 return;
 
-            var penaltySlot = tiers[tierIndex]?.penaltySlot;
-            if (penaltySlot != null)
-                AddRuntimeStorySlot(penaltySlot);
+            var tierDefinition = tiers[tierIndex];
+            if (tierDefinition == null)
+                return;
+
+            Debug.Log(
+                $"[ChallengeController] Threat tier depleted. Type={type}, TierIndex={tierIndex}, " +
+                $"PenaltySlot={(tierDefinition.penaltySlot != null ? tierDefinition.penaltySlot.name : "none")}, " +
+                $"PenaltyStatus={(tierDefinition.penaltyStatus != null ? tierDefinition.penaltyStatus.statusName : "none")}");
+
+            if (tierDefinition.penaltySlot != null)
+                AddRuntimeStorySlot(tierDefinition.penaltySlot);
+
+            if (tierDefinition.penaltyStatus != null)
+                _statusCollection?.Add(tierDefinition.penaltyStatus);
 
             RefreshUI();
         }
@@ -176,7 +191,22 @@ namespace CardsUnity
 
         private void HandleLevelUp(StoryEffectResolutionKey dominantType)
         {
-            Debug.Log($"Level up! Dominant type: {dominantType}, Tier: {_progression.CurrentTier}");
+            CardDefinition rewardCard = null;
+            if (config.progressionRewardDeckSet != null)
+            {
+                rewardCard = config.progressionRewardDeckSet.GetRewardCard(dominantType, _rng);
+                if (rewardCard != null)
+                {
+                    _turn.AddCardsToDeck(
+                        new[] { rewardCard },
+                        StoryEffectDeckTarget.Player,
+                        StoryEffectDeckPlacement.DiscardPile);
+                }
+            }
+
+            Debug.Log(
+                $"[ChallengeController] Level up resolved. DominantType={dominantType}, Tier={_progression.CurrentTier}, " +
+                $"RewardCard={(rewardCard != null ? rewardCard.title : "none")}");
             RefreshUI();
         }
 
@@ -301,6 +331,8 @@ namespace CardsUnity
 
             if (storyCardView != null)
                 storyCardView.Refresh(_storyDeck?.ActiveCard, _storyDeck?.ActiveCardClock);
+
+            statusView?.Refresh(_statusCollection);
         }
 
         private void CheckEndCondition()

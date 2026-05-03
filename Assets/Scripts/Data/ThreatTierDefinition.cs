@@ -10,5 +10,8 @@ namespace CardsUnity
 
         [Tooltip("Slot spawned on the board when this tier is depleted. Leave null for the final tier (game over instead).")]
         public SlotDefinition penaltySlot;
+
+        [Tooltip("Status attached to the player when this tier is depleted. Can combine with penaltySlot.")]
+        public StatusDefinition penaltyStatus;
     }
 }

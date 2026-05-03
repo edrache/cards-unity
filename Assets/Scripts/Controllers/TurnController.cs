@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using UnityEngine;
 
 namespace CardsUnity
@@ -13,6 +14,7 @@ namespace CardsUnity
         private readonly ThreatState _threatState;
         private readonly ProgressionState _progression;
         private readonly PlayedCardCounterState _playedCardCounters;
+        private readonly StatusCollection _statusCollection;
         private readonly int _draftValue;
         private readonly System.Random _rng;
         private bool _turnEndedByEffect;
@@ -29,6 +31,7 @@ namespace CardsUnity
             ClockState opponentClock,
             ProgressionState progression,
             PlayedCardCounterState playedCardCounters,
+            StatusCollection statusCollection,
             int draftValue,
             System.Random rng)
         {
@@ -40,6 +43,7 @@ namespace CardsUnity
             _threatState = threatState;
             _progression = progression;
             _playedCardCounters = playedCardCounters;
+            _statusCollection = statusCollection;
             _draftValue = draftValue;
             _rng = rng ?? throw new ArgumentNullException(nameof(rng));
         }
@@ -61,6 +65,7 @@ namespace CardsUnity
                     _playerHand.Add(new CardInstance(card));
             }
 
+            EvaluateStatusEffects();
             EvaluateSlotEffects(SlotEffectTrigger.OnPlayerTurnStart);
         }
 
@@ -165,8 +170,7 @@ namespace CardsUnity
 
             if (result.SecondResult.Destroyed)
             {
-                slot.PlayerCard = null;
-                OnPlayerCardDestroyed?.Invoke();
+                MovePlayerBoardCardToDiscard(slot, "combat");
             }
         }
 
@@ -290,7 +294,13 @@ namespace CardsUnity
                     if (TryResolveFixedTargetCardType(effect.targetCardType, out CardType appearingTargetCardType))
                         IncreaseAppearingOpponentCardOfTypeValue(triggeringOpponentCard, appearingTargetCardType, effect.actionValue);
                     break;
+                case SlotEffectAction.ModifyPlayerCardsOfTypeValue:
+                    if (TryResolveFixedTargetCardType(effect.targetCardType, out CardType playerTargetCardType))
+                        ModifyPlayerCardsOfTypeValue(playerTargetCardType, effect.actionValue);
+                    break;
             }
+
+            DiscardPlayerCardsAtOrBelowZero();
 
             Debug.Log(
                 $"[TurnController] Finished slot effect. Slot={GetSlotIndex(slot)}, Action={effect.action}, BoardStateAfterAction={DescribeBoardState()}");
@@ -482,6 +492,46 @@ namespace CardsUnity
             card.CurrentValue += amount;
         }
 
+        private void ModifyPlayerCardsOfTypeValue(CardType targetCardType, int amount)
+        {
+            if (amount == 0)
+                return;
+
+            int modifiedCount = 0;
+
+            foreach (var handCard in _playerHand.Cards)
+            {
+                if (handCard?.Definition == null || handCard.Definition.type != targetCardType)
+                    continue;
+
+                int previousValue = handCard.CurrentValue;
+                handCard.CurrentValue += amount;
+                modifiedCount++;
+
+                Debug.Log(
+                    $"[TurnController] Modified player hand card value. Type={targetCardType}, Delta={amount}, Before={previousValue}, After={handCard.CurrentValue}, Card={DescribeCard(handCard)}");
+            }
+
+            foreach (var boardSlot in _board.Slots)
+            {
+                if (!boardSlot.IsActive || boardSlot.PlayerCard?.Definition == null)
+                    continue;
+
+                if (boardSlot.PlayerCard.Definition.type != targetCardType)
+                    continue;
+
+                int previousValue = boardSlot.PlayerCard.CurrentValue;
+                boardSlot.PlayerCard.CurrentValue += amount;
+                modifiedCount++;
+
+                Debug.Log(
+                    $"[TurnController] Modified player board card value. Slot={GetSlotIndex(boardSlot)}, Type={targetCardType}, Delta={amount}, Before={previousValue}, After={boardSlot.PlayerCard.CurrentValue}, Card={DescribeCard(boardSlot.PlayerCard)}");
+            }
+
+            Debug.Log(
+                $"[TurnController] Finished modifying player card values. Type={targetCardType}, Delta={amount}, ModifiedCards={modifiedCount}");
+        }
+
         private static bool CanHostPlayerCard(SlotState slot)
         {
             return slot?.Definition == null || slot.Definition.hasPlayerCardSpot;
@@ -505,6 +555,83 @@ namespace CardsUnity
                 : card.CurrentValue;
 
             _playedCardCounters.Add(card.Definition.type, amount);
+        }
+
+        private void EvaluateStatusEffects()
+        {
+            _statusCollection?.EvaluateAndTick(ApplyStatusEffect);
+        }
+
+        private void ApplyStatusEffect(StatusState status)
+        {
+            var definition = status?.Definition;
+            if (definition == null)
+                return;
+
+            Debug.Log(
+                $"[TurnController] Applying status effect. Name={definition.statusName}, DurationType={definition.durationType}, RemainingTurns={status.RemainingTurns}, " +
+                $"Action={definition.action}, TargetType={definition.targetCardType}, ActionValue={definition.actionValue}");
+
+            switch (definition.action)
+            {
+                case SlotEffectAction.DamageToThreat:
+                    if (TryResolveFixedTargetCardType(definition.targetCardType, out CardType threatType))
+                        _threatState?.GetBar(threatType)?.TakeDamage(definition.actionValue);
+                    break;
+                case SlotEffectAction.AddToClock:
+                    _opponentClock?.Increment(definition.actionValue);
+                    break;
+            }
+
+            DiscardPlayerCardsAtOrBelowZero();
+        }
+
+        private void DiscardPlayerCardsAtOrBelowZero()
+        {
+            var zeroHandCards = _playerHand.Cards
+                .Where(card => card?.Definition != null && card.CurrentValue <= 0)
+                .ToList();
+
+            foreach (var handCard in zeroHandCards)
+                MovePlayerHandCardToDiscard(handCard, "value reached zero in hand");
+
+            foreach (var boardSlot in _board.Slots)
+            {
+                if (!boardSlot.IsActive || boardSlot.PlayerCard?.Definition == null)
+                    continue;
+
+                if (boardSlot.PlayerCard.CurrentValue > 0)
+                    continue;
+
+                MovePlayerBoardCardToDiscard(boardSlot, "value reached zero on board");
+            }
+        }
+
+        private void MovePlayerHandCardToDiscard(CardInstance card, string reason)
+        {
+            if (card?.Definition == null)
+                return;
+
+            if (!_playerHand.Remove(card))
+                return;
+
+            _playerDeck?.AddToDiscardPile(card.Definition);
+            Debug.Log(
+                $"[TurnController] Discarded player hand card. Reason={reason}, Card={DescribeCard(card)}");
+            OnPlayerCardDestroyed?.Invoke();
+        }
+
+        private void MovePlayerBoardCardToDiscard(SlotState slot, string reason)
+        {
+            if (slot?.PlayerCard?.Definition == null)
+                return;
+
+            CardInstance card = slot.PlayerCard;
+            slot.PlayerCard = null;
+            _playerDeck?.AddToDiscardPile(card.Definition);
+            Debug.Log(
+                $"[TurnController] Discarded player board card. Reason={reason}, Slot={GetSlotIndex(slot)}, Card={DescribeCard(card)}");
+            OnPlayerCardDestroyed?.Invoke();
         }
 
         private string DescribeBoardState()

@@ -1,7 +1,7 @@
 # Game Design Document
 
 *This is the single source of truth for all game design decisions.*
-*Last updated: 2026-05-01*
+*Last updated: 2026-05-03*
 
 Any change to mechanics — adding, modifying, or removing a rule, system, or data model — must be reflected here. Append an entry to the [Changelog](#changelog) at the bottom.
 
@@ -150,15 +150,16 @@ Mutual destruction is possible.
 When a card's `CurrentValue` reaches `0`:
 - Card is removed from its slot.
 - The appropriate clock is incremented.
-- *(Planned: card moves to its owner's discard pile.)*
+
+For player cards, this zero-value rule now applies globally to all live `CardInstance`s, not only to combat on the board: if a player card in hand or on the board reaches `CurrentValue <= 0` for any reason, that runtime instance is destroyed immediately and its `CardDefinition` is added to the player's discard pile.
 
 ### Threat and Progression on Destruction
 
 | Event | Result |
 |---|---|
 | Opponent card destroyed | Opponent clock +1 and player XP increases by the defeated card's base value |
-| Player card destroyed | No threat damage is dealt automatically; threat changes come from explicit effects |
-| Both destroyed | Opponent clock +1, player XP increases by the defeated opponent card's base value, and the player card is removed |
+| Player card destroyed | No threat damage is dealt automatically; threat changes come from explicit effects; the destroyed player's card is added to the player's discard pile |
+| Both destroyed | Opponent clock +1, player XP increases by the defeated opponent card's base value, and the player card is added to the player's discard pile |
 
 ---
 
@@ -319,7 +320,7 @@ These tags exist on `CardDefinition.effects` but **are not evaluated** by any ru
 **Slot effects** — `SlotEffectDefinition` (ScriptableObject) fields:
 - `context` — `SlotEffectContext`: `NoOpponentCard`, `NoPlayerCard`, `Passive`
 - `trigger` — `SlotEffectTrigger`: `OnPlayerTurnStart`, `OnCardPlayed`, `OnOpponentCardPlaced`, `OnRoundEnd`
-- `action` — `SlotEffectAction`: `DrawOpponentCard`, `AddToClock`, `DamageToThreat`, `ReturnCardsFromSlots`, `DrawToHandLimit`, `TurnEnd`, `IncreaseOpponentCardsOfTypeValue`, `IncreaseAppearingOpponentCardOfTypeValue`
+- `action` — `SlotEffectAction`: `DrawOpponentCard`, `AddToClock`, `DamageToThreat`, `ReturnCardsFromSlots`, `DrawToHandLimit`, `TurnEnd`, `IncreaseOpponentCardsOfTypeValue`, `IncreaseAppearingOpponentCardOfTypeValue`, `ModifyPlayerCardsOfTypeValue`
 - `actionValue` — `int` used by numeric effect payloads such as `AddToClock` and `DamageToThreat`
 - `valueSource` — `SlotEffectValueSource`: `FixedValue` or `CardOnSlotValue`; currently used by `DamageToThreat`
 - `slotCardTarget` — `SlotEffectSlotCardTarget`: `OpponentCard` or `PlayerCard`; selects which card on the same slot provides the value when `valueSource` is `CardOnSlotValue`
@@ -339,6 +340,7 @@ Slot effects **are evaluated at runtime** by `TurnController`.
 | `TurnEnd` | `OnCardPlayed` | `Passive` | Run the full end-turn sequence immediately: return player cards, clear player slots, and refill opponent slots |
 | `IncreaseOpponentCardsOfTypeValue` | `OnPlayerTurnStart` or `OnCardPlayed` | `Passive` | Increase `CurrentValue` by `actionValue` for every opponent card on the board whose `CardType` matches `targetCardType` |
 | `IncreaseAppearingOpponentCardOfTypeValue` | `OnOpponentCardPlaced` | `Passive` | Increase `CurrentValue` by `actionValue` only for the opponent card that has just been placed, if its `CardType` matches `targetCardType` |
+| `ModifyPlayerCardsOfTypeValue` | `OnPlayerTurnStart`, `OnCardPlayed`, or `OnRoundEnd` | `Passive` | Change `CurrentValue` by `actionValue` for every live player `CardInstance` whose `CardType` matches `targetCardType`. In the current runtime model this means cards in hand plus player cards currently on the board; cards in draw/discard piles are `CardDefinition` assets, not mutable runtime instances. Any affected player card that reaches `CurrentValue <= 0` is destroyed immediately and sent to the player's discard pile |
 
 `OnRoundEnd` fires as soon as the round-end flow is triggered, before player cards return to hand and before empty board slots are refilled with opponent cards. This includes round ends caused by the `TurnEnd` slot action.
 
@@ -428,6 +430,18 @@ Resolving a challenge rewards the player:
 - New cards added to the deck.
 - Upgrades to existing cards (`maxValue` increase or new effect entries).
 
+### Progression Reward Deck
+
+`ProgressionRewardDeckSet` holds four `CardDefinition` lists keyed by `StoryEffectResolutionKey`: `Force`, `Wit`, `Presence`, and `FullTie`.
+
+When the player levels up, the dominant defeated-card type for that level-up picks the matching reward list. One random card from that list is added permanently to the player's discard pile, so it enters the run through the normal reshuffle loop instead of appearing immediately in hand. The reward deck set is assigned through `GameConfig.progressionRewardDeckSet`.
+
+### Status / Condition Cards
+
+Statuses are persistent penalties attached to the player rather than to a slot. `StatusDefinition` describes the status data: display name, icon, description, duration (`Permanent` or a fixed number of turns), and one per-turn effect (`SlotEffectAction`, target type, and value).
+
+At runtime, each active status is represented by `StatusState`, and the active list is owned by `StatusCollection`. Statuses are evaluated at the start of every player turn before slot effects resolve. After evaluation, turn-based statuses tick down by one turn; expired statuses are then removed. Threat tier boundaries can attach a status through `ThreatTierDefinition.penaltyStatus`, allowing a tier to spawn a passive slot, a player status, or both. Active statuses are rendered in the HUD by `StatusView` as icon + remaining-turn counter widgets.
+
 ---
 
 ## Configuration
@@ -441,6 +455,7 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | `startingDeck` | 9 cards | Player's starting deck (mix of sample cards) |
 | `opponentDeck` | 5 cards | Opponent's deck (smaller mixed set) |
 | `slotDefinitions` | Empty list | Optional per-slot definitions used to switch the board into slot-effect mode |
+| `progressionRewardDeckSet` | None | Reward deck lists used by level-up resolution to add cards to the player's discard pile |
 
 ---
 
@@ -530,3 +545,7 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | 2026-05-01 | Updated `SlotView` to concatenate multiple effect descriptions from the same context into one multi-line label instead of overwriting earlier text |
 | 2026-05-01 | Disabled the prototype win-condition hook for a full opponent clock so only the player loss condition remains active |
 | 2026-05-03 | Replaced the player clock with three segmented threat bars and added XP-based player progression with dominant-type level-up resolution |
+| 2026-05-03 | Added `ProgressionRewardDeckSet`: level-up now draws a reward card from the dominant-type reward list into the player's discard pile |
+| 2026-05-03 | Added Status / Condition Cards: per-turn status effects, turn-based expiry, threat-tier status spawning, and HUD status rendering via `StatusView` |
+| 2026-05-03 | Added `ModifyPlayerCardsOfTypeValue` slot effect action for changing all live player cards of a chosen type across hand and board on `OnPlayerTurnStart`, `OnCardPlayed`, or `OnRoundEnd` |
+| 2026-05-03 | Player cards that reach `CurrentValue <= 0` now immediately move to the player's discard pile, including cards destroyed by slot effects outside combat |

@@ -9,6 +9,7 @@ namespace CardsUnity
         DrawToHandLimit,
         TurnEnd,
         IncreaseOpponentCardsOfTypeValue,
-        IncreaseAppearingOpponentCardOfTypeValue
+        IncreaseAppearingOpponentCardOfTypeValue,
+        ModifyPlayerCardsOfTypeValue
     }
 }

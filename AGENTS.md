@@ -71,6 +71,10 @@ When implementing any change — adding a mechanic, modifying a rule, removing a
 
 Do not let the implementation diverge from the documented design without updating the doc. If a design decision is unclear or undocumented, treat `docs/game-design-doc.md` as the authoritative reference and ask the user before changing it.
 
+## Effect Feasibility Skill
+
+When the user asks whether a slot or story effect is possible, asks how to configure a `SlotEffectDefinition` or `StoryEffectDefinition`, or references effect setup with phrases such as "can I do X?", "is this possible?", or "how do I set up this effect?", always read `.claude/skills/effect-feasibility/SKILL.md` and follow its workflow before answering.
+
 ## Workflow
 
 - Keep runtime data and resolver logic free of Unity scene dependencies unless the architecture explicitly calls for a `MonoBehaviour`.

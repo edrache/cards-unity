@@ -19,6 +19,7 @@ namespace CardsUnity
 
         [Header("Progression")]
         [Min(1)] public int progressionXpCap = 10;
+        public ProgressionRewardDeckSet progressionRewardDeckSet;
 
         public List<ThreatTierDefinition> GetThreatTiers(CardType type) => type switch
         {

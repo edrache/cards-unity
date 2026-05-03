@@ -13,4 +13,5 @@ MonoBehaviour:
   m_Name: Force_ThreatTier_1
   m_EditorClassIdentifier: CardsUnity.Runtime::CardsUnity.ThreatTierDefinition
   maxValue: 30
-  penaltySlot: {fileID: 0}
+  penaltySlot: {fileID: 11400000, guid: bec319d5eced44bad82c908a9a5d4cf3, type: 2}
+  penaltyStatus: {fileID: 0}
