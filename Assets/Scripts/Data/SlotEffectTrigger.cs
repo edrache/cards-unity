@@ -4,6 +4,7 @@ namespace CardsUnity
     {
         OnPlayerTurnStart,
         OnCardPlayed,
-        OnOpponentCardPlaced
+        OnOpponentCardPlaced,
+        OnRoundEnd
     }
 }

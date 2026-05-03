@@ -152,13 +152,13 @@ When a card's `CurrentValue` reaches `0`:
 - The appropriate clock is incremented.
 - *(Planned: card moves to its owner's discard pile.)*
 
-### Clock Increments on Destruction
+### Threat and Progression on Destruction
 
-| Event | Clock incremented |
+| Event | Result |
 |---|---|
-| Opponent card destroyed | Opponent clock +1 |
-| Player card destroyed | Player clock +1 |
-| Both destroyed | Both clocks +1 |
+| Opponent card destroyed | Opponent clock +1 and player XP increases by the defeated card's base value |
+| Player card destroyed | No threat damage is dealt automatically; threat changes come from explicit effects |
+| Both destroyed | Opponent clock +1, player XP increases by the defeated opponent card's base value, and the player card is removed |
 
 ---
 
@@ -276,22 +276,32 @@ To re-engage with a fatigued card, the player must return it to hand and play it
 
 ### Current Implementation
 
-`ClockState` tracks `CurrentValue` and `MaxValue`. Clock max = deck size (player or opponent).
+`ClockState` tracks `CurrentValue` and `MaxValue`.
 
-Current prototype note: only the player clock currently ends the run. The opponent clock still fills for progression feedback, but its win-condition hook is temporarily disabled.
+Current prototype note: the opponent clock still fills when opponent cards are defeated, but it does not currently end the encounter.
 
 - Destroying an opponent card → `_opponentClock.Increment(1)`
-- Losing a player card → `_playerClock.Increment(1)`
+- Story cards use their own per-card `ClockState` to track narrative progress
 
 ### Planned: Multiple Clocks
 
 The game uses multiple clocks rather than a single HP value. A clock is any numeric resource that fills and triggers an event.
 
-**Player clock** — the main losing condition. Slots or opponent cards drain it (e.g., "at end of turn, if this slot is empty, subtract 2 from player clock").
+**Threat bars** — the player-facing losing condition is now split into three typed bars: `Force`, `Wit`, and `Presence`. Each bar is built from ordered segments. Damage drains the first available segment in bar order; when a segment is depleted it may spawn a penalty slot, and when any full bar reaches zero the run ends.
 
 **Zone clocks** — attached to a slot group. If the player does not cover a slot in the group, the opponent card there contributes its `CurrentValue` to the zone clock each turn. When full, an event triggers.
 
 **Type-contribution tracking** *(planned)* — Zone clocks also record which card types were used to resolve them. When a zone clock fills, the dominant type determines the outcome event. This makes *how* the player solved a challenge matter, not just *whether* they solved it.
+
+## Player Progression
+
+The player also has one XP bar represented by `ProgressionState`.
+
+- Defeating an opponent card adds XP equal to that card's base `CardDefinition.value`.
+- The same defeated value is also added into per-type counters for `Force`, `Wit`, and `Presence`.
+- When XP reaches `XpCap`, the player levels up and the dominant defeated type is resolved via `PlayedCardCounterDominanceResolver`.
+- On level-up, the current tier increments, the defeated-type counters reset, and any XP overflow carries into the next tier.
+- Reward resolution is currently limited to surfacing the dominant type event; concrete reward content will be wired later.
 
 ---
 
@@ -308,11 +318,11 @@ These tags exist on `CardDefinition.effects` but **are not evaluated** by any ru
 
 **Slot effects** — `SlotEffectDefinition` (ScriptableObject) fields:
 - `context` — `SlotEffectContext`: `NoOpponentCard`, `NoPlayerCard`, `Passive`
-- `trigger` — `SlotEffectTrigger`: `OnPlayerTurnStart`, `OnCardPlayed`, `OnOpponentCardPlaced`
-- `action` — `SlotEffectAction`: `DrawOpponentCard`, `AddToClock`, `ReturnCardsFromSlots`, `DrawToHandLimit`, `TurnEnd`, `IncreaseOpponentCardsOfTypeValue`, `IncreaseAppearingOpponentCardOfTypeValue`
-- `actionValue` — `int` used by `AddToClock`
-- `targetCardType` — `CardType` used by `IncreaseOpponentCardsOfTypeValue` and `IncreaseAppearingOpponentCardOfTypeValue`
-- `clockTarget` — `ClockTarget`: `PlayerClock`, `OpponentClock`
+- `trigger` — `SlotEffectTrigger`: `OnPlayerTurnStart`, `OnCardPlayed`, `OnOpponentCardPlaced`, `OnRoundEnd`
+- `action` — `SlotEffectAction`: `DrawOpponentCard`, `AddToClock`, `DamageToThreat`, `ReturnCardsFromSlots`, `DrawToHandLimit`, `TurnEnd`, `IncreaseOpponentCardsOfTypeValue`, `IncreaseAppearingOpponentCardOfTypeValue`
+- `actionValue` — `int` used by numeric effect payloads such as `AddToClock` and `DamageToThreat`
+- `targetCardType` — `CardType` used by `DamageToThreat`, `IncreaseOpponentCardsOfTypeValue`, and `IncreaseAppearingOpponentCardOfTypeValue`
+- `clockTarget` — `ClockTarget`: currently only `OpponentClock`
 - `description` — `string` shown in `SlotView`; multiple effects in the same context are concatenated into one multi-line label
 
 Slot effects **are evaluated at runtime** by `TurnController`.
@@ -320,12 +330,15 @@ Slot effects **are evaluated at runtime** by `TurnController`.
 | Action | Trigger | Context | Behaviour |
 |---|---|---|---|
 | `DrawOpponentCard` | `OnPlayerTurnStart` | `NoOpponentCard` | Draw from opponent deck and place the card on this slot |
-| `AddToClock` | `OnPlayerTurnStart` | `NoPlayerCard` | Increment the selected clock by `actionValue` |
+| `AddToClock` | `OnPlayerTurnStart` | `NoPlayerCard` | Increment the opponent clock by `actionValue` |
+| `DamageToThreat` | `OnPlayerTurnStart` or `OnCardPlayed` | Any supported slot context | Drain the targeted threat bar by `actionValue` using `targetCardType` |
 | `ReturnCardsFromSlots` | `OnCardPlayed` | `Passive` | Return all player cards currently on the board to hand |
 | `DrawToHandLimit` | `OnCardPlayed` | `Passive` | Draw from the player deck until hand reaches `draftValue` |
 | `TurnEnd` | `OnCardPlayed` | `Passive` | Run the full end-turn sequence immediately: return player cards, clear player slots, and refill opponent slots |
 | `IncreaseOpponentCardsOfTypeValue` | `OnPlayerTurnStart` or `OnCardPlayed` | `Passive` | Increase `CurrentValue` by `actionValue` for every opponent card on the board whose `CardType` matches `targetCardType` |
 | `IncreaseAppearingOpponentCardOfTypeValue` | `OnOpponentCardPlaced` | `Passive` | Increase `CurrentValue` by `actionValue` only for the opponent card that has just been placed, if its `CardType` matches `targetCardType` |
+
+`OnRoundEnd` fires as soon as the round-end flow is triggered, before player cards return to hand and before empty board slots are refilled with opponent cards. This includes round ends caused by the `TurnEnd` slot action.
 
 ### Planned: Trigger + Action Structure
 
@@ -359,7 +372,7 @@ trigger → action
 |---|---|
 | Draw card | Draw one card |
 | Draw to limit | Draw up to hand limit |
-| Advance clock | Move a zone clock or player clock |
+| Advance clock | Move a zone clock, story clock, or opponent clock |
 | Change card value | Increase or decrease `CurrentValue` of own or opponent cards |
 | Search discard | Look through discard and select a card |
 | Search deck | Look through deck and select a card (by type or value threshold) |
@@ -434,16 +447,18 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 ### Implemented and Working
 
 - Single-challenge loop
-- Deck, hand, board, and clock state (`DeckState`, `HandState`, `BoardState`, `ClockState`)
+- Deck, hand, board, threat, clock, and progression state (`DeckState`, `HandState`, `BoardState`, `ThreatState`, `ClockState`, `ProgressionState`)
 - Draw-to-draft at turn start (with auto-reshuffle)
 - Drag-and-drop card play (Unity EventSystem)
 - Automatic combat on contested slots (simultaneous exchange)
 - End turn flow (cards return to hand, opponent refills)
-- Win/loss state detection (clock fill check)
+- Win/loss state detection (threat depletion for loss, opponent clock retained as encounter feedback)
 - ScriptableObject-based card and config data
 - Full test coverage for combat, deck, and turn logic
 - Slot effect system: `SlotEffectDefinition` and `SlotDefinition` ScriptableObjects with runtime evaluation in `TurnController`
-- Slot effect actions implemented: `DrawOpponentCard`, `AddToClock`, `ReturnCardsFromSlots`, `DrawToHandLimit`, `TurnEnd`
+- Slot effect actions implemented: `DrawOpponentCard`, `AddToClock`, `DamageToThreat`, `ReturnCardsFromSlots`, `DrawToHandLimit`, `TurnEnd`
+- UI support for segmented threat bars via `ThreatBarView`, including an aggregated `current/max` label across all threat segments
+- UI support for player XP/tier tracking via `ProgressionView`
 - Slot UI effect descriptions via `TextMeshProUGUI` labels in `SlotView`
 - Reusable UI outline renderer for `Canvas` elements via `RectOutlineGraphic` (`MaskableGraphic` + shader) with configurable thickness, color, rounded corners, solid/dashed mode, dash length, gap length, dash offset, and fixed vs edge-fitted dash distribution
 - Story card data model: `StoryCardDefinition`, `StoryDeckDefinition` ScriptableObjects with `StoryDrawMode` (Sequential/Random); `StoryDeckState` runtime class with clock-driven `AdvanceCard()`; `ChallengeController.IncrementStoryClock(int)` entry point
@@ -506,5 +521,9 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | 2026-05-01 | Added runtime story-slot spawning via `StoryEffectSlotMutationMode.Add`, plus `SlotDefinition.spawnInPassiveContainer` and `BoardView.passiveSlotContainer` support for passive-slot placement |
 | 2026-05-01 | Added `IncreaseOpponentCardsOfTypeValue` slot effect action with `targetCardType` filtering for buffing matching opponent cards already on the board |
 | 2026-05-01 | Added `OnOpponentCardPlaced` slot-effect trigger and `IncreaseAppearingOpponentCardOfTypeValue` for one-time buffs applied only to the newly spawned matching opponent card |
+| 2026-05-03 | Added `OnRoundEnd` slot-effect trigger, evaluated immediately when round end begins, including `TurnEnd`-driven round ends |
+| 2026-05-03 | Removed the startup `EndTurn()` call from `ChallengeController`, so a new encounter now begins without triggering round-end slot effects or spawning the initial opponent refill automatically |
+| 2026-05-03 | Added a `Type current/max` TextMeshPro value label to `ThreatBarView`, showing the summed threat across all bar segments |
 | 2026-05-01 | Updated `SlotView` to concatenate multiple effect descriptions from the same context into one multi-line label instead of overwriting earlier text |
-| 2026-05-01 | Disabled the prototype win-condition hook for a full opponent clock so only the player clock ends the run for now |
+| 2026-05-01 | Disabled the prototype win-condition hook for a full opponent clock so only the player loss condition remains active |
+| 2026-05-03 | Replaced the player clock with three segmented threat bars and added XP-based player progression with dominant-type level-up resolution |

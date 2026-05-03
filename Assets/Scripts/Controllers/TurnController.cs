@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace CardsUnity
 {
@@ -8,11 +9,12 @@ namespace CardsUnity
         private readonly HandState _playerHand;
         private readonly DeckState _opponentDeck;
         private readonly BoardState _board;
-        private readonly ClockState _playerClock;
         private readonly ClockState _opponentClock;
+        private readonly ThreatState _threatState;
+        private readonly ProgressionState _progression;
         private readonly PlayedCardCounterState _playedCardCounters;
         private readonly int _draftValue;
-        private readonly Random _rng;
+        private readonly System.Random _rng;
         private bool _turnEndedByEffect;
 
         public event Action OnOpponentCardDestroyed;
@@ -23,18 +25,20 @@ namespace CardsUnity
             HandState playerHand,
             DeckState opponentDeck,
             BoardState board,
-            ClockState playerClock,
+            ThreatState threatState,
             ClockState opponentClock,
+            ProgressionState progression,
             PlayedCardCounterState playedCardCounters,
             int draftValue,
-            Random rng)
+            System.Random rng)
         {
             _playerDeck = playerDeck;
             _playerHand = playerHand;
             _opponentDeck = opponentDeck;
             _board = board;
-            _playerClock = playerClock;
             _opponentClock = opponentClock;
+            _threatState = threatState;
+            _progression = progression;
             _playedCardCounters = playedCardCounters;
             _draftValue = draftValue;
             _rng = rng ?? throw new ArgumentNullException(nameof(rng));
@@ -94,6 +98,10 @@ namespace CardsUnity
 
         public void EndTurn()
         {
+            Debug.Log($"[TurnController] EndTurn started. Board before OnRoundEnd: {DescribeBoardState()}");
+            EvaluateSlotEffects(SlotEffectTrigger.OnRoundEnd);
+            Debug.Log($"[TurnController] EndTurn continuing after OnRoundEnd. Board before returning player cards: {DescribeBoardState()}");
+
             foreach (var slot in _board.Slots)
             {
                 if (!slot.IsActive)
@@ -102,12 +110,15 @@ namespace CardsUnity
                 if (slot.PlayerCard == null)
                     continue;
 
+                Debug.Log($"[TurnController] Returning player card from slot {GetSlotIndex(slot)} to hand. Card={DescribeCard(slot.PlayerCard)}");
                 slot.PlayerCard.IsExhausted = false;
                 _playerHand.Add(slot.PlayerCard);
                 slot.PlayerCard = null;
             }
 
+            Debug.Log($"[TurnController] EndTurn after returning player cards. Board before opponent refill: {DescribeBoardState()}");
             PlaceOpponentCards();
+            Debug.Log($"[TurnController] EndTurn completed. Final board state: {DescribeBoardState()}");
         }
 
         public bool ConsumeTurnEndedByEffect()
@@ -144,14 +155,16 @@ namespace CardsUnity
 
             if (result.FirstResult.Destroyed)
             {
+                var defeatedCard = slot.OpponentCard;
                 _opponentClock.Increment();
                 slot.OpponentCard = null;
+                if (defeatedCard?.Definition != null)
+                    _progression?.AddDefeatedCard(defeatedCard.Definition.type, defeatedCard.Definition.value);
                 OnOpponentCardDestroyed?.Invoke();
             }
 
             if (result.SecondResult.Destroyed)
             {
-                _playerClock.Increment();
                 slot.PlayerCard = null;
                 OnPlayerCardDestroyed?.Invoke();
             }
@@ -180,6 +193,7 @@ namespace CardsUnity
                 if (card != null)
                 {
                     slot.OpponentCard = new CardInstance(card);
+                    Debug.Log($"[TurnController] Placed opponent card on slot {GetSlotIndex(slot)} during EndTurn. Card={DescribeCard(slot.OpponentCard)}");
                     EvaluateSlotEffects(SlotEffectTrigger.OnOpponentCardPlaced, slot, slot.OpponentCard);
                 }
             }
@@ -210,7 +224,13 @@ namespace CardsUnity
                 if (effect == null || effect.trigger != trigger)
                     continue;
 
-                if (!IsContextConditionMet(effect.context, slot))
+                bool contextMet = IsContextConditionMet(effect.context, slot);
+                Debug.Log(
+                    $"[TurnController] Evaluating slot effect. Trigger={trigger}, Slot={GetSlotIndex(slot)}, Context={effect.context}, " +
+                    $"ContextMet={contextMet}, Action={effect.action}, ActionValue={effect.actionValue}, TargetType={effect.targetCardType}, " +
+                    $"SlotState={DescribeSlotState(slot)}, TriggeredSlot={DescribeTriggeredSlot(triggeredSlot)}, TriggeringOpponentCard={DescribeCard(triggeringOpponentCard)}");
+
+                if (!contextMet)
                     continue;
 
                 ExecuteSlotEffect(effect, slot, triggeredSlot, triggeringOpponentCard);
@@ -234,14 +254,21 @@ namespace CardsUnity
             SlotState triggeredSlot = null,
             CardInstance triggeringOpponentCard = null)
         {
+            Debug.Log(
+                $"[TurnController] Executing slot effect. Slot={GetSlotIndex(slot)}, Context={effect.context}, Trigger={effect.trigger}, " +
+                $"Action={effect.action}, ActionValue={effect.actionValue}, TargetType={effect.targetCardType}, " +
+                $"BoardStateBeforeAction={DescribeBoardState()}");
+
             switch (effect.action)
             {
                 case SlotEffectAction.DrawOpponentCard:
                     DrawOpponentCardToSlot(slot);
                     break;
                 case SlotEffectAction.AddToClock:
-                    var clock = effect.clockTarget == ClockTarget.PlayerClock ? _playerClock : _opponentClock;
-                    clock.Increment(effect.actionValue);
+                    _opponentClock.Increment(effect.actionValue);
+                    break;
+                case SlotEffectAction.DamageToThreat:
+                    _threatState?.GetBar(effect.targetCardType)?.TakeDamage(effect.actionValue);
                     break;
                 case SlotEffectAction.ReturnCardsFromSlots:
                     ReturnAllPlayerCardsToHand();
@@ -260,6 +287,9 @@ namespace CardsUnity
                     IncreaseAppearingOpponentCardOfTypeValue(triggeringOpponentCard, effect.targetCardType, effect.actionValue);
                     break;
             }
+
+            Debug.Log(
+                $"[TurnController] Finished slot effect. Slot={GetSlotIndex(slot)}, Action={effect.action}, BoardStateAfterAction={DescribeBoardState()}");
         }
 
         private void DrawOpponentCardToSlot(SlotState slot)
@@ -370,6 +400,50 @@ namespace CardsUnity
                 : card.CurrentValue;
 
             _playedCardCounters.Add(card.Definition.type, amount);
+        }
+
+        private string DescribeBoardState()
+        {
+            var parts = new string[_board.Slots.Length];
+            for (int i = 0; i < _board.Slots.Length; i++)
+                parts[i] = DescribeSlotState(_board.Slots[i]);
+
+            return string.Join(" | ", parts);
+        }
+
+        private string DescribeSlotState(SlotState slot)
+        {
+            if (slot == null)
+                return "Slot<null>";
+
+            return $"Slot[{GetSlotIndex(slot)}](Active={slot.IsActive}, Player={DescribeCard(slot.PlayerCard)}, Opponent={DescribeCard(slot.OpponentCard)}, HasDefinition={slot.Definition != null})";
+        }
+
+        private string DescribeTriggeredSlot(SlotState slot)
+        {
+            return slot == null ? "none" : $"Slot[{GetSlotIndex(slot)}]";
+        }
+
+        private int GetSlotIndex(SlotState slot)
+        {
+            if (slot == null || _board?.Slots == null)
+                return -1;
+
+            for (int i = 0; i < _board.Slots.Length; i++)
+            {
+                if (ReferenceEquals(_board.Slots[i], slot))
+                    return i;
+            }
+
+            return -1;
+        }
+
+        private static string DescribeCard(CardInstance card)
+        {
+            if (card?.Definition == null)
+                return "none";
+
+            return $"{card.Definition.type}:{card.CurrentValue}(Exhausted={card.IsExhausted})";
         }
     }
 }

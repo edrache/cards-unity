@@ -11,8 +11,11 @@ namespace CardsUnity
         [SerializeField] private GameConfig config;
         [SerializeField] private BoardView boardView;
         [SerializeField] private HandView handView;
-        [SerializeField] private ClockView playerClockView;
         [SerializeField] private ClockView opponentClockView;
+        [SerializeField] private ThreatBarView forceThreatBarView;
+        [SerializeField] private ThreatBarView witThreatBarView;
+        [SerializeField] private ThreatBarView presenceThreatBarView;
+        [SerializeField] private ProgressionView progressionView;
         [SerializeField] private PlayedCardCounterView playedCardCounterView;
         [SerializeField] private EndTurnButton endTurnButton;
         [SerializeField] private GameObject winPanel;
@@ -23,8 +26,9 @@ namespace CardsUnity
         private TurnController _turn;
         private HandState _hand;
         private BoardState _board;
-        private ClockState _playerClock;
         private ClockState _opponentClock;
+        private ThreatState _threatState;
+        private ProgressionState _progression;
         private PlayedCardCounterState _playedCardCounters;
         private System.Random _rng;
         private StoryDeckState _storyDeck;
@@ -34,7 +38,7 @@ namespace CardsUnity
         private void Start()
         {
             if (config == null || boardView == null || handView == null ||
-                playerClockView == null || opponentClockView == null || endTurnButton == null)
+                opponentClockView == null || endTurnButton == null)
             {
                 Debug.LogError("ChallengeController is missing required references.");
                 enabled = false;
@@ -52,8 +56,9 @@ namespace CardsUnity
             _board = slotDefs != null
                 ? new BoardState(slotDefs, slotActiveStates)
                 : new BoardState(config.boardSlotCount);
-            _playerClock = new ClockState(config.startingDeck != null ? config.startingDeck.Count : 0);
             _opponentClock = new ClockState(config.opponentDeck != null ? config.opponentDeck.Count : 0);
+            _threatState = BuildThreatState();
+            _progression = new ProgressionState(config.progressionXpCap);
             _playedCardCounters = new PlayedCardCounterState();
 
             _turn = new TurnController(
@@ -61,8 +66,9 @@ namespace CardsUnity
                 _hand,
                 opponentDeck,
                 _board,
-                _playerClock,
+                _threatState,
                 _opponentClock,
+                _progression,
                 _playedCardCounters,
                 config.draftValue,
                 _rng);
@@ -79,6 +85,9 @@ namespace CardsUnity
             endTurnButton.OnClicked += OnEndTurn;
             _turn.OnOpponentCardDestroyed += HandleOpponentCardDestroyed;
             _turn.OnPlayerCardDestroyed += HandlePlayerCardDestroyed;
+            _threatState.OnTierDepleted += HandleThreatTierDepleted;
+            _threatState.OnBarAtZero += HandleThreatBarAtZero;
+            _progression.OnLevelUp += HandleLevelUp;
 
             if (winPanel != null)
                 winPanel.SetActive(false);
@@ -90,8 +99,11 @@ namespace CardsUnity
             if (slotDefs != null)
                 boardView.ConfigureSlots(slotDefs);
 
+            forceThreatBarView?.Build(_threatState.GetBar(CardType.Force));
+            witThreatBarView?.Build(_threatState.GetBar(CardType.Wit));
+            presenceThreatBarView?.Build(_threatState.GetBar(CardType.Presence));
+
             BeginTurn();
-            _turn.EndTurn();
             RefreshUI();
             CheckEndCondition();
         }
@@ -115,6 +127,57 @@ namespace CardsUnity
                 _turn.OnOpponentCardDestroyed -= HandleOpponentCardDestroyed;
                 _turn.OnPlayerCardDestroyed -= HandlePlayerCardDestroyed;
             }
+
+            if (_threatState != null)
+            {
+                _threatState.OnTierDepleted -= HandleThreatTierDepleted;
+                _threatState.OnBarAtZero -= HandleThreatBarAtZero;
+            }
+
+            if (_progression != null)
+                _progression.OnLevelUp -= HandleLevelUp;
+        }
+
+        private ThreatState BuildThreatState()
+        {
+            return new ThreatState(
+                EnsureThreatTierList(config.GetThreatTiers(CardType.Force)),
+                EnsureThreatTierList(config.GetThreatTiers(CardType.Wit)),
+                EnsureThreatTierList(config.GetThreatTiers(CardType.Presence)));
+        }
+
+        private static List<ThreatTierDefinition> EnsureThreatTierList(List<ThreatTierDefinition> tiers)
+        {
+            if (tiers != null && tiers.Count > 0)
+                return tiers;
+
+            var fallback = ScriptableObject.CreateInstance<ThreatTierDefinition>();
+            fallback.maxValue = 5;
+            return new List<ThreatTierDefinition> { fallback };
+        }
+
+        private void HandleThreatTierDepleted(CardType type, int tierIndex)
+        {
+            var tiers = config.GetThreatTiers(type);
+            if (tiers == null || tierIndex < 0 || tierIndex >= tiers.Count)
+                return;
+
+            var penaltySlot = tiers[tierIndex]?.penaltySlot;
+            if (penaltySlot != null)
+                AddRuntimeStorySlot(penaltySlot);
+
+            RefreshUI();
+        }
+
+        private void HandleThreatBarAtZero(CardType type)
+        {
+            CheckEndCondition();
+        }
+
+        private void HandleLevelUp(StoryEffectResolutionKey dominantType)
+        {
+            Debug.Log($"Level up! Dominant type: {dominantType}, Tier: {_progression.CurrentTier}");
+            RefreshUI();
         }
 
         private static DeckState BuildDeck(List<CardDefinition> cards, System.Random rng)
@@ -227,8 +290,11 @@ namespace CardsUnity
         {
             handView.Refresh(_hand);
             boardView.Refresh(_board);
-            playerClockView.Refresh(_playerClock);
             opponentClockView.Refresh(_opponentClock);
+            forceThreatBarView?.Refresh(_threatState?.GetBar(CardType.Force));
+            witThreatBarView?.Refresh(_threatState?.GetBar(CardType.Wit));
+            presenceThreatBarView?.Refresh(_threatState?.GetBar(CardType.Presence));
+            progressionView?.Refresh(_progression);
 
             if (playedCardCounterView != null)
                 playedCardCounterView.Refresh(_playedCardCounters);
@@ -243,14 +309,13 @@ namespace CardsUnity
             // if (_opponentClock.IsFull && winPanel != null)
             //     winPanel.SetActive(true);
 
-            if (_playerClock.IsFull && losePanel != null)
+            if (_threatState != null && _threatState.AnyAtZero && losePanel != null)
                 losePanel.SetActive(true);
         }
 
         private bool IsGameOver()
         {
-            // return _playerClock.IsFull || _opponentClock.IsFull;
-            return _playerClock.IsFull;
+            return _threatState != null && _threatState.AnyAtZero;
         }
 
         public void Restart()

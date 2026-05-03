@@ -2,6 +2,7 @@ using System.Linq;
 using NUnit.Framework;
 using CardsUnity;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace CardsUnity.Tests
 {
@@ -12,8 +13,9 @@ namespace CardsUnity.Tests
         private HandState _playerHand;
         private DeckState _opponentDeck;
         private BoardState _board;
-        private ClockState _playerClock;
+        private ThreatState _threatState;
         private ClockState _opponentClock;
+        private ProgressionState _progression;
         private PlayedCardCounterState _playedCardCounters;
 
         [SetUp]
@@ -23,14 +25,15 @@ namespace CardsUnity.Tests
             _playerHand = new HandState();
             _opponentDeck = MakeDeck(4, CardType.Presence, value: 4);
             _board = new BoardState(slotCount: 3);
-            _playerClock = new ClockState(maxValue: 6);
+            _threatState = MakeThreatState(maxPerBar: 10);
             _opponentClock = new ClockState(maxValue: 4);
+            _progression = new ProgressionState(xpCap: 100);
             _playedCardCounters = new PlayedCardCounterState();
 
             _turn = new TurnController(
                 _playerDeck, _playerHand,
                 _opponentDeck, _board,
-                _playerClock, _opponentClock, _playedCardCounters,
+                _threatState, _opponentClock, _progression, _playedCardCounters,
                 draftValue: 3,
                 rng: new System.Random(42));
         }
@@ -127,7 +130,20 @@ namespace CardsUnity.Tests
         }
 
         [Test]
-        public void PlayCard_increments_player_clock_when_player_card_is_destroyed_by_counterattack()
+        public void PlayCard_destroying_opponent_card_adds_to_progression()
+        {
+            _turn.StartTurn();
+            _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Presence, value: 1));
+
+            var playerCard = _playerHand.Cards.First(c => c.Definition.type == CardType.Force);
+            _turn.PlayCard(playerCard, slotIndex: 0);
+
+            Assert.AreEqual(1, _progression.DefeatedCounters.Presence);
+            Assert.AreEqual(1, _progression.CurrentXp);
+        }
+
+        [Test]
+        public void PlayCard_player_card_destroyed_does_not_affect_threat_bars()
         {
             _turn.StartTurn();
             _board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Wit, value: 10));
@@ -135,7 +151,7 @@ namespace CardsUnity.Tests
             var playerCard = _playerHand.Cards.First(c => c.Definition.type == CardType.Force);
             _turn.PlayCard(playerCard, slotIndex: 0);
 
-            Assert.AreEqual(1, _playerClock.CurrentValue);
+            Assert.IsFalse(_threatState.AnyAtZero);
             Assert.IsNull(_board.Slots[0].PlayerCard);
         }
 
@@ -186,6 +202,22 @@ namespace CardsUnity.Tests
             Assert.Greater(_board.Slots.Count(s => s.HasOpponentCard), 0);
         }
 
+        [Test]
+        public void EndTurn_OnRoundEnd_effects_are_evaluated_when_round_end_is_triggered()
+        {
+            var endRoundSlotDef = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnRoundEnd,
+                SlotEffectAction.AddToClock,
+                actionValue: 2);
+            var board = new BoardState(new SlotDefinition[] { endRoundSlotDef, null, null });
+            var turn = MakeTurnWithBoard(board);
+
+            turn.EndTurn();
+
+            Assert.AreEqual(2, _opponentClock.CurrentValue);
+        }
+
         private static DeckState MakeDeck(int count, CardType type, int value)
         {
             var deck = new DeckState();
@@ -205,15 +237,13 @@ namespace CardsUnity.Tests
             SlotEffectContext context,
             SlotEffectTrigger trigger,
             SlotEffectAction action,
-            int actionValue = 1,
-            ClockTarget clockTarget = ClockTarget.PlayerClock)
+            int actionValue = 1)
         {
             var effect = ScriptableObject.CreateInstance<SlotEffectDefinition>();
             effect.context = context;
             effect.trigger = trigger;
             effect.action = action;
             effect.actionValue = actionValue;
-            effect.clockTarget = clockTarget;
 
             var def = ScriptableObject.CreateInstance<SlotDefinition>();
             def.effects = new System.Collections.Generic.List<SlotEffectDefinition> { effect };
@@ -225,7 +255,7 @@ namespace CardsUnity.Tests
             return new TurnController(
                 _playerDeck, _playerHand,
                 _opponentDeck, board,
-                _playerClock, _opponentClock, _playedCardCounters,
+                _threatState, _opponentClock, _progression, _playedCardCounters,
                 draftValue: 3,
                 rng: new System.Random(42));
         }
@@ -338,38 +368,36 @@ namespace CardsUnity.Tests
         }
 
         [Test]
-        public void StartTurn_AddToClock_increments_player_clock_when_no_player_card()
+        public void StartTurn_DamageToThreat_drains_correct_bar()
         {
             var def = MakeSlotDefinition(
                 SlotEffectContext.NoPlayerCard,
                 SlotEffectTrigger.OnPlayerTurnStart,
-                SlotEffectAction.AddToClock,
-                actionValue: 2,
-                clockTarget: ClockTarget.PlayerClock);
+                SlotEffectAction.DamageToThreat,
+                actionValue: 3);
+            def.effects[0].targetCardType = CardType.Force;
             var board = new BoardState(new SlotDefinition[] { def, null, null });
             var turn = MakeTurnWithBoard(board);
 
             turn.StartTurn();
 
-            Assert.AreEqual(2, _playerClock.CurrentValue);
+            Assert.AreEqual(7, _threatState.GetBar(CardType.Force).Segments[0].CurrentValue);
         }
 
         [Test]
-        public void StartTurn_AddToClock_does_not_fire_when_player_card_present()
+        public void StartTurn_AddToClock_increments_opponent_clock_when_no_player_card()
         {
             var def = MakeSlotDefinition(
                 SlotEffectContext.NoPlayerCard,
                 SlotEffectTrigger.OnPlayerTurnStart,
                 SlotEffectAction.AddToClock,
-                actionValue: 2,
-                clockTarget: ClockTarget.PlayerClock);
+                actionValue: 2);
             var board = new BoardState(new SlotDefinition[] { def, null, null });
-            board.Slots[0].PlayerCard = new CardInstance(MakeCardDef(CardType.Force, 3));
             var turn = MakeTurnWithBoard(board);
 
             turn.StartTurn();
 
-            Assert.AreEqual(0, _playerClock.CurrentValue);
+            Assert.AreEqual(2, _opponentClock.CurrentValue);
         }
 
         [Test]
@@ -571,6 +599,27 @@ namespace CardsUnity.Tests
         }
 
         [Test]
+        public void PlayCard_TurnEnd_also_triggers_OnRoundEnd_effects()
+        {
+            var endRoundEffectDef = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnRoundEnd,
+                SlotEffectAction.AddToClock,
+                actionValue: 1);
+            var turnEndSlotDef = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnCardPlayed,
+                SlotEffectAction.TurnEnd);
+            var board = new BoardState(new[] { endRoundEffectDef, null, turnEndSlotDef });
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+            turn.PlayCard(_playerHand.Cards[0], slotIndex: 2);
+
+            Assert.AreEqual(1, _opponentClock.CurrentValue);
+        }
+
+        [Test]
         public void ConsumeTurnEndedByEffect_returns_false_after_state_is_consumed()
         {
             var turnEndSlotDef = MakeSlotDefinition(
@@ -585,6 +634,15 @@ namespace CardsUnity.Tests
 
             Assert.IsTrue(turn.ConsumeTurnEndedByEffect());
             Assert.IsFalse(turn.ConsumeTurnEndedByEffect());
+        }
+
+        private static ThreatState MakeThreatState(int maxPerBar)
+        {
+            var tier = ScriptableObject.CreateInstance<ThreatTierDefinition>();
+            tier.maxValue = maxPerBar;
+
+            var tiers = new List<ThreatTierDefinition> { tier };
+            return new ThreatState(tiers, tiers, tiers);
         }
     }
 }

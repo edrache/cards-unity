@@ -70,3 +70,10 @@ PlayMode tests:
 ```bash
 /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -quit -projectPath . -runTests -testPlatform PlayMode -testResults TestResults/PlayMode.xml
 ```
+
+## Workflow
+
+- Keep runtime data and resolver logic free of Unity scene dependencies unless the architecture explicitly calls for a `MonoBehaviour`.
+- Prefer focused, incremental changes that preserve existing Unity asset references and serialized fields.
+- Do not rewrite or regenerate Unity `.meta` files unless the asset operation genuinely requires it.
+- When changing runtime gameplay flows, add frequent structured debug logs in the touched code paths so state transitions are visible in the Unity Console during debugging. Prefer logs around trigger evaluation, condition checks, mutations, and end-of-step summaries rather than a single final log.
