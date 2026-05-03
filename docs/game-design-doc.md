@@ -321,7 +321,9 @@ These tags exist on `CardDefinition.effects` but **are not evaluated** by any ru
 - `trigger` — `SlotEffectTrigger`: `OnPlayerTurnStart`, `OnCardPlayed`, `OnOpponentCardPlaced`, `OnRoundEnd`
 - `action` — `SlotEffectAction`: `DrawOpponentCard`, `AddToClock`, `DamageToThreat`, `ReturnCardsFromSlots`, `DrawToHandLimit`, `TurnEnd`, `IncreaseOpponentCardsOfTypeValue`, `IncreaseAppearingOpponentCardOfTypeValue`
 - `actionValue` — `int` used by numeric effect payloads such as `AddToClock` and `DamageToThreat`
-- `targetCardType` — `CardType` used by `DamageToThreat`, `IncreaseOpponentCardsOfTypeValue`, and `IncreaseAppearingOpponentCardOfTypeValue`
+- `valueSource` — `SlotEffectValueSource`: `FixedValue` or `CardOnSlotValue`; currently used by `DamageToThreat`
+- `slotCardTarget` — `SlotEffectSlotCardTarget`: `OpponentCard` or `PlayerCard`; selects which card on the same slot provides the value when `valueSource` is `CardOnSlotValue`
+- `targetCardType` — `SlotEffectTargetCardType`; for `DamageToThreat` this can be a fixed type (`Force`, `Presence`, `Wit`) or derive the threatened bar from the `OpponentCard` / `PlayerCard` on the same slot, while the opponent-buff actions still use only the fixed type variants
 - `clockTarget` — `ClockTarget`: currently only `OpponentClock`
 - `description` — `string` shown in `SlotView`; multiple effects in the same context are concatenated into one multi-line label
 
@@ -331,7 +333,7 @@ Slot effects **are evaluated at runtime** by `TurnController`.
 |---|---|---|---|
 | `DrawOpponentCard` | `OnPlayerTurnStart` | `NoOpponentCard` | Draw from opponent deck and place the card on this slot |
 | `AddToClock` | `OnPlayerTurnStart` | `NoPlayerCard` | Increment the opponent clock by `actionValue` |
-| `DamageToThreat` | `OnPlayerTurnStart` or `OnCardPlayed` | Any supported slot context | Drain the targeted threat bar by `actionValue` using `targetCardType` |
+| `DamageToThreat` | `OnPlayerTurnStart` or `OnCardPlayed` | Any supported slot context | Drain the targeted threat bar using `targetCardType`; the damage comes either from fixed `actionValue` or from the `CurrentValue` of the selected `slotCardTarget` on that same slot. If the required source card is missing, the effect does nothing |
 | `ReturnCardsFromSlots` | `OnCardPlayed` | `Passive` | Return all player cards currently on the board to hand |
 | `DrawToHandLimit` | `OnCardPlayed` | `Passive` | Draw from the player deck until hand reaches `draftValue` |
 | `TurnEnd` | `OnCardPlayed` | `Passive` | Run the full end-turn sequence immediately: return player cards, clear player slots, and refill opponent slots |
@@ -524,6 +526,7 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | 2026-05-03 | Added `OnRoundEnd` slot-effect trigger, evaluated immediately when round end begins, including `TurnEnd`-driven round ends |
 | 2026-05-03 | Removed the startup `EndTurn()` call from `ChallengeController`, so a new encounter now begins without triggering round-end slot effects or spawning the initial opponent refill automatically |
 | 2026-05-03 | Added a `Type current/max` TextMeshPro value label to `ThreatBarView`, showing the summed threat across all bar segments |
+| 2026-05-03 | Extended `SlotEffectDefinition.DamageToThreat` so it can derive both damage value and threatened bar type from the player/opponent card on the same slot, and now skips the effect if the required source card is missing |
 | 2026-05-01 | Updated `SlotView` to concatenate multiple effect descriptions from the same context into one multi-line label instead of overwriting earlier text |
 | 2026-05-01 | Disabled the prototype win-condition hook for a full opponent clock so only the player loss condition remains active |
 | 2026-05-03 | Replaced the player clock with three segmented threat bars and added XP-based player progression with dominant-type level-up resolution |

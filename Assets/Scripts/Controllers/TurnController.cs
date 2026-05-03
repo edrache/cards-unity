@@ -228,6 +228,7 @@ namespace CardsUnity
                 Debug.Log(
                     $"[TurnController] Evaluating slot effect. Trigger={trigger}, Slot={GetSlotIndex(slot)}, Context={effect.context}, " +
                     $"ContextMet={contextMet}, Action={effect.action}, ActionValue={effect.actionValue}, TargetType={effect.targetCardType}, " +
+                    $"ValueSource={effect.valueSource}, SlotCardTarget={effect.slotCardTarget}, " +
                     $"SlotState={DescribeSlotState(slot)}, TriggeredSlot={DescribeTriggeredSlot(triggeredSlot)}, TriggeringOpponentCard={DescribeCard(triggeringOpponentCard)}");
 
                 if (!contextMet)
@@ -257,6 +258,7 @@ namespace CardsUnity
             Debug.Log(
                 $"[TurnController] Executing slot effect. Slot={GetSlotIndex(slot)}, Context={effect.context}, Trigger={effect.trigger}, " +
                 $"Action={effect.action}, ActionValue={effect.actionValue}, TargetType={effect.targetCardType}, " +
+                $"ValueSource={effect.valueSource}, SlotCardTarget={effect.slotCardTarget}, " +
                 $"BoardStateBeforeAction={DescribeBoardState()}");
 
             switch (effect.action)
@@ -268,7 +270,7 @@ namespace CardsUnity
                     _opponentClock.Increment(effect.actionValue);
                     break;
                 case SlotEffectAction.DamageToThreat:
-                    _threatState?.GetBar(effect.targetCardType)?.TakeDamage(effect.actionValue);
+                    ApplyDamageToThreat(effect, slot);
                     break;
                 case SlotEffectAction.ReturnCardsFromSlots:
                     ReturnAllPlayerCardsToHand();
@@ -281,15 +283,118 @@ namespace CardsUnity
                     _turnEndedByEffect = true;
                     break;
                 case SlotEffectAction.IncreaseOpponentCardsOfTypeValue:
-                    IncreaseOpponentCardsOfTypeValue(effect.targetCardType, effect.actionValue);
+                    if (TryResolveFixedTargetCardType(effect.targetCardType, out CardType fixedTargetCardType))
+                        IncreaseOpponentCardsOfTypeValue(fixedTargetCardType, effect.actionValue);
                     break;
                 case SlotEffectAction.IncreaseAppearingOpponentCardOfTypeValue:
-                    IncreaseAppearingOpponentCardOfTypeValue(triggeringOpponentCard, effect.targetCardType, effect.actionValue);
+                    if (TryResolveFixedTargetCardType(effect.targetCardType, out CardType appearingTargetCardType))
+                        IncreaseAppearingOpponentCardOfTypeValue(triggeringOpponentCard, appearingTargetCardType, effect.actionValue);
                     break;
             }
 
             Debug.Log(
                 $"[TurnController] Finished slot effect. Slot={GetSlotIndex(slot)}, Action={effect.action}, BoardStateAfterAction={DescribeBoardState()}");
+        }
+
+        private static int GetEffectValue(SlotEffectDefinition effect, SlotState slot)
+        {
+            if (effect.valueSource != SlotEffectValueSource.CardOnSlotValue)
+                return effect.actionValue;
+
+            CardInstance sourceCard = GetCardOnSlot(slot, effect.slotCardTarget);
+
+            return sourceCard?.CurrentValue ?? 0;
+        }
+
+        private void ApplyDamageToThreat(SlotEffectDefinition effect, SlotState slot)
+        {
+            if (effect.valueSource == SlotEffectValueSource.CardOnSlotValue &&
+                GetCardOnSlot(slot, effect.slotCardTarget) == null)
+            {
+                Debug.Log(
+                    $"[TurnController] Skipping DamageToThreat because slot card target {effect.slotCardTarget} is missing on slot {GetSlotIndex(slot)}.");
+                return;
+            }
+
+            if (!TryResolveTargetCardType(effect, slot, out CardType targetCardType))
+            {
+                Debug.Log(
+                    $"[TurnController] Skipping DamageToThreat because target card type {effect.targetCardType} could not be resolved on slot {GetSlotIndex(slot)}.");
+                return;
+            }
+
+            int damage = GetEffectValue(effect, slot);
+            if (damage <= 0)
+                return;
+
+            _threatState?.GetBar(targetCardType)?.TakeDamage(damage);
+        }
+
+        private static bool TryResolveTargetCardType(SlotEffectDefinition effect, SlotState slot, out CardType targetCardType)
+        {
+            switch (effect.targetCardType)
+            {
+                case SlotEffectTargetCardType.Force:
+                    targetCardType = CardType.Force;
+                    return true;
+                case SlotEffectTargetCardType.Presence:
+                    targetCardType = CardType.Presence;
+                    return true;
+                case SlotEffectTargetCardType.Wit:
+                    targetCardType = CardType.Wit;
+                    return true;
+                case SlotEffectTargetCardType.OpponentCard:
+                    return TryGetCardTypeFromSlotTarget(slot, SlotEffectSlotCardTarget.OpponentCard, out targetCardType);
+                case SlotEffectTargetCardType.PlayerCard:
+                    return TryGetCardTypeFromSlotTarget(slot, SlotEffectSlotCardTarget.PlayerCard, out targetCardType);
+                default:
+                    targetCardType = default;
+                    return false;
+            }
+        }
+
+        private static bool TryResolveFixedTargetCardType(SlotEffectTargetCardType targetCardType, out CardType resolvedCardType)
+        {
+            switch (targetCardType)
+            {
+                case SlotEffectTargetCardType.Force:
+                    resolvedCardType = CardType.Force;
+                    return true;
+                case SlotEffectTargetCardType.Presence:
+                    resolvedCardType = CardType.Presence;
+                    return true;
+                case SlotEffectTargetCardType.Wit:
+                    resolvedCardType = CardType.Wit;
+                    return true;
+                default:
+                    resolvedCardType = default;
+                    return false;
+            }
+        }
+
+        private static bool TryGetCardTypeFromSlotTarget(
+            SlotState slot,
+            SlotEffectSlotCardTarget slotCardTarget,
+            out CardType targetCardType)
+        {
+            CardInstance sourceCard = GetCardOnSlot(slot, slotCardTarget);
+            if (sourceCard?.Definition == null)
+            {
+                targetCardType = default;
+                return false;
+            }
+
+            targetCardType = sourceCard.Definition.type;
+            return true;
+        }
+
+        private static CardInstance GetCardOnSlot(SlotState slot, SlotEffectSlotCardTarget slotCardTarget)
+        {
+            return slotCardTarget switch
+            {
+                SlotEffectSlotCardTarget.PlayerCard => slot.PlayerCard,
+                _ => slot.OpponentCard,
+            };
         }
 
         private void DrawOpponentCardToSlot(SlotState slot)

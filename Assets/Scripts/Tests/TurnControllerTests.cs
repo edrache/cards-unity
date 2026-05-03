@@ -375,13 +375,97 @@ namespace CardsUnity.Tests
                 SlotEffectTrigger.OnPlayerTurnStart,
                 SlotEffectAction.DamageToThreat,
                 actionValue: 3);
-            def.effects[0].targetCardType = CardType.Force;
+            def.effects[0].targetCardType = SlotEffectTargetCardType.Force;
             var board = new BoardState(new SlotDefinition[] { def, null, null });
             var turn = MakeTurnWithBoard(board);
 
             turn.StartTurn();
 
             Assert.AreEqual(7, _threatState.GetBar(CardType.Force).Segments[0].CurrentValue);
+        }
+
+        [Test]
+        public void StartTurn_DamageToThreat_can_use_opponent_card_value_from_same_slot()
+        {
+            var def = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnPlayerTurnStart,
+                SlotEffectAction.DamageToThreat,
+                actionValue: 1);
+            def.effects[0].targetCardType = SlotEffectTargetCardType.Wit;
+            def.effects[0].valueSource = SlotEffectValueSource.CardOnSlotValue;
+            def.effects[0].slotCardTarget = SlotEffectSlotCardTarget.OpponentCard;
+
+            var board = new BoardState(new SlotDefinition[] { def, null, null });
+            board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Presence, 4));
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+
+            Assert.AreEqual(6, _threatState.GetBar(CardType.Wit).Segments[0].CurrentValue);
+        }
+
+        [Test]
+        public void StartTurn_DamageToThreat_can_use_player_card_value_from_same_slot()
+        {
+            var def = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnPlayerTurnStart,
+                SlotEffectAction.DamageToThreat,
+                actionValue: 1);
+            def.effects[0].targetCardType = SlotEffectTargetCardType.Presence;
+            def.effects[0].valueSource = SlotEffectValueSource.CardOnSlotValue;
+            def.effects[0].slotCardTarget = SlotEffectSlotCardTarget.PlayerCard;
+
+            var board = new BoardState(new SlotDefinition[] { def, null, null });
+            board.Slots[0].PlayerCard = new CardInstance(MakeCardDef(CardType.Force, 5));
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+
+            Assert.AreEqual(5, _threatState.GetBar(CardType.Presence).Segments[0].CurrentValue);
+        }
+
+        [Test]
+        public void StartTurn_DamageToThreat_can_use_opponent_card_type_from_same_slot()
+        {
+            var def = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnPlayerTurnStart,
+                SlotEffectAction.DamageToThreat,
+                actionValue: 2);
+            def.effects[0].targetCardType = SlotEffectTargetCardType.OpponentCard;
+
+            var board = new BoardState(new SlotDefinition[] { def, null, null });
+            board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Wit, 4));
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+
+            Assert.AreEqual(8, _threatState.GetBar(CardType.Wit).Segments[0].CurrentValue);
+        }
+
+        [Test]
+        public void StartTurn_DamageToThreat_does_not_trigger_when_slot_card_target_is_missing()
+        {
+            var def = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnPlayerTurnStart,
+                SlotEffectAction.DamageToThreat,
+                actionValue: 1);
+            def.effects[0].valueSource = SlotEffectValueSource.CardOnSlotValue;
+            def.effects[0].slotCardTarget = SlotEffectSlotCardTarget.PlayerCard;
+            def.effects[0].targetCardType = SlotEffectTargetCardType.PlayerCard;
+
+            var board = new BoardState(new SlotDefinition[] { def, null, null });
+            board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Wit, 4));
+            var turn = MakeTurnWithBoard(board);
+
+            turn.StartTurn();
+
+            Assert.AreEqual(10, _threatState.GetBar(CardType.Force).Segments[0].CurrentValue);
+            Assert.AreEqual(10, _threatState.GetBar(CardType.Presence).Segments[0].CurrentValue);
+            Assert.AreEqual(10, _threatState.GetBar(CardType.Wit).Segments[0].CurrentValue);
         }
 
         [Test]
@@ -456,7 +540,7 @@ namespace CardsUnity.Tests
                 SlotEffectTrigger.OnPlayerTurnStart,
                 SlotEffectAction.IncreaseOpponentCardsOfTypeValue,
                 actionValue: 2);
-            def.effects[0].targetCardType = CardType.Presence;
+            def.effects[0].targetCardType = SlotEffectTargetCardType.Presence;
 
             var board = new BoardState(new SlotDefinition[] { def, null, null });
             board.Slots[1].OpponentCard = new CardInstance(MakeCardDef(CardType.Presence, 4));
@@ -477,7 +561,7 @@ namespace CardsUnity.Tests
                 SlotEffectTrigger.OnPlayerTurnStart,
                 SlotEffectAction.IncreaseOpponentCardsOfTypeValue,
                 actionValue: 3);
-            def.effects[0].targetCardType = CardType.Presence;
+            def.effects[0].targetCardType = SlotEffectTargetCardType.Presence;
 
             var board = new BoardState(new SlotDefinition[] { def, null, null });
             board.Slots[0].OpponentCard = new CardInstance(MakeCardDef(CardType.Presence, 2));
@@ -496,7 +580,7 @@ namespace CardsUnity.Tests
                 SlotEffectTrigger.OnOpponentCardPlaced,
                 SlotEffectAction.IncreaseAppearingOpponentCardOfTypeValue,
                 actionValue: 2);
-            effectSlotDef.effects[0].targetCardType = CardType.Presence;
+            effectSlotDef.effects[0].targetCardType = SlotEffectTargetCardType.Presence;
 
             var board = new BoardState(new SlotDefinition[] { effectSlotDef, null, null });
             var existingCard = new CardInstance(MakeCardDef(CardType.Presence, 7));
@@ -524,7 +608,7 @@ namespace CardsUnity.Tests
                 SlotEffectTrigger.OnOpponentCardPlaced,
                 SlotEffectAction.IncreaseAppearingOpponentCardOfTypeValue,
                 actionValue: 3);
-            passiveBuffSlotDef.effects[0].targetCardType = CardType.Presence;
+            passiveBuffSlotDef.effects[0].targetCardType = SlotEffectTargetCardType.Presence;
 
             var board = new BoardState(new SlotDefinition[] { drawSlotDef, passiveBuffSlotDef, null });
             var turn = MakeTurnWithBoard(board);
@@ -542,7 +626,7 @@ namespace CardsUnity.Tests
                 SlotEffectTrigger.OnOpponentCardPlaced,
                 SlotEffectAction.IncreaseAppearingOpponentCardOfTypeValue,
                 actionValue: 2);
-            effectSlotDef.effects[0].targetCardType = CardType.Force;
+            effectSlotDef.effects[0].targetCardType = SlotEffectTargetCardType.Force;
 
             var board = new BoardState(new SlotDefinition[] { effectSlotDef, null, null });
             var turn = MakeTurnWithBoard(board);
