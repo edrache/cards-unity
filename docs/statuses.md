@@ -60,3 +60,41 @@ Informational penalties — the player is misled, confused, or mentally outmaneu
 | 8 | Overwhelmed | Too much, too fast. Cards you placed cannot keep their footing. | Turns 3 | ReturnCardsFromSlots | Wit | 0 |
 | 9 | Paranoid | Every clue looks like a trap. Wit cards buckle under the doubt. | Turns 4 | ModifyPlayerCardsOfTypeValue | Wit | -1 |
 | 10 | Outmaneuvered | They predicted your move before you made it. Opponents grow sharper. | Turns 2 | IncreaseOpponentCardsOfTypeValue | Wit | 1 |
+
+---
+
+## Tier 1
+
+Moderate penalties — early-stage consequences. Turn-based, single-bar pressure, value 1.
+
+| # | Name | Description | Duration | Action | Target | Value |
+|---|------|-------------|----------|--------|--------|-------|
+| 1 | Under Surveillance | Someone is watching every move you make. Time is slipping. | Turns 3 | AddToClock | Presence | 1 |
+| 2 | Sprained | One bad step. Force carries the cost for a few turns. | Turns 2 | DamageToThreat | Force | 1 |
+| 3 | Second-Guessing | Doubt has crept in. Wit erodes while certainty waits. | Turns 2 | DamageToThreat | Wit | 1 |
+| 4 | Bruised Ego | A public slight that lingers. Presence fades as the story spreads. | Turns 2 | DamageToThreat | Presence | 1 |
+| 5 | Tailed | A shadow follows. Opponents learn more than they should. | Turns 3 | DrawOpponentCard | Force | 1 |
+| 6 | Shaken | An unexpected blow left you rattled. The clock doesn't wait. | Turns 2 | AddToClock | Wit | 1 |
+| 7 | Strained | Pushing past limits. Force bleeds slowly but steadily. | Turns 3 | DamageToThreat | Force | 1 |
+| 8 | Gossiped About | Rumors circulate in the wrong circles. Presence takes the hit. | Turns 3 | DamageToThreat | Presence | 1 |
+| 9 | Spooked | Jumpiness replaces clarity. Wit cards lose their footing. | Turns 3 | ModifyPlayerCardsOfTypeValue | Wit | -1 |
+| 10 | Loose Talk | You said too much. Opponents are already better informed. | Turns 3 | IncreaseOpponentCardsOfTypeValue | Presence | 1 |
+
+---
+
+## Tier 2
+
+Serious penalties — late-stage consequences. Permanent or long duration, value 2–3, often targeting multiple resources.
+
+| # | Name | Description | Duration | Action | Target | Value |
+|---|------|-------------|----------|--------|--------|-------|
+| 1 | Hunted | They have committed resources to finding you. The clock never stops. | Permanent | AddToClock | Force | 2 |
+| 2 | Crippled | The damage is done and it isn't healing. Force drains every turn, without end. | Permanent | DamageToThreat | Force | 2 |
+| 3 | Disgraced | Your name is ruin. No one in the city will stand with you now. | Permanent | DamageToThreat | Presence | 2 |
+| 4 | Obsessed | The case has swallowed everything else. Wit hollows out turn by turn. | Permanent | DamageToThreat | Wit | 2 |
+| 5 | Broken Will | The pressure has done its work. Presence collapses from the inside. | Turns 5 | DamageToThreat | Presence | 3 |
+| 6 | Shattered | A blow too many. Force hemorrhages at a rate the body cannot sustain. | Turns 4 | DamageToThreat | Force | 3 |
+| 7 | Mind Fractured | Too many contradictions at once. Wit shatters under the weight of false truths. | Turns 4 | DamageToThreat | Wit | 3 |
+| 8 | Burned Bridges | Every favor called in, every contact spent. Opponents fill the vacuum. | Permanent | DrawOpponentCard | Presence | 2 |
+| 9 | Wanted | A bounty posted and believed. Opponents mobilize faster with every turn. | Turns 5 | AddToClock | Force | 2 |
+| 10 | Fully Compromised | Everything about you is known. Opponents anticipate every play you have left. | Permanent | IncreaseOpponentCardsOfTypeValue | Wit | 2 |
