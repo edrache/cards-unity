@@ -65,6 +65,68 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 1
+--- !u!1 &5141970766765055064
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1474880870090285145}
+  - component: {fileID: 6024198513398471958}
+  m_Layer: 5
+  m_Name: Ticks
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1474880870090285145
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5141970766765055064}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7564074268495368775}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &6024198513398471958
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5141970766765055064}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.HorizontalLayoutGroup
+  m_Padding:
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
+  m_ChildAlignment: 0
+  m_Spacing: 0
+  m_ChildForceExpandWidth: 1
+  m_ChildForceExpandHeight: 1
+  m_ChildControlWidth: 1
+  m_ChildControlHeight: 1
+  m_ChildScaleWidth: 0
+  m_ChildScaleHeight: 0
+  m_ReverseArrangement: 0
 --- !u!1001 &3144467239583829657
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -322,6 +384,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5073798536378247808, guid: d53aa0ccc107e45c4992b0b616758560, type: 3}
       insertIndex: -1
       addedObject: {fileID: 188694426185711903}
+    - targetCorrespondingSourceObject: {fileID: 5073798536378247808, guid: d53aa0ccc107e45c4992b0b616758560, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1474880870090285145}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 5954593629722317821, guid: d53aa0ccc107e45c4992b0b616758560, type: 3}
       insertIndex: -1
@@ -394,6 +459,8 @@ MonoBehaviour:
   type: 0
   segmentContainer: {fileID: 188694426185711903}
   segmentPrefab: {fileID: 4174560432873839512, guid: 61588c4448ef745f18858689fa6340c5, type: 3}
+  tickContainer: {fileID: 1474880870090285145}
+  tickPrefab: {fileID: 5912268452317846911, guid: cc674013f71e64028b6e519dd4caae38, type: 3}
   valueLabel: {fileID: 5936706842611217892}
   segmentSpacing: 100
 --- !u!114 &2735211057111010095

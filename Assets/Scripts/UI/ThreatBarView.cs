@@ -11,11 +11,14 @@ namespace CardsUnity.UI
         [SerializeField] private CardType type;
         [SerializeField] private RectTransform segmentContainer;
         [SerializeField] private GameObject segmentPrefab;
+        [SerializeField] private Transform tickContainer;
+        [SerializeField] private GameObject tickPrefab;
         [SerializeField] private TextMeshProUGUI valueLabel;
         [SerializeField] private float segmentSpacing = 4f;
 
         private readonly List<MMProgressBar> _segmentProgressBars = new();
         private readonly List<Image> _segmentFills = new();
+        private readonly List<GameObject> _activeTicks = new();
 
         public CardType Type => type;
 
@@ -35,6 +38,8 @@ namespace CardsUnity.UI
             int totalMaxValue = 0;
             foreach (var segment in bar.Segments)
                 totalMaxValue += segment.MaxValue;
+
+            SyncTicks(totalMaxValue);
 
             if (totalMaxValue <= 0)
                 return;
@@ -60,7 +65,16 @@ namespace CardsUnity.UI
         public void Refresh(ThreatBarState bar)
         {
             if (bar == null)
+            {
+                ClearTicks();
                 return;
+            }
+
+            int totalMaxValue = 0;
+            foreach (var segment in bar.Segments)
+                totalMaxValue += segment.MaxValue;
+
+            SyncTicks(totalMaxValue);
 
             for (int i = 0; i < _segmentFills.Count && i < bar.Segments.Count; i++)
             {
@@ -96,6 +110,39 @@ namespace CardsUnity.UI
             }
 
             valueLabel.text = $"{type} {currentValue}/{maxValue}";
+        }
+
+        private void SyncTicks(int tickCount)
+        {
+            if (tickContainer == null || tickPrefab == null)
+                return;
+
+            while (_activeTicks.Count > tickCount)
+            {
+                int lastIndex = _activeTicks.Count - 1;
+                var tick = _activeTicks[lastIndex];
+                _activeTicks.RemoveAt(lastIndex);
+
+                if (tick != null)
+                    Destroy(tick);
+            }
+
+            while (_activeTicks.Count < tickCount)
+            {
+                var tick = Instantiate(tickPrefab, tickContainer);
+                _activeTicks.Add(tick);
+            }
+        }
+
+        private void ClearTicks()
+        {
+            foreach (var tick in _activeTicks)
+            {
+                if (tick != null)
+                    Destroy(tick);
+            }
+
+            _activeTicks.Clear();
         }
 
         private void EnsureValueLabel()
