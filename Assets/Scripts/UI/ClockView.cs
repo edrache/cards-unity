@@ -21,25 +21,22 @@ namespace CardsUnity.UI
         {
             if (clock == null)
             {
-                if (progressBar != null)
-                    progressBar.SetBar01(0f);
-                if (fillImage != null)
-                    fillImage.fillAmount = 0f;
-                if (label != null)
-                    label.text = string.Empty;
-                ClearTicks();
+                RefreshEmpty();
                 return;
             }
 
-            SyncTicks(clock.MaxValue);
+            RefreshInternal(clock.CurrentValue, clock.MaxValue, clock.Progress);
+        }
 
-            if (progressBar != null)
-                progressBar.UpdateBar(clock.CurrentValue, 0f, clock.MaxValue);
-            else if (fillImage != null)
-                fillImage.fillAmount = clock.Progress;
+        public void Refresh(SlotClockState clock)
+        {
+            if (clock == null)
+            {
+                RefreshEmpty();
+                return;
+            }
 
-            if (label != null)
-                label.text = $"{clock.CurrentValue} / {clock.MaxValue}";
+            RefreshInternal(clock.CurrentValue, clock.MaxValue, clock.Progress);
         }
 
         private void SyncTicks(int tickCount)
@@ -73,6 +70,37 @@ namespace CardsUnity.UI
             }
 
             _activeTicks.Clear();
+        }
+
+        private void RefreshInternal(int currentValue, int maxValue, float progress)
+        {
+            SyncTicks(Mathf.Max(0, maxValue));
+
+            if (progressBar != null)
+            {
+                if (maxValue > 0)
+                    progressBar.UpdateBar(currentValue, 0f, maxValue);
+                else
+                    progressBar.SetBar01(0f);
+            }
+            else if (fillImage != null)
+            {
+                fillImage.fillAmount = Mathf.Clamp01(progress);
+            }
+
+            if (label != null)
+                label.text = maxValue > 0 ? $"{currentValue} / {maxValue}" : string.Empty;
+        }
+
+        private void RefreshEmpty()
+        {
+            if (progressBar != null)
+                progressBar.SetBar01(0f);
+            if (fillImage != null)
+                fillImage.fillAmount = 0f;
+            if (label != null)
+                label.text = string.Empty;
+            ClearTicks();
         }
     }
 }

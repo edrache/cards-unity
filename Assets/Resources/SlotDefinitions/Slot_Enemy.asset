@@ -18,6 +18,9 @@ MonoBehaviour:
   contributesToGlobalPlayedCardCounts: 1
   playedCardCountMode: 0
   fixedPlayedCardCountValue: 1
+  clock:
+    maxValue: 0
+    completionEffect: 0
   effects:
   - {fileID: 11400000, guid: ad64ac4f1df994ce19f7fe1a1e411f14, type: 2}
   - {fileID: 11400000, guid: 238d8680d67f4474eba45266591df005, type: 2}

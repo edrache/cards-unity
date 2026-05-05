@@ -294,6 +294,7 @@ MonoBehaviour:
   opponentCardSpotVisual: {fileID: 1348171601639600107}
   slotDefinition: {fileID: 11400000, guid: 5b1a32838738a44ecb407f77113733d6, type: 2}
   startsActiveInBoard: 1
+  clockView: {fileID: 8377397187521390513}
   noOpponentCardEffectLabel: {fileID: 4959206229972974805}
   noPlayerCardEffectLabel: {fileID: 4510187887760642497}
   passiveEffectLabel: {fileID: 8735596225336547419}
@@ -1361,7 +1362,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5073798536378247808, guid: d53aa0ccc107e45c4992b0b616758560, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 100
+      value: 145
       objectReference: {fileID: 0}
     - target: {fileID: 5073798536378247808, guid: d53aa0ccc107e45c4992b0b616758560, type: 3}
       propertyPath: m_SizeDelta.y
@@ -1428,7 +1429,15 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6482282801096086432, guid: d53aa0ccc107e45c4992b0b616758560, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6482282801096086432, guid: d53aa0ccc107e45c4992b0b616758560, type: 3}
       propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6482282801096086432, guid: d53aa0ccc107e45c4992b0b616758560, type: 3}
+      propertyPath: m_SizeDelta.y
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6482282801096086432, guid: d53aa0ccc107e45c4992b0b616758560, type: 3}
@@ -1467,7 +1476,7 @@ MonoBehaviour:
   m_IgnoreLayout: 0
   m_MinWidth: -1
   m_MinHeight: -1
-  m_PreferredWidth: 100
+  m_PreferredWidth: 145
   m_PreferredHeight: 10
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
@@ -1477,3 +1486,14 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 5073798536378247808, guid: d53aa0ccc107e45c4992b0b616758560, type: 3}
   m_PrefabInstance: {fileID: 9192266461414409064}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &8377397187521390513 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 852029150566180057, guid: d53aa0ccc107e45c4992b0b616758560, type: 3}
+  m_PrefabInstance: {fileID: 9192266461414409064}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3257099784819888277}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a16fd31647fe54a399c9f083c48e71d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CardsUnity.Runtime::CardsUnity.UI.ClockView

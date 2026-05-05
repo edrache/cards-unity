@@ -18,6 +18,8 @@ namespace CardsUnity
         public PlayedCardCountMode playedCardCountMode = PlayedCardCountMode.UseCardValue;
         [Tooltip("When using a fixed contribution mode, every card played into this slot adds this value to the matching global type counter.")]
         public int fixedPlayedCardCountValue = 1;
+        [Tooltip("Optional clock attached to this slot. maxValue > 0 activates it. Use a ProgressSlotClock effect to advance it.")]
+        public SlotClockConfig clock;
         public List<SlotEffectDefinition> effects = new List<SlotEffectDefinition>();
     }
 }

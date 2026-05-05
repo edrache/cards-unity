@@ -17,6 +17,7 @@ namespace CardsUnity.UI
         [SerializeField] private GameObject opponentCardSpotVisual;
         [SerializeField] private SlotDefinition slotDefinition;
         [SerializeField] private bool startsActiveInBoard = true;
+        [SerializeField] private ClockView clockView;
         [SerializeField] private TextMeshProUGUI noOpponentCardEffectLabel;
         [SerializeField] private TextMeshProUGUI noPlayerCardEffectLabel;
         [SerializeField] private TextMeshProUGUI passiveEffectLabel;
@@ -156,6 +157,22 @@ namespace CardsUnity.UI
         {
             slotDefinition = definition;
             SetEffectDescriptions(slotDefinition);
+            RefreshClock(null);
+        }
+
+        public void RefreshClock(SlotClockState clockState)
+        {
+            if (clockView == null)
+                return;
+
+            int maxValue = clockState?.MaxValue ?? slotDefinition?.clock?.maxValue ?? 0;
+            bool hasVisibleClock = maxValue > 0;
+
+            clockView.gameObject.SetActive(hasVisibleClock);
+            if (hasVisibleClock)
+                clockView.Refresh(clockState ?? new SlotClockState(maxValue));
+            else
+                clockView.Refresh((ClockState)null);
         }
 
         public void OnDrop(PointerEventData eventData)

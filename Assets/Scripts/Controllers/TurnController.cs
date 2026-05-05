@@ -298,12 +298,60 @@ namespace CardsUnity
                     if (TryResolveFixedTargetCardType(effect.targetCardType, out CardType playerTargetCardType))
                         ModifyPlayerCardsOfTypeValue(playerTargetCardType, effect.actionValue);
                     break;
+                case SlotEffectAction.ProgressSlotClock:
+                    ProgressSlotClock(slot, effect.actionValue);
+                    break;
             }
 
             DiscardPlayerCardsAtOrBelowZero();
 
             Debug.Log(
                 $"[TurnController] Finished slot effect. Slot={GetSlotIndex(slot)}, Action={effect.action}, BoardStateAfterAction={DescribeBoardState()}");
+        }
+
+        private void ProgressSlotClock(SlotState slot, int amount)
+        {
+            if (slot?.ClockState == null)
+            {
+                Debug.Log(
+                    $"[TurnController] Skipping ProgressSlotClock because slot {GetSlotIndex(slot)} has no clock state.");
+                return;
+            }
+
+            int previousValue = slot.ClockState.CurrentValue;
+            slot.ClockState.Increment(amount);
+
+            Debug.Log(
+                $"[TurnController] Progressed slot clock. Slot={GetSlotIndex(slot)}, Delta={amount}, Previous={previousValue}, Current={slot.ClockState.CurrentValue}, Max={slot.ClockState.MaxValue}, IsFull={slot.ClockState.IsFull}");
+
+            if (!slot.ClockState.IsFull)
+                return;
+
+            ExecuteSlotClockCompletion(slot);
+        }
+
+        private void ExecuteSlotClockCompletion(SlotState slot)
+        {
+            var config = slot?.Definition?.clock;
+            if (config == null)
+            {
+                Debug.Log(
+                    $"[TurnController] Skipping slot clock completion because slot {GetSlotIndex(slot)} has no clock config.");
+                return;
+            }
+
+            Debug.Log(
+                $"[TurnController] Resolving slot clock completion. Slot={GetSlotIndex(slot)}, CompletionEffect={config.completionEffect}, BoardStateBeforeCompletion={DescribeBoardState()}");
+
+            switch (config.completionEffect)
+            {
+                case SlotClockCompletionEffect.RemoveSlot:
+                    slot.SetActive(false);
+                    break;
+            }
+
+            Debug.Log(
+                $"[TurnController] Finished slot clock completion. Slot={GetSlotIndex(slot)}, CompletionEffect={config.completionEffect}, SlotActive={slot.IsActive}, BoardStateAfterCompletion={DescribeBoardState()}");
         }
 
         private static int GetEffectValue(SlotEffectDefinition effect, SlotState slot)

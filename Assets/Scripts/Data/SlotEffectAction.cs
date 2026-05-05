@@ -10,6 +10,7 @@ namespace CardsUnity
         TurnEnd,
         IncreaseOpponentCardsOfTypeValue,
         IncreaseAppearingOpponentCardOfTypeValue,
-        ModifyPlayerCardsOfTypeValue
+        ModifyPlayerCardsOfTypeValue,
+        ProgressSlotClock
     }
 }

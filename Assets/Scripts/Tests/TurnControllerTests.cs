@@ -237,6 +237,38 @@ namespace CardsUnity.Tests
             Assert.AreEqual(2, _opponentClock.CurrentValue);
         }
 
+        [Test]
+        public void EndTurn_ProgressSlotClock_increments_slot_clock()
+        {
+            var def = MakeSlotDefWithClock(
+                maxValue: 5,
+                completionEffect: SlotClockCompletionEffect.RemoveSlot,
+                progressPerTrigger: 2);
+            _board.Slots[0].SetDefinition(def);
+
+            _turn.EndTurn();
+
+            Assert.NotNull(_board.Slots[0].ClockState);
+            Assert.AreEqual(2, _board.Slots[0].ClockState.CurrentValue);
+            Assert.IsTrue(_board.Slots[0].IsActive);
+        }
+
+        [Test]
+        public void EndTurn_ProgressSlotClock_removes_slot_when_clock_reaches_max()
+        {
+            var def = MakeSlotDefWithClock(
+                maxValue: 1,
+                completionEffect: SlotClockCompletionEffect.RemoveSlot,
+                progressPerTrigger: 1);
+            _board.Slots[0].SetDefinition(def);
+
+            _turn.EndTurn();
+
+            Assert.NotNull(_board.Slots[0].ClockState);
+            Assert.AreEqual(1, _board.Slots[0].ClockState.CurrentValue);
+            Assert.IsFalse(_board.Slots[0].IsActive);
+        }
+
         private static DeckState MakeDeck(int count, CardType type, int value)
         {
             var deck = new DeckState();
@@ -266,6 +298,27 @@ namespace CardsUnity.Tests
 
             var def = ScriptableObject.CreateInstance<SlotDefinition>();
             def.effects = new System.Collections.Generic.List<SlotEffectDefinition> { effect };
+            return def;
+        }
+
+        private static SlotDefinition MakeSlotDefWithClock(
+            int maxValue,
+            SlotClockCompletionEffect completionEffect,
+            int progressPerTrigger)
+        {
+            var effect = ScriptableObject.CreateInstance<SlotEffectDefinition>();
+            effect.context = SlotEffectContext.Passive;
+            effect.trigger = SlotEffectTrigger.OnRoundEnd;
+            effect.action = SlotEffectAction.ProgressSlotClock;
+            effect.actionValue = progressPerTrigger;
+
+            var def = ScriptableObject.CreateInstance<SlotDefinition>();
+            def.clock = new SlotClockConfig
+            {
+                maxValue = maxValue,
+                completionEffect = completionEffect,
+            };
+            def.effects = new List<SlotEffectDefinition> { effect };
             return def;
         }
 

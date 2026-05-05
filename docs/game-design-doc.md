@@ -1,7 +1,7 @@
 # Game Design Document
 
 *This is the single source of truth for all game design decisions.*
-*Last updated: 2026-05-03*
+*Last updated: 2026-05-05*
 
 Any change to mechanics — adding, modifying, or removing a rule, system, or data model — must be reflected here. Append an entry to the [Changelog](#changelog) at the bottom.
 
@@ -210,8 +210,10 @@ Default board: 3 slots.
 
 Each `SlotState` may also hold an optional `SlotDefinition` (ScriptableObject). When a `SlotDefinition` is present:
 - `hasOpponentCardSpot` / `hasPlayerCardSpot` declare whether the slot can currently host opponent and player cards.
+- `clock` optionally embeds a `SlotClockConfig`; when `clock.maxValue > 0`, runtime initialization creates a per-slot `SlotClockState` that tracks `CurrentValue`, `MaxValue`, `IsFull`, and normalized `Progress`.
 - `effects` is a list of `SlotEffectDefinition` entries evaluated by `TurnController`.
 - `SlotView` exposes up to three effect description labels (one per context: `NoOpponentCard`, `NoPlayerCard`, `Passive`).
+- `SlotView` may also reference a `ClockView`; `BoardView.Refresh()` pushes the live `SlotClockState` into that UI binding each refresh so slot clocks can be shown directly on the board.
 - `SlotView` can serialize its own `SlotDefinition` directly on the scene object, and `ChallengeController` will use scene slot definitions before falling back to `GameConfig.slotDefinitions`.
 
 Slots with no `SlotDefinition` use the legacy default behaviour: both anchors are available and opponent cards are auto-placed at end of turn by `PlaceOpponentCards()`.
@@ -235,6 +237,19 @@ The played card's type determines which global bucket is incremented. Example: a
 - Affecting opponent: modifies the opponent card in an adjacent linked slot.
 
 **Draw slot** — the special slot described in Turn Structure above.
+
+### Slot Clocks
+
+A slot can optionally carry its own local clock through `SlotDefinition.clock`, which embeds a serializable `SlotClockConfig`.
+
+| Field | Purpose |
+|---|---|
+| `maxValue` | Maximum fill threshold for the slot clock. Values `<= 0` disable the clock entirely. |
+| `completionEffect` | What happens when the slot clock reaches or exceeds `maxValue`. Currently only `RemoveSlot` is supported. |
+
+At runtime, `SlotState` creates a mutable `SlotClockState` from that config. Slot clocks do not advance automatically on turn boundaries; they move only when a slot effect explicitly progresses them.
+
+The initial completion behaviour is `RemoveSlot`: when the clock fills, the slot is deactivated (`SlotState.IsActive = false`) and stops participating in the board until reinitialized by encounter setup.
 
 ### Slot Groups
 
@@ -283,6 +298,7 @@ Current prototype note: the opponent clock still fills when opponent cards are d
 
 - Destroying an opponent card → `_opponentClock.Increment(1)`
 - Story cards use their own per-card `ClockState` to track narrative progress
+- Slots may also own an independent `SlotClockState`, created from `SlotDefinition.clock`, for localized per-slot progress and completion handling
 
 ### Planned: Multiple Clocks
 
@@ -320,8 +336,8 @@ These tags exist on `CardDefinition.effects` but **are not evaluated** by any ru
 **Slot effects** — `SlotEffectDefinition` (ScriptableObject) fields:
 - `context` — `SlotEffectContext`: `NoOpponentCard`, `NoPlayerCard`, `Passive`
 - `trigger` — `SlotEffectTrigger`: `OnPlayerTurnStart`, `OnCardPlayed`, `OnOpponentCardPlaced`, `OnRoundEnd`
-- `action` — `SlotEffectAction`: `DrawOpponentCard`, `AddToClock`, `DamageToThreat`, `ReturnCardsFromSlots`, `DrawToHandLimit`, `TurnEnd`, `IncreaseOpponentCardsOfTypeValue`, `IncreaseAppearingOpponentCardOfTypeValue`, `ModifyPlayerCardsOfTypeValue`
-- `actionValue` — `int` used by numeric effect payloads such as `AddToClock` and `DamageToThreat`
+- `action` — `SlotEffectAction`: `DrawOpponentCard`, `AddToClock`, `DamageToThreat`, `ReturnCardsFromSlots`, `DrawToHandLimit`, `TurnEnd`, `IncreaseOpponentCardsOfTypeValue`, `IncreaseAppearingOpponentCardOfTypeValue`, `ModifyPlayerCardsOfTypeValue`, `ProgressSlotClock`
+- `actionValue` — `int` used by numeric effect payloads such as `AddToClock`, `DamageToThreat`, and `ProgressSlotClock`
 - `valueSource` — `SlotEffectValueSource`: `FixedValue` or `CardOnSlotValue`; currently used by `DamageToThreat`
 - `slotCardTarget` — `SlotEffectSlotCardTarget`: `OpponentCard` or `PlayerCard`; selects which card on the same slot provides the value when `valueSource` is `CardOnSlotValue`
 - `targetCardType` — `SlotEffectTargetCardType`; for `DamageToThreat` this can be a fixed type (`Force`, `Presence`, `Wit`) or derive the threatened bar from the `OpponentCard` / `PlayerCard` on the same slot, while the opponent-buff actions still use only the fixed type variants
@@ -341,6 +357,7 @@ Slot effects **are evaluated at runtime** by `TurnController`.
 | `IncreaseOpponentCardsOfTypeValue` | `OnPlayerTurnStart` or `OnCardPlayed` | `Passive` | Increase `CurrentValue` by `actionValue` for every opponent card on the board whose `CardType` matches `targetCardType` |
 | `IncreaseAppearingOpponentCardOfTypeValue` | `OnOpponentCardPlaced` | `Passive` | Increase `CurrentValue` by `actionValue` only for the opponent card that has just been placed, if its `CardType` matches `targetCardType` |
 | `ModifyPlayerCardsOfTypeValue` | `OnPlayerTurnStart`, `OnCardPlayed`, or `OnRoundEnd` | `Passive` | Change `CurrentValue` by `actionValue` for every live player `CardInstance` whose `CardType` matches `targetCardType`. In the current runtime model this means cards in hand plus player cards currently on the board; cards in draw/discard piles are `CardDefinition` assets, not mutable runtime instances. Any affected player card that reaches `CurrentValue <= 0` is destroyed immediately and sent to the player's discard pile |
+| `ProgressSlotClock` | `OnPlayerTurnStart`, `OnCardPlayed`, `OnOpponentCardPlaced`, or `OnRoundEnd` | Any supported slot context | Increment the slot's own `SlotClockState` by `actionValue`. If the slot has no clock configured, the effect does nothing. After incrementing, completion is checked immediately; when the clock is full and `completionEffect` is `RemoveSlot`, the slot deactivates immediately |
 
 `OnRoundEnd` fires as soon as the round-end flow is triggered, before player cards return to hand and before empty board slots are refilled with opponent cards. This includes round ends caused by the `TurnEnd` slot action.
 
@@ -377,6 +394,7 @@ trigger → action
 | Draw card | Draw one card |
 | Draw to limit | Draw up to hand limit |
 | Advance clock | Move a zone clock, story clock, or opponent clock |
+| Progress slot clock | Move a slot's local `SlotClockState` and then resolve its completion effect |
 | Change card value | Increase or decrease `CurrentValue` of own or opponent cards |
 | Search discard | Look through discard and select a card |
 | Search deck | Look through deck and select a card (by type or value threshold) |
@@ -473,14 +491,16 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 - ScriptableObject-based card and config data
 - Full test coverage for combat, deck, and turn logic
 - Slot effect system: `SlotEffectDefinition` and `SlotDefinition` ScriptableObjects with runtime evaluation in `TurnController`
-- Slot effect actions implemented: `DrawOpponentCard`, `AddToClock`, `DamageToThreat`, `ReturnCardsFromSlots`, `DrawToHandLimit`, `TurnEnd`
+- Slot effect actions implemented: `DrawOpponentCard`, `AddToClock`, `DamageToThreat`, `ReturnCardsFromSlots`, `DrawToHandLimit`, `TurnEnd`, `ProgressSlotClock`
 - UI support for segmented threat bars via `ThreatBarView`, including an aggregated `current/max` label across all threat segments
 - UI support for player XP/tier tracking via `ProgressionView`
 - Slot UI effect descriptions via `TextMeshProUGUI` labels in `SlotView`
+- Slot clock UI support: `SlotView` can forward a live `SlotClockState` into a bound `ClockView`, and `BoardView.Refresh()` keeps that view synchronized with per-slot progress
 - Reusable UI outline renderer for `Canvas` elements via `RectOutlineGraphic` (`MaskableGraphic` + shader) with configurable thickness, color, rounded corners, solid/dashed mode, dash length, gap length, dash offset, and fixed vs edge-fitted dash distribution
 - Story card data model: `StoryCardDefinition`, `StoryDeckDefinition` ScriptableObjects with `StoryDrawMode` (Sequential/Random); `StoryDeckState` runtime class with clock-driven `AdvanceCard()`; `ChallengeController.IncrementStoryClock(int)` entry point
 - Story card effects can resolve on story-clock completion from global played-card counters, use RPS to break two-way ties, use a dedicated full-tie branch, optionally hide from the story-card UI, and mutate decks or passive board slots
 - Runtime-spawned story slots can now be instantiated directly from story effects; `SlotDefinition.spawnInPassiveContainer` routes them into `BoardView.passiveSlotContainer` for passive-effect layout separation
+- Slot clocks: `SlotDefinition.clock` embeds `SlotClockConfig`, `SlotState` owns runtime `SlotClockState`, `ProgressSlotClock` advances the slot clock, and full clocks currently resolve via `SlotClockCompletionEffect.RemoveSlot`
 
 ### Current Story Content
 
@@ -549,3 +569,4 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | 2026-05-03 | Added Status / Condition Cards: per-turn status effects, turn-based expiry, threat-tier status spawning, and HUD status rendering via `StatusView` |
 | 2026-05-03 | Added `ModifyPlayerCardsOfTypeValue` slot effect action for changing all live player cards of a chosen type across hand and board on `OnPlayerTurnStart`, `OnCardPlayed`, or `OnRoundEnd` |
 | 2026-05-03 | Player cards that reach `CurrentValue <= 0` now immediately move to the player's discard pile, including cards destroyed by slot effects outside combat |
+| 2026-05-05 | Added slot clocks: `SlotClockConfig` on `SlotDefinition`, runtime `SlotClockState`, `ProgressSlotClock` slot effect, `RemoveSlot` completion, and slot-clock UI wiring through `SlotView` / `ClockView` |

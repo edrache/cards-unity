@@ -42,12 +42,14 @@ namespace CardsUnity.UI
                 slotView.gameObject.SetActive(slot.IsActive);
                 if (!slot.IsActive)
                 {
+                    slotView.RefreshClock(null);
                     slotView.ClearPlayerCard();
                     slotView.ClearOpponentCard();
                     continue;
                 }
 
                 slotView.ApplyDefinition(slot.Definition);
+                slotView.RefreshClock(slot.ClockState);
                 slotView.SetHighlight(false);
 
                 if (slot.HasPlayerCard)
@@ -68,6 +70,7 @@ namespace CardsUnity.UI
 
                 _runtimeSlotViews[i].gameObject.SetActive(false);
                 _runtimeSlotViews[i].SetHighlight(false);
+                _runtimeSlotViews[i].RefreshClock(null);
                 _runtimeSlotViews[i].ClearPlayerCard();
                 _runtimeSlotViews[i].ClearOpponentCard();
             }
@@ -216,7 +219,6 @@ namespace CardsUnity.UI
                 return;
 
             slotView.SlotIndex = index;
-            slotView.ApplyDefinition(slotView.Definition);
             slotView.OnCardDropped = (cardView, droppedSlotIndex) =>
                 OnCardPlayed?.Invoke(cardView.Card, droppedSlotIndex);
         }
