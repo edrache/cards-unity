@@ -6,6 +6,8 @@ namespace CardsUnity
     [CreateAssetMenu(menuName = "CardsUnity/Slot Definition", fileName = "NewSlot")]
     public class SlotDefinition : ScriptableObject
     {
+        [Tooltip("Optional display name shown above the slot. Leave empty to hide the label.")]
+        public string slotName;
         [Tooltip("If true, an opponent card can occupy this slot and participate in combat.")]
         public bool hasOpponentCardSpot = true;
         [Tooltip("If true, the player can drag a card onto this slot.")]

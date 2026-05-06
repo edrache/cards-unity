@@ -310,6 +310,45 @@ The game uses multiple clocks rather than a single HP value. A clock is any nume
 
 **Type-contribution tracking** *(planned)* — Zone clocks also record which card types were used to resolve them. When a zone clock fills, the dominant type determines the outcome event. This makes *how* the player solved a challenge matter, not just *whether* they solved it.
 
+## NPC Deck
+
+NPC cards are a separate narrative deck that can be triggered by slot effects instead of entering combat on the board.
+
+### Definition
+
+`NpcCardDefinition` stores:
+
+- `characterName` — display name
+- `portrait` — optional character sprite
+- `narrativeText` — the text shown in the HUD when this NPC is active
+- `effects` — a list of `NpcEffect` payloads
+
+`NpcEffect` currently supports these actions:
+
+- `None`
+- `AddCardToPlayerHand`
+- `DamageToThreat`
+- `IncrementOpponentClock`
+
+`NpcDeckDefinition` stores the NPC card list plus `shuffleOnInit`.
+
+### Runtime
+
+`NpcDeckState` owns:
+
+- draw pile
+- discard pile
+- `ActiveCard`
+
+When `Draw()` is called, the current `ActiveCard` is first moved to discard. If the draw pile is empty, discard is shuffled back into draw. The newly drawn card becomes the new `ActiveCard`.
+
+### Trigger and Resolution
+
+- `SlotEffectAction.DrawNpcCard` draws from `NpcDeckState`
+- `TurnController` raises `OnNpcCardDrawn(NpcCardDefinition)` when a card is drawn
+- `ChallengeController` applies the mechanical effects immediately because it already owns the runtime hand, threat bars, and opponent clock
+- `NpcCardView` renders the active NPC portrait, name, and narrative text, and hides itself when no NPC card is active
+
 ## Player Progression
 
 The player also has one XP bar represented by `ProgressionState`.
@@ -501,6 +540,7 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 - Story card effects can resolve on story-clock completion from global played-card counters, use RPS to break two-way ties, use a dedicated full-tie branch, optionally hide from the story-card UI, and mutate decks or passive board slots
 - Runtime-spawned story slots can now be instantiated directly from story effects; `SlotDefinition.spawnInPassiveContainer` routes them into `BoardView.passiveSlotContainer` for passive-effect layout separation
 - Slot clocks: `SlotDefinition.clock` embeds `SlotClockConfig`, `SlotState` owns runtime `SlotClockState`, `ProgressSlotClock` advances the slot clock, and full clocks currently resolve via `SlotClockCompletionEffect.RemoveSlot`
+- NPC deck system: `NpcCardDefinition` carries character name, portrait, narrative text, and `NpcEffect` entries; `NpcDeckDefinition` stores the list and shuffle behavior; `NpcDeckState.Draw()` moves the previous active NPC to discard, reshuffles discard into draw when needed, and exposes the current active NPC for `NpcCardView`
 
 ### Current Story Content
 
@@ -570,3 +610,4 @@ Managed by `GameConfig` (ScriptableObject in `Assets/Scripts/Config/`):
 | 2026-05-03 | Added `ModifyPlayerCardsOfTypeValue` slot effect action for changing all live player cards of a chosen type across hand and board on `OnPlayerTurnStart`, `OnCardPlayed`, or `OnRoundEnd` |
 | 2026-05-03 | Player cards that reach `CurrentValue <= 0` now immediately move to the player's discard pile, including cards destroyed by slot effects outside combat |
 | 2026-05-05 | Added slot clocks: `SlotClockConfig` on `SlotDefinition`, runtime `SlotClockState`, `ProgressSlotClock` slot effect, `RemoveSlot` completion, and slot-clock UI wiring through `SlotView` / `ClockView` |
+| 2026-05-03 | Added NPC Deck system: `DrawNpcCard` can reveal an NPC card with narrative text plus optional hand, threat, or opponent-clock effects |

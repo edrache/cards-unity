@@ -21,6 +21,9 @@ namespace CardsUnity
         [Min(1)] public int progressionXpCap = 10;
         public ProgressionRewardDeckSet progressionRewardDeckSet;
 
+        [Header("NPC Deck")]
+        public NpcDeckDefinition npcDeck;
+
         public List<ThreatTierDefinition> GetThreatTiers(CardType type) => type switch
         {
             CardType.Force => forceThreatTiers,

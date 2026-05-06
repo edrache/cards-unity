@@ -18,6 +18,7 @@ namespace CardsUnity.Tests
         private ProgressionState _progression;
         private PlayedCardCounterState _playedCardCounters;
         private StatusCollection _statusCollection;
+        private NpcDeckState _npcDeck;
 
         [SetUp]
         public void SetUp()
@@ -37,6 +38,7 @@ namespace CardsUnity.Tests
                 _opponentDeck, _board,
                 _threatState, _opponentClock, _progression, _playedCardCounters,
                 _statusCollection,
+                _npcDeck,
                 draftValue: 3,
                 rng: new System.Random(42));
         }
@@ -329,8 +331,35 @@ namespace CardsUnity.Tests
                 _opponentDeck, board,
                 _threatState, _opponentClock, _progression, _playedCardCounters,
                 _statusCollection,
+                _npcDeck,
                 draftValue: 3,
                 rng: new System.Random(42));
+        }
+
+        [Test]
+        public void StartTurn_DrawNpcCard_fires_OnNpcCardDrawn_with_drawn_card()
+        {
+            var npcCard = ScriptableObject.CreateInstance<NpcCardDefinition>();
+            npcCard.characterName = "TestNpc";
+
+            var deckDefinition = ScriptableObject.CreateInstance<NpcDeckDefinition>();
+            deckDefinition.cards = new List<NpcCardDefinition> { npcCard };
+            deckDefinition.shuffleOnInit = false;
+            _npcDeck = new NpcDeckState(deckDefinition, new System.Random(42));
+
+            var slotDef = MakeSlotDefinition(
+                SlotEffectContext.Passive,
+                SlotEffectTrigger.OnPlayerTurnStart,
+                SlotEffectAction.DrawNpcCard);
+            var board = new BoardState(new SlotDefinition[] { slotDef, null, null });
+            var turn = MakeTurnWithBoard(board);
+
+            NpcCardDefinition drawn = null;
+            turn.OnNpcCardDrawn += card => drawn = card;
+
+            turn.StartTurn();
+
+            Assert.AreSame(npcCard, drawn);
         }
 
         [Test]

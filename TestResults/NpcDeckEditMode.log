@@ -1,0 +1,26 @@
+attempt to write a readonly database
+attempt to write a readonly database
+Unity Editor version:    6000.3.10f1 (e35f0c77bd8e)
+Branch:                  6000.3/staging
+Build type:              Release
+Batch mode:              YES
+macOS version:           Version 26.4.1 (Build 25E253)
+Darwin version:          25.4.0
+Architecture:            arm64
+Running under Rosetta:   NO
+Available memory:        32768 MB
+Date:                    2026-05-05T19:51:43Z
+[Licensing::Module] Trying to connect to existing licensing client channel...
+No explicit failure code handling for error of type 1
+[Licensing::IpcConnector] Error: Failed to connect to LicenseClient-marek channel (error code: 0x80000000) .
+[Licensing::IpcConnector] Error: Connection to channel: "LicenseClient-marek" failed; code: "0x80000000"
+[Licensing::IpcConnector] Error: Failed to connect to LicenseClient-marek channel (error code: 0x80000000) .
+[Licensing::IpcConnector] Channel LicenseClient-marek-6000.3.10 doesn't exist
+Launching external process: /Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/Helpers/UnityLicensingClient.app/Contents/MacOS/Unity.Licensing.Client
+[Licensing::Module] Successfully launched the LicensingClient (PId: 84412)
+2026-05-05 21:51:43.236 Unity[84411:4008712] Failure on line 688 in function id scheduleApplicationNotification(LSNotificationCode, NSWorkspaceNotificationCenter *): noErr == _LSModifyNotification(notificationID, 1, &code, 0, NULL, NULL, NULL)
+2026-05-05 21:51:43.300 Unity[84411:4008714] Connection Invalid error for service com.apple.hiservices-xpcservice.
+2026-05-05 21:51:43.300 Unity[84411:4008712] Error received in message reply handler: Connection invalid
+[Licensing::IpcConnector] Channel LicenseClient-marek-6000.3.10 doesn't exist
+[Licensing::Module] Timed-out after 60.00s, waiting for channel: "LicenseClient-marek-6000.3.10"
+[Licensing::Module] Error: Licensing initialization failed after 74.83s

@@ -15,12 +15,14 @@ namespace CardsUnity
         private readonly ProgressionState _progression;
         private readonly PlayedCardCounterState _playedCardCounters;
         private readonly StatusCollection _statusCollection;
+        private readonly NpcDeckState _npcDeck;
         private readonly int _draftValue;
         private readonly System.Random _rng;
         private bool _turnEndedByEffect;
 
         public event Action OnOpponentCardDestroyed;
         public event Action OnPlayerCardDestroyed;
+        public event Action<NpcCardDefinition> OnNpcCardDrawn;
 
         public TurnController(
             DeckState playerDeck,
@@ -32,6 +34,7 @@ namespace CardsUnity
             ProgressionState progression,
             PlayedCardCounterState playedCardCounters,
             StatusCollection statusCollection,
+            NpcDeckState npcDeck,
             int draftValue,
             System.Random rng)
         {
@@ -44,6 +47,7 @@ namespace CardsUnity
             _progression = progression;
             _playedCardCounters = playedCardCounters;
             _statusCollection = statusCollection;
+            _npcDeck = npcDeck;
             _draftValue = draftValue;
             _rng = rng ?? throw new ArgumentNullException(nameof(rng));
         }
@@ -276,6 +280,9 @@ namespace CardsUnity
                 case SlotEffectAction.DamageToThreat:
                     ApplyDamageToThreat(effect, slot);
                     break;
+                case SlotEffectAction.DrawNpcCard:
+                    DrawNpcCard();
+                    break;
                 case SlotEffectAction.ReturnCardsFromSlots:
                     ReturnAllPlayerCardsToHand();
                     break;
@@ -307,6 +314,16 @@ namespace CardsUnity
 
             Debug.Log(
                 $"[TurnController] Finished slot effect. Slot={GetSlotIndex(slot)}, Action={effect.action}, BoardStateAfterAction={DescribeBoardState()}");
+        }
+
+        private void DrawNpcCard()
+        {
+            if (_npcDeck == null)
+                return;
+
+            var card = _npcDeck.Draw(_rng);
+            if (card != null)
+                OnNpcCardDrawn?.Invoke(card);
         }
 
         private void ProgressSlotClock(SlotState slot, int amount)

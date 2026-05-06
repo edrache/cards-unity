@@ -23,6 +23,7 @@ namespace CardsUnity
         [SerializeField] private GameObject losePanel;
         [SerializeField] private StoryDeckDefinition storyDeck;
         [SerializeField] private StoryCardView storyCardView;
+        [SerializeField] private NpcCardView npcCardView;
 
         private TurnController _turn;
         private HandState _hand;
@@ -34,6 +35,7 @@ namespace CardsUnity
         private StatusCollection _statusCollection;
         private System.Random _rng;
         private StoryDeckState _storyDeck;
+        private NpcDeckState _npcDeck;
         private Action<CardView> _cardDragStartHandler;
         private Action<CardView> _cardDragEndHandler;
 
@@ -64,6 +66,12 @@ namespace CardsUnity
             _playedCardCounters = new PlayedCardCounterState();
             _statusCollection = new StatusCollection();
 
+            if (storyDeck != null)
+                _storyDeck = new StoryDeckState(storyDeck, _rng);
+
+            if (config.npcDeck != null)
+                _npcDeck = new NpcDeckState(config.npcDeck, _rng);
+
             _turn = new TurnController(
                 playerDeck,
                 _hand,
@@ -74,11 +82,9 @@ namespace CardsUnity
                 _progression,
                 _playedCardCounters,
                 _statusCollection,
+                _npcDeck,
                 config.draftValue,
                 _rng);
-
-            if (storyDeck != null)
-                _storyDeck = new StoryDeckState(storyDeck, _rng);
 
             _cardDragStartHandler = _ => boardView.SetHighlightAll(true);
             _cardDragEndHandler = _ => boardView.SetHighlightAll(false);
@@ -89,6 +95,7 @@ namespace CardsUnity
             endTurnButton.OnClicked += OnEndTurn;
             _turn.OnOpponentCardDestroyed += HandleOpponentCardDestroyed;
             _turn.OnPlayerCardDestroyed += HandlePlayerCardDestroyed;
+            _turn.OnNpcCardDrawn += HandleNpcCardDrawn;
             _threatState.OnTierDepleted += HandleThreatTierDepleted;
             _threatState.OnBarAtZero += HandleThreatBarAtZero;
             _progression.OnLevelUp += HandleLevelUp;
@@ -130,6 +137,7 @@ namespace CardsUnity
             {
                 _turn.OnOpponentCardDestroyed -= HandleOpponentCardDestroyed;
                 _turn.OnPlayerCardDestroyed -= HandlePlayerCardDestroyed;
+                _turn.OnNpcCardDrawn -= HandleNpcCardDrawn;
             }
 
             if (_threatState != null)
@@ -208,6 +216,37 @@ namespace CardsUnity
                 $"[ChallengeController] Level up resolved. DominantType={dominantType}, Tier={_progression.CurrentTier}, " +
                 $"RewardCard={(rewardCard != null ? rewardCard.title : "none")}");
             RefreshUI();
+        }
+
+        private void HandleNpcCardDrawn(NpcCardDefinition card)
+        {
+            if (card?.effects != null)
+            {
+                foreach (var effect in card.effects)
+                {
+                    if (effect != null)
+                        ApplyNpcEffect(effect);
+                }
+            }
+
+            RefreshUI();
+        }
+
+        private void ApplyNpcEffect(NpcEffect effect)
+        {
+            switch (effect.action)
+            {
+                case NpcEffectAction.AddCardToPlayerHand:
+                    if (effect.cardToAdd != null)
+                        _hand.Add(new CardInstance(effect.cardToAdd));
+                    break;
+                case NpcEffectAction.DamageToThreat:
+                    _threatState?.GetBar(effect.targetCardType)?.TakeDamage(effect.actionValue);
+                    break;
+                case NpcEffectAction.IncrementOpponentClock:
+                    _opponentClock?.Increment(effect.actionValue);
+                    break;
+            }
         }
 
         private static DeckState BuildDeck(List<CardDefinition> cards, System.Random rng)
@@ -333,6 +372,7 @@ namespace CardsUnity
                 storyCardView.Refresh(_storyDeck?.ActiveCard, _storyDeck?.ActiveCardClock);
 
             statusView?.Refresh(_statusCollection);
+            npcCardView?.Refresh(_npcDeck?.ActiveCard);
         }
 
         private void CheckEndCondition()

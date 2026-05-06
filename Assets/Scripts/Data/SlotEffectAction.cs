@@ -5,6 +5,7 @@ namespace CardsUnity
         DrawOpponentCard,
         AddToClock,
         DamageToThreat,
+        DrawNpcCard,
         ReturnCardsFromSlots,
         DrawToHandLimit,
         TurnEnd,
