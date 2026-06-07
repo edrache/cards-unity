@@ -92,6 +92,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Sock
   sockRenderer: {fileID: 8636411053918106924}
+  pickUpDuration: 0.4
+  segCholewka: {fileID: 2128509493427075589}
+  segSrodstopie: {fileID: 3614531707788016191}
+  segNosek: {fileID: 8257126233625026640}
 --- !u!1 &4228327437436214934
 GameObject:
   m_ObjectHideFlags: 0

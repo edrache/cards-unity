@@ -67,10 +67,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d642410782994e91b6ffa0e48861b2c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SockSelector
-  maxDistance: 0.5
+  maxDistance: 2
   sockLayerMask:
     serializedVersion: 2
     m_Bits: 4294967295
+  pickUpActionName: Interact
+  holdPoint: {fileID: 0}
+  throwForce: 0.3
+  slotCholewka: {fileID: 0}
+  slotSrodstopie: {fileID: 0}
+  slotNosek: {fileID: 0}
 --- !u!1 &4995296097535773816
 GameObject:
   m_ObjectHideFlags: 0

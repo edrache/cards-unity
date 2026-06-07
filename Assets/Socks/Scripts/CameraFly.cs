@@ -7,17 +7,23 @@ public class CameraFly : MonoBehaviour
     [SerializeField] float lookSensitivity = 2f;
     [SerializeField] bool invertLookX;
     [SerializeField] bool invertLookY;
+    [SerializeField] float collisionRadius = 0.3f;
+    [SerializeField] LayerMask collisionMask = ~0;
+    [SerializeField] bool mouseLookEnabled = true;
+
+    const float SkinWidth = 0.01f;
 
     Player _player;
     float _pitch;
     float _yaw;
+    bool _prevMouseLookEnabled;
 
     void Awake()
     {
         _player = ReInput.players.GetPlayer(0);
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        _prevMouseLookEnabled = mouseLookEnabled;
+        ApplyCursorState();
 
         _yaw = transform.eulerAngles.y;
         _pitch = transform.eulerAngles.x;
@@ -25,6 +31,12 @@ public class CameraFly : MonoBehaviour
 
     void Update()
     {
+        if (mouseLookEnabled != _prevMouseLookEnabled)
+        {
+            _prevMouseLookEnabled = mouseLookEnabled;
+            ApplyCursorState();
+        }
+
         HandleLook();
         HandleMove();
     }
@@ -33,6 +45,12 @@ public class CameraFly : MonoBehaviour
     {
         float lookX = _player.GetAxis("LookX");
         float lookY = _player.GetAxis("LookY");
+
+        if (mouseLookEnabled)
+        {
+            lookX += _player.GetAxis("MouseX");
+            lookY += _player.GetAxis("MouseY");
+        }
 
         if (invertLookX) lookX = -lookX;
         if (invertLookY) lookY = -lookY;
@@ -51,6 +69,21 @@ public class CameraFly : MonoBehaviour
         float moveY = _player.GetAxis("MoveY");
 
         Vector3 move = transform.right * moveX + transform.forward * moveZ + Vector3.up * moveY;
-        transform.position += move * (moveSpeed * Time.deltaTime);
+        float distance = move.magnitude * moveSpeed * Time.deltaTime;
+
+        if (distance <= Mathf.Epsilon) return;
+
+        Vector3 dir = move.normalized;
+
+        if (Physics.SphereCast(transform.position, collisionRadius, dir, out RaycastHit hit, distance + SkinWidth, collisionMask))
+            distance = Mathf.Max(0f, hit.distance - SkinWidth);
+
+        transform.position += dir * distance;
+    }
+
+    void ApplyCursorState()
+    {
+        Cursor.lockState = mouseLookEnabled ? CursorLockMode.Locked : CursorLockMode.None;
+        Cursor.visible = !mouseLookEnabled;
     }
 }

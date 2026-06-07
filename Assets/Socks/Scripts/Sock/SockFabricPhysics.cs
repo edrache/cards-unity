@@ -25,6 +25,7 @@ public class SockFabricPhysics : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (rb.isKinematic) return;
         if (rb.IsSleeping()) return;
 
         // Oś Y segmentu powinna wskazywać w górę — skarpeta leży płasko
