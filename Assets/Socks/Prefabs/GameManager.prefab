@@ -47,14 +47,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SockSpawner
   sockPrefabs:
-  - {fileID: 4152073992747145768, guid: 737bce9e06e0f4a99b2710d07533e899, type: 3}
-  - {fileID: 4152073992747145768, guid: 0c06a899e0fa54a6f836b470f516d257, type: 3}
-  - {fileID: 4152073992747145768, guid: adebe2cb5e0f04846aa1f047aaaf1117, type: 3}
-  - {fileID: 4152073992747145768, guid: 1b6947f98a95647c09a800cd960221fe, type: 3}
-  - {fileID: 4152073992747145768, guid: 8ffaacafd89e14deea8aaa7cd43f89e6, type: 3}
   - {fileID: 3622177971730950113, guid: 6c1b9419f36524867aea7ee411435163, type: 3}
   spawnZone: {fileID: 1863396074420588297}
+  sourceMaterial: {fileID: 2100000, guid: e29e7833077984128af382ced0a1a674, type: 2}
   spawnActionName: SpawnSock
+  pairCount: 20
+  spawnInterval: 0.1
 --- !u!114 &2542066189261921369
 MonoBehaviour:
   m_ObjectHideFlags: 0

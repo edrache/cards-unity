@@ -6,7 +6,7 @@ Texture2D:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: z__GradientRampTex{"mode":0,"colorKeys":[{"color":{"r":0.5094339847564697,"g":0.12735849618911744,"b":0.16588720679283143,"a":1.0},"time":0.27940794825553896},{"color":{"r":0.7264150977134705,"g":0.18845675885677339,"b":0.5068021416664124,"a":1.0},"time":0.3499961793422699},{"color":{"r":0.9150943160057068,"g":0.45323067903518679,"b":0.5741949081420898,"a":1.0},"time":0.497062623500824},{"color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0},"time":0.994125247001648}],"alphaKeys":[{"alpha":1.0,"time":0.0},{"alpha":1.0,"time":1.0}]}
+  m_Name: z__GradientRampTex{"mode":0,"colorKeys":[{"color":{"r":0.21698111295700074,"g":0.1879900097846985,"b":0.1279369741678238,"a":1.0},"time":0.5911802649497986},{"color":{"r":0.5566037893295288,"g":0.5290887355804443,"b":0.4384567439556122,"a":1.0},"time":0.7617608904838562},{"color":{"r":0.9056603908538818,"g":0.8065285086631775,"b":0.6621573567390442,"a":1.0},"time":1.0}],"alphaKeys":[{"alpha":1.0,"time":0.0},{"alpha":1.0,"time":1.0}]}
   m_ImageContentsHash:
     serializedVersion: 2
     Hash: 00000000000000000000000000000000
@@ -40,7 +40,7 @@ Texture2D:
   m_ColorSpace: 1
   m_PlatformBlob: 
   image data: 1024
-  _typelessdata: ff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff82202aff84212eff872233ff8a2338ff8d243cff912541ff942546ff97264bff9a2750ff9d2855ffa02959ffa32a5effa62b63ffa92c68ffac2c6dffaf2d72ffb22e76ffb52f7bffb83080ffba3182ffbb3382ffbd3582ffbe3783ffbf3983ffc13a84ffc23c84ffc33e85ffc44085ffc64286ffc74386ffc84587ffca4787ffcb4988ffcc4b88ffcd4c88ffcf4e89ffd05089ffd1528affd3548affd4558bffd5578bffd6598cffd85b8cffd95d8dffda5e8dffdc608dffdd628effde648effdf668fffe1678fffe26990ffe36b90ffe56d91ffe66f91ffe77092ffe87292ffe97493ffea7593ffea7694ffea7795ffea7896ffea7997ffea7a98ffeb7c99ffeb7d99ffeb7e9affeb7f9bffeb809cffeb819dffec829effec839fffec849fffec85a0ffec87a1ffec88a2ffed89a3ffed8aa4ffed8ba5ffed8ca5ffed8da6ffed8ea7ffee8fa8ffee90a9ffee92aaffee93abffee94abffef95acffef96adffef97aeffef98afffef99b0ffef9ab1fff09bb1fff09db2fff09eb3fff09fb4fff0a0b5fff0a1b6fff1a2b7fff1a3b7fff1a4b8fff1a5b9fff1a6bafff1a8bbfff2a9bcfff2aabdfff2abbdfff2acbefff2adbffff2aec0fff3afc1fff3b0c2fff3b1c3fff3b3c3fff3b4c4fff3b5c5fff4b6c6fff4b7c7fff4b8c8fff4b9c9fff4bac9fff4bbcafff5bccbfff5beccfff5bfcdfff5c0cefff5c1cffff6c2cffff6c3d0fff6c4d1fff6c5d2fff6c6d3fff6c7d4fff7c9d5fff7cad5fff7cbd6fff7ccd7fff7cdd8fff7ced9fff8cfdafff8d0dbfff8d1dbfff8d2dcfff8d4ddfff8d5defff9d6dffff9d7e0fff9d8e1fff9d9e1fff9dae2fff9dbe3fffadce4fffadde5fffadfe6fffae0e7fffae1e7fffae2e8fffbe3e9fffbe4eafffbe5ebfffbe6ecfffbe7edfffbe8edfffceaeefffcebeffffcecf0fffcedf1fffceef2fffdeff3fffdf0f3fffdf1f4fffdf2f5fffdf3f6fffdf5f7fffef6f8fffef7f9fffef8f9fffef9fafffefafbfffefbfcfffffcfdfffffdfefffffeffffffffffffffffff
+  _typelessdata: ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff373021ff383021ff3a3223ff3c3425ff3e3627ff403828ff423a2aff443c2cff463e2eff484030ff4a4231ff4c4433ff4e4635ff504837ff524a39ff544c3bff564e3cff58503eff5a5240ff5c5442ff5e5644ff605845ff625a47ff645c49ff665e4bff68604dff6a624fff6c6450ff6e6652ff706854ff726a56ff746c58ff766e5aff78705bff7a725dff7c745fff7e7661ff807863ff817a64ff837c66ff857e68ff87806aff89826cff8b846eff8d866fff8f8871ff908971ff928a72ff938b73ff958c74ff968e75ff988f76ff999077ff9b9178ff9c9279ff9e937aff9f957bffa1967cffa2977dffa4987effa5997fffa69a80ffa89c80ffa99d81ffab9e82ffac9f83ffaea084ffafa185ffb1a386ffb2a487ffb4a588ffb5a689ffb7a78affb8a88bffbaaa8cffbbab8dffbcac8effbead8fffbfae8fffc1af90ffc2b191ffc4b292ffc5b393ffc7b494ffc8b595ffcab696ffcbb897ffcdb998ffceba99ffd0bb9affd1bc9bffd2bd9cffd4bf9dffd5c09effd7c19fffd8c29fffdac3a0ffdbc4a1ffddc6a2ffdec7a3ffe0c8a4ffe1c9a5ffe3caa6ffe4cba7ffe5cda8ffe7cea9
   m_StreamData:
     serializedVersion: 2
     offset: 0
@@ -73,7 +73,7 @@ Material:
   m_ValidKeywords:
   - DR_OUTLINE_ON
   - _BASEMAP_PREMULTIPLY
-  - _DETAILMAPBLENDINGMODE_INTERPOLATE
+  - _DETAILMAPBLENDINGMODE_MULTIPLY
   - _TEXTUREBLENDINGMODE_MULTIPLY
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -93,7 +93,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BaseMap:
-        m_Texture: {fileID: 2800000, guid: 2ea714ee9c72c4e41ab36c393218ae6d, type: 3}
+        m_Texture: {fileID: 2800000, guid: 1469cbf5c22ea4b5393a19d139b28835, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
@@ -172,7 +172,7 @@ Material:
     - _Cutoff: 0.5
     - _DecalPaintOver: 0
     - _DetailAlbedoMapScale: 1
-    - _DetailMapBlendingMode: 2
+    - _DetailMapBlendingMode: 0
     - _DetailMapImpact: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
@@ -207,7 +207,7 @@ Material:
     - _QueueOffset: 0
     - _ReceiveShadows: 1
     - _RimEnabled: 0
-    - _SelfShadingSize: 0.32
+    - _SelfShadingSize: 0
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularEnabled: 0
@@ -226,7 +226,7 @@ Material:
     - _BaseColor: {r: 0.9716981, g: 0.30709326, b: 0.30709326, a: 1}
     - _Color: {r: 0.9716981, g: 0.30709323, b: 0.30709323, a: 1}
     - _ColorGradient: {r: 0.85023, g: 0.85034, b: 0.8504499, a: 0.85056}
-    - _DetailMapColor: {r: 1, g: 0.6725611, b: 0, a: 1}
+    - _DetailMapColor: {r: 0.6313726, g: 0.36823323, b: 0.007843152, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _FlatRimColor: {r: 0.85023, g: 0.85034, b: 0.85045, a: 0.85056}
     - _FlatSpecularColor: {r: 0.85023, g: 0.85034, b: 0.85045, a: 0.85056}
