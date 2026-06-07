@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 7204052199475540493}
   - component: {fileID: 1419677240244527829}
   - component: {fileID: 924480422924971398}
+  - component: {fileID: 7563895058552091316}
   m_Layer: 0
   m_Name: SockRoot
   m_TagString: Untagged
@@ -78,6 +79,19 @@ MonoBehaviour:
   segCholewka: {fileID: 2128509493427075589}
   segSrodstopie: {fileID: 3614531707788016191}
   segNosek: {fileID: 8257126233625026640}
+--- !u!114 &7563895058552091316
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3622177971730950113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba292d69109ff4bc29162929f82872eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Sock
+  sockRenderer: {fileID: 8636411053918106924}
 --- !u!1 &4228327437436214934
 GameObject:
   m_ObjectHideFlags: 0
@@ -448,5 +462,10 @@ Transform:
 --- !u!4 &7482370403986994168 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -5236689530496101261, guid: 893043d7ec44e4165ade6a7cc752e7f6, type: 3}
+  m_PrefabInstance: {fileID: 5802099361073571723}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &8636411053918106924 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 2837127819157574311, guid: 893043d7ec44e4165ade6a7cc752e7f6, type: 3}
   m_PrefabInstance: {fileID: 5802099361073571723}
   m_PrefabAsset: {fileID: 0}
