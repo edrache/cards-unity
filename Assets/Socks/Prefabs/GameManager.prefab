@@ -71,12 +71,27 @@ MonoBehaviour:
   sockLayerMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  pickUpActionName: Interact
-  holdPoint: {fileID: 0}
   throwForce: 0.3
-  slotCholewka: {fileID: 0}
-  slotSrodstopie: {fileID: 0}
-  slotNosek: {fileID: 0}
+  actionLeft: InteractLeft
+  slotCholewkaLeft: {fileID: 0}
+  slotSrodstopieLeft: {fileID: 0}
+  slotNosekLeft: {fileID: 0}
+  actionRight: InteractRight
+  slotCholewkaRight: {fileID: 0}
+  slotSrodstopieRight: {fileID: 0}
+  slotNosekRight: {fileID: 0}
+  actionPair: Pair
+  pairDuration: 0.5
+  pairEase: 28
+  pairSlotCholewkaLeft: {fileID: 0}
+  pairSlotSrodstopieLeft: {fileID: 0}
+  pairSlotNosekLeft: {fileID: 0}
+  pairSlotCholewkaRight: {fileID: 0}
+  pairSlotSrodstopieRight: {fileID: 0}
+  pairSlotNosekRight: {fileID: 0}
+  sockPairPrefab: {fileID: 841922794809623722, guid: 5b4996a10d5ef45fe9d681bfb616ed4f, type: 3}
+  pairSpawnPoint: {fileID: 0}
+  pairThrowForce: 2
 --- !u!1 &4995296097535773816
 GameObject:
   m_ObjectHideFlags: 0

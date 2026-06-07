@@ -92,7 +92,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Sock
   sockRenderer: {fileID: 8636411053918106924}
+  skinnedMesh: {fileID: 8636411053918106924}
+  blendShapeIndex: 0
   pickUpDuration: 0.4
+  pickUpEase: 7
   segCholewka: {fileID: 2128509493427075589}
   segSrodstopie: {fileID: 3614531707788016191}
   segNosek: {fileID: 8257126233625026640}
