@@ -9,7 +9,9 @@ Conversation with the user is conducted in **Polish**.
 
 ## Project Overview
 
-Unity 6 (6000.3.10f1) project. Currently a bare scaffold — no game logic has been implemented yet.
+Unity 6 (6000.3.10f1) project. The game is about collecting socks and finding matching pairs.
+
+Active game lives under `Assets/Socks/` — this is the working folder for all game-specific scenes, scripts, prefabs, models, and materials.
 
 ## Key Dependencies
 

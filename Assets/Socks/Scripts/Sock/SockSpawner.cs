@@ -1,32 +1,33 @@
+using Rewired;
 using UnityEngine;
 
-/// <summary>
-/// Kliknij LPM w Game view → losowy wariant skarpety spawnie się w tym miejscu.
-/// Dodaj ten skrypt na dowolny GameObject w scenie (np. GameManager).
-/// Przypisz prefaby w liście sockPrefabs w Inspektorze.
-/// </summary>
 public class SockSpawner : MonoBehaviour
 {
     [SerializeField] GameObject[] sockPrefabs;
-    [SerializeField] float spawnHeightOffset = 0.05f;
+    [SerializeField] BoxCollider spawnZone;
+    [SerializeField] string spawnActionName = "SpawnSock";
 
-    Camera _cam;
+    Player _player;
 
-    void Awake() => _cam = Camera.main;
+    void Awake() => _player = ReInput.players.GetPlayer(0);
 
     void Update()
     {
-        if (!Input.GetMouseButtonDown(0)) return;
-        if (sockPrefabs == null || sockPrefabs.Length == 0) return;
+        if (_player.GetButtonDown(spawnActionName))
+            SpawnSock();
+    }
 
-        Ray ray = _cam.ScreenPointToRay(Input.mousePosition);
+    void SpawnSock()
+    {
+        if (sockPrefabs == null || sockPrefabs.Length == 0 || spawnZone == null) return;
 
-        if (Physics.Raycast(ray, out RaycastHit hit))
-        {
-            Vector3 spawnPos = hit.point + hit.normal * spawnHeightOffset;
-            Quaternion spawnRot = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
-            GameObject prefab = sockPrefabs[Random.Range(0, sockPrefabs.Length)];
-            Instantiate(prefab, spawnPos, spawnRot);
-        }
+        Bounds b = spawnZone.bounds;
+        Vector3 spawnPos = new Vector3(
+            Random.Range(b.min.x, b.max.x),
+            Random.Range(b.min.y, b.max.y),
+            Random.Range(b.min.z, b.max.z)
+        );
+        Quaternion spawnRot = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+        Instantiate(sockPrefabs[Random.Range(0, sockPrefabs.Length)], spawnPos, spawnRot);
     }
 }
