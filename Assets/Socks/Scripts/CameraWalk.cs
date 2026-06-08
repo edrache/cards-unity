@@ -1,26 +1,27 @@
 using Rewired;
 using UnityEngine;
 
+[RequireComponent(typeof(CharacterController))]
 public class CameraWalk : MonoBehaviour
 {
     [SerializeField] float moveSpeed = 5f;
     [SerializeField] float lookSensitivity = 2f;
     [SerializeField] bool invertLookX;
     [SerializeField] bool invertLookY;
-    [SerializeField] float collisionRadius = 0.3f;
-    [SerializeField] LayerMask collisionMask = ~0;
     [SerializeField] bool mouseLookEnabled = true;
-
-    const float SkinWidth = 0.01f;
+    [SerializeField] float gravity = -20f;
 
     Player _player;
+    CharacterController _controller;
     float _pitch;
     float _yaw;
+    float _verticalVelocity;
     bool _prevMouseLookEnabled;
 
     void Awake()
     {
         _player = ReInput.players.GetPlayer(0);
+        _controller = GetComponent<CharacterController>();
 
         _prevMouseLookEnabled = mouseLookEnabled;
         ApplyCursorState();
@@ -67,21 +68,17 @@ public class CameraWalk : MonoBehaviour
         float moveX = _player.GetAxis("MoveX");
         float moveZ = _player.GetAxis("MoveZ");
 
-        // Project forward/right onto XZ plane so walking stays level
         Vector3 forward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
         Vector3 right = Vector3.ProjectOnPlane(transform.right, Vector3.up).normalized;
+        Vector3 horizontalMove = (right * moveX + forward * moveZ) * moveSpeed;
 
-        Vector3 move = right * moveX + forward * moveZ;
-        float distance = move.magnitude * moveSpeed * Time.deltaTime;
+        if (_controller.isGrounded)
+            _verticalVelocity = -2f; // small constant keeps grounded flag stable
+        else
+            _verticalVelocity += gravity * Time.deltaTime;
 
-        if (distance <= Mathf.Epsilon) return;
-
-        Vector3 dir = move.normalized;
-
-        if (Physics.SphereCast(transform.position, collisionRadius, dir, out RaycastHit hit, distance + SkinWidth, collisionMask))
-            distance = Mathf.Max(0f, hit.distance - SkinWidth);
-
-        transform.position += dir * distance;
+        Vector3 move = horizontalMove + Vector3.up * _verticalVelocity;
+        _controller.Move(move * Time.deltaTime);
     }
 
     void ApplyCursorState()
