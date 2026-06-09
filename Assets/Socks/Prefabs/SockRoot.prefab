@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 1419677240244527829}
   - component: {fileID: 924480422924971398}
   - component: {fileID: 7563895058552091316}
+  - component: {fileID: 8113336804859575498}
   m_Layer: 0
   m_Name: SockRoot
   m_TagString: Untagged
@@ -148,6 +149,21 @@ MonoBehaviour:
   - {fileID: 1783509818416039456}
   - {fileID: 862624055968573031}
   - {fileID: 6294634194864644348}
+--- !u!114 &8113336804859575498
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3622177971730950113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 454780d69e5df4dd395ef34ac99f56b3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SockSimulator
+  minActiveTimeAfterThrow: 1.5
+  sleepVelocityThreshold: 0.05
+  _state: 0
 --- !u!1 &3730869190696984777
 GameObject:
   m_ObjectHideFlags: 0
