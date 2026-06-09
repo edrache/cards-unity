@@ -11,9 +11,7 @@ public class Sock : MonoBehaviour
     [SerializeField] Ease pickUpEase = Ease.InOutQuad;
 
     [Header("Segmenty fizyczne (te same co w SockPhysicsBuilder)")]
-    [SerializeField] Transform segCholewka;
-    [SerializeField] Transform segSrodstopie;
-    [SerializeField] Transform segNosek;
+    [SerializeField] Transform[] segments;
 
     static readonly int OutlineColorId = Shader.PropertyToID("_OutlineColor");
 
@@ -24,15 +22,8 @@ public class Sock : MonoBehaviour
 
     bool _isHeld;
 
-    // Aktywne sloty (do których LateUpdate snapuje segmenty)
-    Transform _activeSlotCholewka;
-    Transform _activeSlotSrodstopie;
-    Transform _activeSlotNosek;
-
-    // Sloty ręki zapamiętane z PickUp — potrzebne do Unpair
-    Transform _handSlotCholewka;
-    Transform _handSlotSrodstopie;
-    Transform _handSlotNosek;
+    Transform[] _activeSlots;
+    Transform[] _handSlots;
 
     void Awake()
     {
@@ -48,9 +39,8 @@ public class Sock : MonoBehaviour
     void LateUpdate()
     {
         if (!_isHeld) return;
-        SnapToSlot(segCholewka,   _activeSlotCholewka);
-        SnapToSlot(segSrodstopie, _activeSlotSrodstopie);
-        SnapToSlot(segNosek,      _activeSlotNosek);
+        for (int i = 0; i < segments.Length && i < _activeSlots.Length; i++)
+            SnapToSlot(segments[i], _activeSlots[i]);
     }
 
     public Material GetSharedMaterial() => sockRenderer.sharedMaterial;
@@ -65,45 +55,30 @@ public class Sock : MonoBehaviour
     public void Highlight()   => _mat.SetColor(OutlineColorId, Color.white);
     public void Unhighlight() => _mat.SetColor(OutlineColorId, _originalOutlineColor);
 
-    public void PickUp(Transform slotCholewka, Transform slotSrodstopie, Transform slotNosek)
+    public void PickUp(Transform[] slots)
     {
-        _handSlotCholewka   = slotCholewka;
-        _handSlotSrodstopie = slotSrodstopie;
-        _handSlotNosek      = slotNosek;
-
-        _activeSlotCholewka   = slotCholewka;
-        _activeSlotSrodstopie = slotSrodstopie;
-        _activeSlotNosek      = slotNosek;
+        _handSlots   = slots;
+        _activeSlots = slots;
 
         SetColliders(false);
         SetKinematic(true);
 
-        TweenSegmentToSlot(segCholewka,   slotCholewka,   pickUpDuration, pickUpEase);
-        TweenSegmentToSlot(segSrodstopie, slotSrodstopie, pickUpDuration, pickUpEase);
-        TweenSegmentToSlot(segNosek,      slotNosek,      pickUpDuration, pickUpEase);
+        for (int i = 0; i < segments.Length && i < slots.Length; i++)
+            TweenSegmentToSlot(segments[i], slots[i], pickUpDuration, pickUpEase);
 
         _isHeld = true;
     }
 
-    // Używane przy podnoszeniu gotowej pary — sock od razu trafia w stan sparowany.
-    public void PickUpPaired(
-        Transform handCholewka,   Transform handSrodstopie,   Transform handNosek,
-        Transform pairCholewka,   Transform pairSrodstopie,   Transform pairNosek)
+    public void PickUpPaired(Transform[] handSlots, Transform[] pairSlots)
     {
-        _handSlotCholewka   = handCholewka;
-        _handSlotSrodstopie = handSrodstopie;
-        _handSlotNosek      = handNosek;
-
-        _activeSlotCholewka   = pairCholewka;
-        _activeSlotSrodstopie = pairSrodstopie;
-        _activeSlotNosek      = pairNosek;
+        _handSlots   = handSlots;
+        _activeSlots = pairSlots;
 
         SetColliders(false);
         SetKinematic(true);
 
-        TweenSegmentToSlot(segCholewka,   pairCholewka,   pickUpDuration, pickUpEase);
-        TweenSegmentToSlot(segSrodstopie, pairSrodstopie, pickUpDuration, pickUpEase);
-        TweenSegmentToSlot(segNosek,      pairNosek,      pickUpDuration, pickUpEase);
+        for (int i = 0; i < segments.Length && i < pairSlots.Length; i++)
+            TweenSegmentToSlot(segments[i], pairSlots[i], pickUpDuration, pickUpEase);
 
         if (skinnedMesh != null)
             skinnedMesh.SetBlendShapeWeight(blendShapeIndex, 100f);
@@ -111,29 +86,22 @@ public class Sock : MonoBehaviour
         _isHeld = true;
     }
 
-    public void Pair(Transform targetCholewka, Transform targetSrodstopie, Transform targetNosek,
-                     float duration, Ease ease)
+    public void Pair(Transform[] targetSlots, float duration, Ease ease)
     {
-        _activeSlotCholewka   = targetCholewka;
-        _activeSlotSrodstopie = targetSrodstopie;
-        _activeSlotNosek      = targetNosek;
+        _activeSlots = targetSlots;
 
-        TweenSegmentToSlot(segCholewka,   targetCholewka,   duration, ease);
-        TweenSegmentToSlot(segSrodstopie, targetSrodstopie, duration, ease);
-        TweenSegmentToSlot(segNosek,      targetNosek,      duration, ease);
+        for (int i = 0; i < segments.Length && i < targetSlots.Length; i++)
+            TweenSegmentToSlot(segments[i], targetSlots[i], duration, ease);
 
         TweenBlendShape(100f, duration, ease);
     }
 
     public void Unpair(float duration, Ease ease)
     {
-        _activeSlotCholewka   = _handSlotCholewka;
-        _activeSlotSrodstopie = _handSlotSrodstopie;
-        _activeSlotNosek      = _handSlotNosek;
+        _activeSlots = _handSlots;
 
-        TweenSegmentToSlot(segCholewka,   _handSlotCholewka,   duration, ease);
-        TweenSegmentToSlot(segSrodstopie, _handSlotSrodstopie, duration, ease);
-        TweenSegmentToSlot(segNosek,      _handSlotNosek,      duration, ease);
+        for (int i = 0; i < segments.Length && i < _handSlots.Length; i++)
+            TweenSegmentToSlot(segments[i], _handSlots[i], duration, ease);
 
         TweenBlendShape(0f, duration, ease);
     }

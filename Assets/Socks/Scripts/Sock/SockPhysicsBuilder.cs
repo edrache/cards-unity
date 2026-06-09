@@ -1,56 +1,39 @@
 using UnityEngine;
 
-/// <summary>
-/// Buduje fizyczny rig skarpety: konfiguruje Rigidbody na 3 segmentach
-/// i łączy je HingeJointami w runtime.
-///
-/// Setup w Inspektorze:
-///   segCholewka  — korzeń łańcucha (brak HingeJoint)
-///   segSrodstopie — połączony z Cholewką
-///   segNosek      — połączony ze Śródstopiem
-///
-/// Każdy segment musi mieć BoxCollider i Rigidbody dodane ręcznie.
-/// </summary>
 [DefaultExecutionOrder(-10)]
 public class SockPhysicsBuilder : MonoBehaviour
 {
     [Header("Segmenty fizyczne (każdy z Rigidbody + BoxCollider)")]
-    [SerializeField] Rigidbody segCholewka;
-    [SerializeField] Rigidbody segSrodstopie;
-    [SerializeField] Rigidbody segNosek;
+    [SerializeField] Rigidbody[] segments;
 
     [Header("Rigidbody")]
     [SerializeField] float mass           = 0.03f;
-    [SerializeField] float linearDamping  = 5.0f;   // wyższe = szybciej zasypia
-    [SerializeField] float angularDamping = 12.0f;  // tłumi obroty przy lądowaniu
-    [SerializeField] float sleepThreshold = 0.15f;  // próg usypiania (domyślne Unity: 0.005)
+    [SerializeField] float linearDamping  = 5.0f;
+    [SerializeField] float angularDamping = 12.0f;
+    [SerializeField] float sleepThreshold = 0.15f;
 
     [Header("HingeJoint — limity zgięcia")]
-    [SerializeField] float jointMin   = -40f;
-    [SerializeField] float jointMax   =  15f;
-    [SerializeField] float spring     =   0.5f;
-    [SerializeField] float damper     =   5.0f;
+    [SerializeField] float jointMin = -40f;
+    [SerializeField] float jointMax =  15f;
+    [SerializeField] float spring   =   0.5f;
+    [SerializeField] float damper   =   5.0f;
 
     void Awake()
     {
-        SetupRigidbody(segCholewka);
-        SetupRigidbody(segSrodstopie);
-        SetupRigidbody(segNosek);
+        if (segments == null || segments.Length == 0) return;
 
-        // Połącz śródstopie z cholewką w punkcie styku
-        Vector3 anchorSrod = segSrodstopie.transform
-            .InverseTransformPoint(segCholewka.transform.position);
-        AddHinge(segSrodstopie, segCholewka, anchorSrod);
+        foreach (Rigidbody rb in segments)
+            SetupRigidbody(rb);
 
-        // Połącz nosek ze śródstopiem w punkcie styku
-        Vector3 anchorNosek = segNosek.transform
-            .InverseTransformPoint(segSrodstopie.transform.position);
-        AddHinge(segNosek, segSrodstopie, anchorNosek);
+        for (int i = 1; i < segments.Length; i++)
+        {
+            Vector3 anchor = segments[i].transform
+                .InverseTransformPoint(segments[i - 1].transform.position);
+            AddHinge(segments[i], segments[i - 1], anchor);
+        }
 
-        // Środek masy nisko → skarpeta naturalnie się kładzie
-        segCholewka.centerOfMass   = new Vector3(0f, -0.004f, 0f);
-        segSrodstopie.centerOfMass = new Vector3(0f, -0.004f, 0f);
-        segNosek.centerOfMass      = new Vector3(0f, -0.004f, 0f);
+        foreach (Rigidbody rb in segments)
+            rb.centerOfMass = new Vector3(0f, -0.004f, 0f);
     }
 
     void SetupRigidbody(Rigidbody rb)

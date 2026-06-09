@@ -4,47 +4,33 @@ using UnityEngine;
 /// Przesuwa kości SkinnedMeshRenderer tak, żeby siatka
 /// zawsze pasowała do fizycznych segmentów.
 ///
-/// Zapamiętuje offset rotacji między segmentem a kością przy starcie,
-/// dzięki czemu kość "zgina się" o tyle samo co segment — bez skręcania siatki.
-///
+/// Listy bones i segments muszą mieć tę samą długość i kolejność.
 /// LateUpdate — po tym jak fizyka zaktualizowała pozycje.
 /// </summary>
 public class SockBoneFollower : MonoBehaviour
 {
     [Header("Kości siatki (z Armature)")]
-    [SerializeField] Transform boneCholewka;
-    [SerializeField] Transform boneSrodstopie;
-    [SerializeField] Transform boneNosek;
+    [SerializeField] Transform[] bones;
 
     [Header("Segmenty fizyczne")]
-    [SerializeField] Transform segCholewka;
-    [SerializeField] Transform segSrodstopie;
-    [SerializeField] Transform segNosek;
+    [SerializeField] Transform[] segments;
 
-    // Offset rotacji: różnica między segmentem a kością w pozycji spoczynkowej
-    Quaternion _offCholewka;
-    Quaternion _offSrodstopie;
-    Quaternion _offNosek;
+    Quaternion[] _offsets;
 
     void Start()
     {
-        _offCholewka   = Quaternion.Inverse(segCholewka.rotation)   * boneCholewka.rotation;
-        _offSrodstopie = Quaternion.Inverse(segSrodstopie.rotation) * boneSrodstopie.rotation;
-        _offNosek      = Quaternion.Inverse(segNosek.rotation)      * boneNosek.rotation;
+        int count = Mathf.Min(bones.Length, segments.Length);
+        _offsets = new Quaternion[count];
+        for (int i = 0; i < count; i++)
+            _offsets[i] = Quaternion.Inverse(segments[i].rotation) * bones[i].rotation;
     }
 
     void LateUpdate()
     {
-        boneCholewka.SetPositionAndRotation(
-            segCholewka.position,
-            segCholewka.rotation * _offCholewka);
-
-        boneSrodstopie.SetPositionAndRotation(
-            segSrodstopie.position,
-            segSrodstopie.rotation * _offSrodstopie);
-
-        boneNosek.SetPositionAndRotation(
-            segNosek.position,
-            segNosek.rotation * _offNosek);
+        int count = _offsets.Length;
+        for (int i = 0; i < count; i++)
+            bones[i].SetPositionAndRotation(
+                segments[i].position,
+                segments[i].rotation * _offsets[i]);
     }
 }

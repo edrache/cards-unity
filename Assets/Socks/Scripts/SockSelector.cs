@@ -10,15 +10,11 @@ public class SockSelector : MonoBehaviour
 
     [Header("Left Hand")]
     [SerializeField] string actionLeft = "InteractLeft";
-    [SerializeField] Transform slotCholewkaLeft;
-    [SerializeField] Transform slotSrodstopieLeft;
-    [SerializeField] Transform slotNosekLeft;
+    [SerializeField] Transform[] slotsLeft;
 
     [Header("Right Hand")]
     [SerializeField] string actionRight = "InteractRight";
-    [SerializeField] Transform slotCholewkaRight;
-    [SerializeField] Transform slotSrodstopieRight;
-    [SerializeField] Transform slotNosekRight;
+    [SerializeField] Transform[] slotsRight;
 
     [Header("Pair / Unpair")]
     [SerializeField] string actionPair  = "Pair";
@@ -26,14 +22,10 @@ public class SockSelector : MonoBehaviour
     [SerializeField] Ease  pairEase     = Ease.InOutBack;
 
     [Header("Pair Slots — Left Sock")]
-    [SerializeField] Transform pairSlotCholewkaLeft;
-    [SerializeField] Transform pairSlotSrodstopieLeft;
-    [SerializeField] Transform pairSlotNosekLeft;
+    [SerializeField] Transform[] pairSlotsLeft;
 
     [Header("Pair Slots — Right Sock")]
-    [SerializeField] Transform pairSlotCholewkaRight;
-    [SerializeField] Transform pairSlotSrodstopieRight;
-    [SerializeField] Transform pairSlotNosekRight;
+    [SerializeField] Transform[] pairSlotsRight;
 
     [Header("Throw Pair")]
     [SerializeField] SockPair sockPairPrefab;
@@ -72,16 +64,16 @@ public class SockSelector : MonoBehaviour
             }
 
             if (pressedLeft)
-                HandleHand(ref _heldLeft, slotCholewkaLeft, slotSrodstopieLeft, slotNosekLeft);
+                HandleHand(ref _heldLeft, slotsLeft);
 
             if (pressedRight)
-                HandleHand(ref _heldRight, slotCholewkaRight, slotSrodstopieRight, slotNosekRight);
+                HandleHand(ref _heldRight, slotsRight);
         }
 
         UpdateSelection();
     }
 
-    void HandleHand(ref Sock held, Transform slotCholewka, Transform slotSrodstopie, Transform slotNosek)
+    void HandleHand(ref Sock held, Transform[] slots)
     {
         if (held != null)
         {
@@ -90,7 +82,7 @@ public class SockSelector : MonoBehaviour
         else if (_current != null)
         {
             _current.Unhighlight();
-            _current.PickUp(slotCholewka, slotSrodstopie, slotNosek);
+            _current.PickUp(slots);
             held = _current;
             _current = null;
         }
@@ -108,7 +100,7 @@ public class SockSelector : MonoBehaviour
 
         Vector3 spawnPos = pairSpawnPoint != null
             ? pairSpawnPoint.position
-            : (pairSlotCholewkaLeft.position + pairSlotCholewkaRight.position) * 0.5f;
+            : (pairSlotsLeft[0].position + pairSlotsRight[0].position) * 0.5f;
 
         SockPair pair = Instantiate(sockPairPrefab, spawnPos, Quaternion.identity);
         pair.SetMaterials(_heldLeft.GetSharedMaterial(), _heldRight.GetSharedMaterial());
@@ -128,13 +120,8 @@ public class SockSelector : MonoBehaviour
 
         var (sockLeft, sockRight) = _currentPair.Decompose(_currentPair.transform.position);
 
-        sockLeft.PickUpPaired(
-            slotCholewkaLeft,      slotSrodstopieLeft,      slotNosekLeft,
-            pairSlotCholewkaLeft,  pairSlotSrodstopieLeft,  pairSlotNosekLeft);
-
-        sockRight.PickUpPaired(
-            slotCholewkaRight,      slotSrodstopieRight,      slotNosekRight,
-            pairSlotCholewkaRight,  pairSlotSrodstopieRight,  pairSlotNosekRight);
+        sockLeft.PickUpPaired(slotsLeft, pairSlotsLeft);
+        sockRight.PickUpPaired(slotsRight, pairSlotsRight);
 
         _heldLeft  = sockLeft;
         _heldRight = sockRight;
@@ -154,14 +141,8 @@ public class SockSelector : MonoBehaviour
         }
         else if (_heldLeft != null && _heldRight != null)
         {
-            _heldLeft.Pair(
-                pairSlotCholewkaLeft,  pairSlotSrodstopieLeft,  pairSlotNosekLeft,
-                pairDuration, pairEase);
-
-            _heldRight.Pair(
-                pairSlotCholewkaRight, pairSlotSrodstopieRight, pairSlotNosekRight,
-                pairDuration, pairEase);
-
+            _heldLeft.Pair(pairSlotsLeft, pairDuration, pairEase);
+            _heldRight.Pair(pairSlotsRight, pairDuration, pairEase);
             _isPaired = true;
         }
     }
