@@ -14,7 +14,7 @@ public class SockSimulator : MonoBehaviour
     SockFabricPhysics[] _fabricPhysics;
     Rigidbody[] _rigidbodies;
 
-    State _state = State.Active;
+    [SerializeField] State _state = State.Active;
     float _throwTime = -1f;
 
     void Awake()
@@ -47,9 +47,11 @@ public class SockSimulator : MonoBehaviour
 
     bool AllRigidbodiesAtRest()
     {
+        if (_rigidbodies.Length == 0) return false;
         foreach (Rigidbody rb in _rigidbodies)
         {
-            if (!rb.isKinematic && !rb.IsSleeping() && rb.linearVelocity.magnitude >= sleepVelocityThreshold)
+            if (rb.isKinematic) continue;
+            if (!rb.IsSleeping() && rb.linearVelocity.sqrMagnitude >= sleepVelocityThreshold * sleepVelocityThreshold)
                 return false;
         }
         return true;
@@ -68,7 +70,10 @@ public class SockSimulator : MonoBehaviour
         foreach (SockFabricPhysics fp in _fabricPhysics)
             fp.enabled = active;
 
-        foreach (Rigidbody rb in _rigidbodies)
-            rb.isKinematic = !active;
+        if (!active)
+        {
+            foreach (Rigidbody rb in _rigidbodies)
+                rb.isKinematic = true;
+        }
     }
 }
