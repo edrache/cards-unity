@@ -24,6 +24,11 @@ public class SockSimulator : MonoBehaviour
         _rigidbodies   = GetComponentsInChildren<Rigidbody>();
     }
 
+    void Start()
+    {
+        _throwTime = Time.time;
+    }
+
     public void OnPickedUp()
     {
         _throwTime = -1f;
