@@ -19,6 +19,7 @@ public class Sock : MonoBehaviour
     Material _mat;
     Rigidbody[] _rigidbodies;
     Collider[] _colliders;
+    SockSimulator _simulator;
 
     bool _isHeld;
 
@@ -34,6 +35,7 @@ public class Sock : MonoBehaviour
         _originalOutlineColor = _mat.GetColor(OutlineColorId);
         _rigidbodies          = GetComponentsInChildren<Rigidbody>();
         _colliders            = GetComponentsInChildren<Collider>();
+        _simulator            = GetComponent<SockSimulator>();
     }
 
     void LateUpdate()
@@ -57,6 +59,8 @@ public class Sock : MonoBehaviour
 
     public void PickUp(Transform[] slots)
     {
+        _simulator?.OnPickedUp();
+
         _handSlots   = slots;
         _activeSlots = slots;
 
@@ -71,6 +75,8 @@ public class Sock : MonoBehaviour
 
     public void PickUpPaired(Transform[] handSlots, Transform[] pairSlots)
     {
+        _simulator?.OnPickedUp();
+
         _handSlots   = handSlots;
         _activeSlots = pairSlots;
 
@@ -108,6 +114,8 @@ public class Sock : MonoBehaviour
 
     public void Throw(Vector3 force)
     {
+        _simulator?.OnThrown();
+
         _isHeld = false;
 
         SetColliders(true);
