@@ -32,6 +32,7 @@ public class SockSimulator : MonoBehaviour
 
     public void OnThrown()
     {
+        SetState(State.Active);
         _throwTime = Time.time;
     }
 
