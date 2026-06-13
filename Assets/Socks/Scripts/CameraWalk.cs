@@ -11,6 +11,8 @@ public class CameraWalk : MonoBehaviour
     [SerializeField] bool invertLookY;
     [SerializeField] bool mouseLookEnabled = true;
     [SerializeField] float gravity = -20f;
+    [SerializeField] float minFov = 30f;
+    [SerializeField] float zoomSpeed = 5f;
 
     public bool LookEnabled { get; set; } = true;
 
@@ -20,6 +22,9 @@ public class CameraWalk : MonoBehaviour
     float _yaw;
     float _verticalVelocity;
     bool _prevMouseLookEnabled;
+    Camera _camera;
+    float _defaultFov;
+    float _currentFov;
 
     void Awake()
     {
@@ -31,6 +36,13 @@ public class CameraWalk : MonoBehaviour
 
         _yaw = transform.eulerAngles.y;
         _pitch = transform.eulerAngles.x;
+
+        _camera = GetComponentInChildren<Camera>();
+        if (_camera != null)
+        {
+            _defaultFov = _camera.fieldOfView;
+            _currentFov = _defaultFov;
+        }
     }
 
     void Update()
@@ -48,6 +60,7 @@ public class CameraWalk : MonoBehaviour
 
         HandleLook();
         HandleMove();
+        HandleZoom();
     }
 
     void HandleLook()
@@ -89,6 +102,16 @@ public class CameraWalk : MonoBehaviour
 
         Vector3 move = horizontalMove + Vector3.up * _verticalVelocity;
         _controller.Move(move * Time.deltaTime);
+    }
+
+    void HandleZoom()
+    {
+        if (_camera == null) return;
+
+        float zoomAxis = _player.GetAxis("Zoom");
+        float targetFov = Mathf.Lerp(_defaultFov, minFov, zoomAxis);
+        _currentFov = Mathf.Lerp(_currentFov, targetFov, zoomSpeed * Time.deltaTime);
+        _camera.fieldOfView = _currentFov;
     }
 
     void ApplyCursorState()

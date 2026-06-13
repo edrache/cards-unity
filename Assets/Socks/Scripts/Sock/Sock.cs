@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 
@@ -13,6 +14,9 @@ public class Sock : MonoBehaviour
     [Header("Segmenty fizyczne (te same co w SockPhysicsBuilder)")]
     [SerializeField] Transform[] segments;
 
+    [Tooltip("Które segmenty można manipulować. Puste = wszystkie.")]
+    [SerializeField] Transform[] manipulableSegments;
+
     static readonly int OutlineEnabledId = Shader.PropertyToID("_OutlineEnabled");
 
     Material _mat;
@@ -24,6 +28,7 @@ public class Sock : MonoBehaviour
 
     // Segment hover & manipulation
     Renderer[] _segmentRenderers;
+    HashSet<int> _manipulableIndices;
     int _hoveredSegmentIndex = -1;
     int _manipulatedSegmentIndex = -1;
     Rigidbody _manipulatedRb;
@@ -55,6 +60,20 @@ public class Sock : MonoBehaviour
             _segmentRenderers[i] = segments[i].GetComponentInChildren<Renderer>();
             if (_segmentRenderers[i] != null)
                 _segmentRenderers[i].enabled = false;
+        }
+
+        _manipulableIndices = new HashSet<int>();
+        if (manipulableSegments == null || manipulableSegments.Length == 0)
+        {
+            for (int i = 0; i < segments.Length; i++)
+                _manipulableIndices.Add(i);
+        }
+        else
+        {
+            for (int i = 0; i < segments.Length; i++)
+                for (int j = 0; j < manipulableSegments.Length; j++)
+                    if (segments[i] == manipulableSegments[j])
+                        _manipulableIndices.Add(i);
         }
     }
 
@@ -90,6 +109,7 @@ public class Sock : MonoBehaviour
         for (int i = 0; i < segments.Length; i++)
         {
             if (segments[i] == null) continue;
+            if (!_manipulableIndices.Contains(i)) continue;
             Vector3 toSeg = segments[i].position - ray.origin;
             float t = Vector3.Dot(toSeg, ray.direction);
             if (t <= 0f) continue;
