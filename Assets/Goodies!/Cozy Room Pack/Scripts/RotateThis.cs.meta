@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 644241ccc7d555e44b793a4e9c17be14
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 286941
+  packageName: Goodies! Cozy Room Pack - Stylized Low Poly
+  packageVersion: 1.2
+  assetPath: Assets/Goodies!/Cozy Room Pack/Scripts/RotateThis.cs
+  uploadId: 670951

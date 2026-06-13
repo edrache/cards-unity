@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 69b97d3703e365548a517012109d0c98
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 286941
+  packageName: Goodies! Cozy Room Pack - Stylized Low Poly
+  packageVersion: 1.2
+  assetPath: Assets/Goodies!/Cozy Room Pack/Scripts/FlickerLights.cs
+  uploadId: 670951
