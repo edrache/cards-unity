@@ -13,9 +13,8 @@ public class Sock : MonoBehaviour
     [Header("Segmenty fizyczne (te same co w SockPhysicsBuilder)")]
     [SerializeField] Transform[] segments;
 
-    static readonly int OutlineColorId = Shader.PropertyToID("_OutlineColor");
+    static readonly int OutlineEnabledId = Shader.PropertyToID("_OutlineEnabled");
 
-    Color _originalOutlineColor;
     Material _mat;
     Rigidbody[] _rigidbodies;
     Collider[] _colliders;
@@ -31,9 +30,9 @@ public class Sock : MonoBehaviour
         if (sockRenderer == null)
             sockRenderer = GetComponentInChildren<Renderer>();
 
-        _mat                  = sockRenderer.material;
-        _originalOutlineColor = _mat.GetColor(OutlineColorId);
-        _rigidbodies          = GetComponentsInChildren<Rigidbody>();
+        _mat         = sockRenderer.material;
+        _rigidbodies = GetComponentsInChildren<Rigidbody>();
+        Unhighlight();
         _colliders            = GetComponentsInChildren<Collider>();
         _simulator            = GetComponent<SockSimulator>();
     }
@@ -50,12 +49,21 @@ public class Sock : MonoBehaviour
     public void SetMaterial(Material mat)
     {
         sockRenderer.sharedMaterial = mat;
-        _mat                  = sockRenderer.material;
-        _originalOutlineColor = _mat.GetColor(OutlineColorId);
+        _mat = sockRenderer.material;
+        Unhighlight();
     }
 
-    public void Highlight()   => _mat.SetColor(OutlineColorId, Color.white);
-    public void Unhighlight() => _mat.SetColor(OutlineColorId, _originalOutlineColor);
+    public void Highlight()
+    {
+        _mat.SetFloat(OutlineEnabledId, 1f);
+        _mat.EnableKeyword("DR_OUTLINE_ON");
+    }
+
+    public void Unhighlight()
+    {
+        _mat.SetFloat(OutlineEnabledId, 0f);
+        _mat.DisableKeyword("DR_OUTLINE_ON");
+    }
 
     public void PickUp(Transform[] slots)
     {

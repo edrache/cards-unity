@@ -6,6 +6,7 @@ public class CameraWalk : MonoBehaviour
 {
     [SerializeField] float moveSpeed = 5f;
     [SerializeField] float lookSensitivity = 2f;
+    [SerializeField] float controllerLookSensitivity = 2f;
     [SerializeField] bool invertLookX;
     [SerializeField] bool invertLookY;
     [SerializeField] bool mouseLookEnabled = true;
@@ -44,20 +45,20 @@ public class CameraWalk : MonoBehaviour
 
     void HandleLook()
     {
-        float lookX = _player.GetAxis("LookX");
-        float lookY = _player.GetAxis("LookY");
+        float lookX = _player.GetAxis("LookX") * controllerLookSensitivity;
+        float lookY = _player.GetAxis("LookY") * controllerLookSensitivity;
 
         if (mouseLookEnabled)
         {
-            lookX += _player.GetAxis("MouseX");
-            lookY += _player.GetAxis("MouseY");
+            lookX += _player.GetAxis("MouseX") * lookSensitivity;
+            lookY += _player.GetAxis("MouseY") * lookSensitivity;
         }
 
         if (invertLookX) lookX = -lookX;
         if (invertLookY) lookY = -lookY;
 
-        _yaw += lookX * lookSensitivity;
-        _pitch -= lookY * lookSensitivity;
+        _yaw += lookX;
+        _pitch -= lookY;
         _pitch = Mathf.Clamp(_pitch, -89f, 89f);
 
         transform.rotation = Quaternion.Euler(_pitch, _yaw, 0f);

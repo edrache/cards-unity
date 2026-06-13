@@ -1,15 +1,8 @@
 fileFormatVersion: 2
-guid: ddd2e8a9791cbad49b952332f0d7af87
+guid: d9e2ff991119163408ca0728bb98cbbc
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 2100000
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 286941
-  packageName: Goodies! Cozy Room Pack - Stylized Low Poly
-  packageVersion: 1.2
-  assetPath: Assets/Goodies!/Cozy Room Pack/Materials/Flat/White offwhite.mat
-  uploadId: 670951
