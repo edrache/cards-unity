@@ -328,9 +328,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 48479336}
-  - component: {fileID: 48479339}
-  - component: {fileID: 48479338}
-  - component: {fileID: 48479337}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
@@ -357,84 +354,6 @@ Transform:
   - {fileID: 382710881}
   m_Father: {fileID: 60289525}
   m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
---- !u!65 &48479337
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 48479335}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!23 &48479338
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 48479335}
-  m_Enabled: 0
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &48479339
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 48479335}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1001 &50335040
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1230,6 +1149,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 382710881}
     m_Modifications:
+    - target: {fileID: 1672017320480741815, guid: 27bb9d620a5f03c4888f8b6366b8a147, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: de1243de086fb43e3a6f31e011b2abf3, type: 2}
     - target: {fileID: 5253462705700510028, guid: 27bb9d620a5f03c4888f8b6366b8a147, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.736
@@ -2738,6 +2661,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: d80e8639c510e704980ffdbbd5708df5, type: 2}
+    - target: {fileID: 1566179440419055067, guid: 551e0b2aa63f1a243943e8671fc05d4e, type: 3}
+      propertyPath: 'm_Materials.Array.data[2]'
+      value: 
+      objectReference: {fileID: 2100000, guid: de1243de086fb43e3a6f31e011b2abf3, type: 2}
     - target: {fileID: 7847080643677057976, guid: 551e0b2aa63f1a243943e8671fc05d4e, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.5145852
@@ -6174,6 +6101,10 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 2147483647
       objectReference: {fileID: 0}
+    - target: {fileID: 7878005730386631851, guid: cfb08d9e4f3103445be78fb30acd54ff, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: de1243de086fb43e3a6f31e011b2abf3, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -10059,7 +9990,7 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.1
+  near clip plane: 0.05
   far clip plane: 1000
   field of view: 60
   orthographic: 0
@@ -10266,6 +10197,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7260796456432316324, guid: c639fb74ef4b7034dbfff8ca76a36130, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: de1243de086fb43e3a6f31e011b2abf3, type: 2}
     - target: {fileID: 8403091329439002533, guid: c639fb74ef4b7034dbfff8ca76a36130, type: 3}
       propertyPath: m_Name
       value: Bookshelf_Wide_Short (1)
@@ -12993,6 +12928,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: ba79afc95cea49d4bb9db34ecb41c8c2, type: 2}
+    - target: {fileID: 3602541959749629452, guid: ffc12d178e1997245a2f9eb019432419, type: 3}
+      propertyPath: 'm_Materials.Array.data[2]'
+      value: 
+      objectReference: {fileID: 2100000, guid: de1243de086fb43e3a6f31e011b2abf3, type: 2}
     - target: {fileID: 8571803981187153087, guid: ffc12d178e1997245a2f9eb019432419, type: 3}
       propertyPath: m_Name
       value: Painting7 (4)
@@ -13170,6 +13109,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 382710881}
     m_Modifications:
+    - target: {fileID: 4602140143461805718, guid: 318ca2aab315dfe4ca577ddf80815c91, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: de1243de086fb43e3a6f31e011b2abf3, type: 2}
     - target: {fileID: 5803982539577036762, guid: 318ca2aab315dfe4ca577ddf80815c91, type: 3}
       propertyPath: m_Name
       value: Railing1
@@ -14044,6 +13987,10 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 2147483647
       objectReference: {fileID: 0}
+    - target: {fileID: 853347025706550781, guid: d917cd9aae0649e4f852caa1980f8727, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: de1243de086fb43e3a6f31e011b2abf3, type: 2}
     - target: {fileID: 6084642298810069957, guid: d917cd9aae0649e4f852caa1980f8727, type: 3}
       propertyPath: m_LocalPosition.x
       value: 1.6589999
@@ -14957,6 +14904,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 382710881}
     m_Modifications:
+    - target: {fileID: 1156071853176551029, guid: 726edbdfbac9e2c4699ba446169179dc, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: de1243de086fb43e3a6f31e011b2abf3, type: 2}
     - target: {fileID: 2325530465500674886, guid: 726edbdfbac9e2c4699ba446169179dc, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.736
@@ -15221,6 +15172,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 33e63dbc980ef444b88347661cd82a73, type: 2}
+    - target: {fileID: 8924681614282457179, guid: f7ed4f5fb3cee3d47bd15744dbab0f71, type: 3}
+      propertyPath: 'm_Materials.Array.data[2]'
+      value: 
+      objectReference: {fileID: 2100000, guid: de1243de086fb43e3a6f31e011b2abf3, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -15234,6 +15189,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 382710881}
     m_Modifications:
+    - target: {fileID: 1995402909097335721, guid: 86aeeddb29b40964e9ff93feaef879a3, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: de1243de086fb43e3a6f31e011b2abf3, type: 2}
     - target: {fileID: 5397074265941065278, guid: 86aeeddb29b40964e9ff93feaef879a3, type: 3}
       propertyPath: m_Name
       value: Railing_Angled_1
