@@ -34,6 +34,7 @@ MonoBehaviour:
   - {fileID: 5429477550587087150}
   - {fileID: 386615751708362275}
   - {fileID: 3782897817318777144}
+  - {fileID: 5780363244404844398}
 --- !u!114 &386615751708362275
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -127,6 +128,34 @@ MonoBehaviour:
   rounded:
     m_OverrideState: 0
     m_Value: 0
+--- !u!114 &5780363244404844398
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66f335fb1ffd8684294ad653bf1c7564, type: 3}
+  m_Name: ColorAdjustments
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.ColorAdjustments
+  active: 1
+  postExposure:
+    m_OverrideState: 1
+    m_Value: 0.6
+  contrast:
+    m_OverrideState: 1
+    m_Value: 3.7
+  colorFilter:
+    m_OverrideState: 0
+    m_Value: {r: 1, g: 1, b: 1, a: 1}
+  hueShift:
+    m_OverrideState: 0
+    m_Value: 0
+  saturation:
+    m_OverrideState: 1
+    m_Value: -7.4
 --- !u!114 &7208895074704291402
 MonoBehaviour:
   m_ObjectHideFlags: 3

@@ -35,6 +35,14 @@ public class SockSimulator : MonoBehaviour
         SetState(State.Active);
     }
 
+    public void WakeUp()
+    {
+        foreach (Rigidbody rb in _rigidbodies)
+            rb.isKinematic = false;
+        SetState(State.Active);
+        _throwTime = -1f;
+    }
+
     public void OnThrown()
     {
         SetState(State.Active);

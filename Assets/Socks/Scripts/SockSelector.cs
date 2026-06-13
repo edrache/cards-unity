@@ -16,6 +16,9 @@ public class SockSelector : MonoBehaviour
     [SerializeField] string actionRight = "InteractRight";
     [SerializeField] Transform[] slotsRight;
 
+    [Header("Segment Manipulation")]
+    [SerializeField] string actionInteract = "InteractSock";
+
     [Header("Pair / Unpair")]
     [SerializeField] string actionPair  = "Pair";
     [SerializeField] float pairDuration = 0.5f;
@@ -39,10 +42,17 @@ public class SockSelector : MonoBehaviour
     Sock _heldRight;
     bool _isPaired;
 
+    bool _isManipulating;
+    Sock _manipulatingSock;
+
     void Awake() => _player = ReInput.players.GetPlayer(0);
 
     void Update()
     {
+        HandleManipulation();
+
+        if (_isManipulating) return;
+
         bool pressedLeft  = _player.GetButtonDown(actionLeft);
         bool pressedRight = _player.GetButtonDown(actionRight);
         bool pressedPair  = _player.GetButtonDown(actionPair);
@@ -71,6 +81,39 @@ public class SockSelector : MonoBehaviour
         }
 
         UpdateSelection();
+        UpdateSegmentHover();
+    }
+
+    void HandleManipulation()
+    {
+        if (_player.GetButtonDown(actionInteract) && _current != null && !_isManipulating)
+        {
+            if (_current.StartManipulating(Camera.main))
+            {
+                _isManipulating = true;
+                _manipulatingSock = _current;
+            }
+        }
+
+        if (_isManipulating)
+        {
+            if (_player.GetButton(actionInteract))
+                _manipulatingSock?.UpdateManipulation(Camera.main);
+
+            if (_player.GetButtonUp(actionInteract))
+            {
+                _manipulatingSock?.StopManipulating();
+                _isManipulating = false;
+                _manipulatingSock = null;
+            }
+        }
+    }
+
+    void UpdateSegmentHover()
+    {
+        if (_current == null) return;
+        Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, 0f));
+        _current.UpdateHoveredSegment(ray);
     }
 
     void HandleHand(ref Sock held, Transform[] slots)
@@ -167,6 +210,7 @@ public class SockSelector : MonoBehaviour
         if (hitSock != _current)
         {
             _current?.Unhighlight();
+            _current?.ClearHoveredSegment();
             _current = hitSock;
             _current?.Highlight();
         }

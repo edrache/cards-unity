@@ -12,6 +12,8 @@ public class CameraWalk : MonoBehaviour
     [SerializeField] bool mouseLookEnabled = true;
     [SerializeField] float gravity = -20f;
 
+    public bool LookEnabled { get; set; } = true;
+
     Player _player;
     CharacterController _controller;
     float _pitch;
@@ -33,6 +35,11 @@ public class CameraWalk : MonoBehaviour
 
     void Update()
     {
+        if (_player.GetButtonDown("MouseLook"))
+        {
+            mouseLookEnabled = !mouseLookEnabled;
+        }
+
         if (mouseLookEnabled != _prevMouseLookEnabled)
         {
             _prevMouseLookEnabled = mouseLookEnabled;
@@ -45,6 +52,8 @@ public class CameraWalk : MonoBehaviour
 
     void HandleLook()
     {
+        if (!LookEnabled) return;
+
         float lookX = _player.GetAxis("LookX") * controllerLookSensitivity;
         float lookY = _player.GetAxis("LookY") * controllerLookSensitivity;
 

@@ -22,6 +22,18 @@ public class Sock : MonoBehaviour
 
     bool _isHeld;
 
+    // Segment hover & manipulation
+    Renderer[] _segmentRenderers;
+    int _hoveredSegmentIndex = -1;
+    int _manipulatedSegmentIndex = -1;
+    Rigidbody _manipulatedRb;
+    bool _manipulatedWasKinematic;
+    float _holdDistance;
+    Vector3 _manipulationTargetPos;
+
+    [Header("Manipulation Follow")]
+    [SerializeField] float manipulationFollowSpeed = 15f;
+
     Transform[] _activeSlots;
     Transform[] _handSlots;
 
@@ -35,6 +47,15 @@ public class Sock : MonoBehaviour
         Unhighlight();
         _colliders            = GetComponentsInChildren<Collider>();
         _simulator            = GetComponent<SockSimulator>();
+
+        _segmentRenderers = new Renderer[segments.Length];
+        for (int i = 0; i < segments.Length; i++)
+        {
+            if (segments[i] == null) continue;
+            _segmentRenderers[i] = segments[i].GetComponentInChildren<Renderer>();
+            if (_segmentRenderers[i] != null)
+                _segmentRenderers[i].enabled = false;
+        }
     }
 
     void LateUpdate()
@@ -43,6 +64,90 @@ public class Sock : MonoBehaviour
         for (int i = 0; i < segments.Length && i < _activeSlots.Length; i++)
             SnapToSlot(segments[i], _activeSlots[i]);
     }
+
+    // --- Segment hover ---
+
+    public void UpdateHoveredSegment(Ray ray)
+    {
+        if (_isHeld) return;
+        int closest = FindClosestSegmentToRay(ray);
+        if (closest == _hoveredSegmentIndex) return;
+        SetSegmentRendererEnabled(_hoveredSegmentIndex, false);
+        _hoveredSegmentIndex = closest;
+        SetSegmentRendererEnabled(_hoveredSegmentIndex, true);
+    }
+
+    public void ClearHoveredSegment()
+    {
+        SetSegmentRendererEnabled(_hoveredSegmentIndex, false);
+        _hoveredSegmentIndex = -1;
+    }
+
+    int FindClosestSegmentToRay(Ray ray)
+    {
+        int closest = -1;
+        float minDist = float.MaxValue;
+        for (int i = 0; i < segments.Length; i++)
+        {
+            if (segments[i] == null) continue;
+            Vector3 toSeg = segments[i].position - ray.origin;
+            float t = Vector3.Dot(toSeg, ray.direction);
+            if (t <= 0f) continue;
+            float dist = Vector3.Cross(ray.direction, toSeg).magnitude;
+            if (dist < minDist) { minDist = dist; closest = i; }
+        }
+        return closest;
+    }
+
+    void SetSegmentRendererEnabled(int index, bool value)
+    {
+        if (index < 0 || index >= _segmentRenderers.Length) return;
+        if (_segmentRenderers[index] != null)
+            _segmentRenderers[index].enabled = value;
+    }
+
+    // --- Segment manipulation ---
+
+    public bool StartManipulating(Camera cam)
+    {
+        if (_hoveredSegmentIndex < 0 || _isHeld) return false;
+        _simulator?.WakeUp();
+        _manipulatedSegmentIndex = _hoveredSegmentIndex;
+        _manipulatedRb = segments[_manipulatedSegmentIndex].GetComponent<Rigidbody>();
+        if (_manipulatedRb != null)
+        {
+            _manipulatedWasKinematic = _manipulatedRb.isKinematic;
+            _manipulatedRb.isKinematic = true;
+        }
+        _holdDistance = Vector3.Distance(cam.transform.position, segments[_manipulatedSegmentIndex].position);
+        _manipulationTargetPos = segments[_manipulatedSegmentIndex].position;
+        return true;
+    }
+
+    public void UpdateManipulation(Camera cam)
+    {
+        if (_manipulatedSegmentIndex < 0 || segments[_manipulatedSegmentIndex] == null) return;
+        Ray ray = cam.ScreenPointToRay(new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
+        _manipulationTargetPos = ray.origin + ray.direction * _holdDistance;
+    }
+
+    void FixedUpdate()
+    {
+        if (_manipulatedRb == null || _manipulatedSegmentIndex < 0) return;
+        Vector3 smoothed = Vector3.Lerp(_manipulatedRb.position, _manipulationTargetPos, manipulationFollowSpeed * Time.fixedDeltaTime);
+        _manipulatedRb.MovePosition(smoothed);
+    }
+
+    public void StopManipulating()
+    {
+        if (_manipulatedRb != null)
+            _manipulatedRb.isKinematic = _manipulatedWasKinematic;
+        _manipulatedSegmentIndex = -1;
+        _manipulatedRb = null;
+        _simulator?.OnThrown();
+    }
+
+    // ---
 
     public Material GetSharedMaterial() => sockRenderer.sharedMaterial;
 
@@ -67,6 +172,8 @@ public class Sock : MonoBehaviour
 
     public void PickUp(Transform[] slots)
     {
+        StopManipulating();
+        ClearHoveredSegment();
         _simulator?.OnPickedUp();
 
         _handSlots   = slots;
