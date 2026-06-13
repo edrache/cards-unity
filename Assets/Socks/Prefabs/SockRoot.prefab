@@ -615,12 +615,12 @@ MonoBehaviour:
   - {fileID: 7104157942070035793}
   mass: 0.03
   linearDamping: 5
-  angularDamping: 12
+  angularDamping: 25
   sleepThreshold: 0.15
-  jointMin: -60
-  jointMax: 30
-  spring: 0.1
-  damper: 5
+  jointMin: -20
+  jointMax: 10
+  spring: 0.01
+  damper: 15
 --- !u!114 &924480422924971398
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -689,6 +689,7 @@ MonoBehaviour:
   - {fileID: 1783509818416039456}
   - {fileID: 862624055968573031}
   - {fileID: 6294634194864644348}
+  manipulationFollowSpeed: 75
 --- !u!114 &8113336804859575498
 MonoBehaviour:
   m_ObjectHideFlags: 0

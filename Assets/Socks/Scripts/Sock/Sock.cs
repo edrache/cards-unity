@@ -27,12 +27,12 @@ public class Sock : MonoBehaviour
     int _hoveredSegmentIndex = -1;
     int _manipulatedSegmentIndex = -1;
     Rigidbody _manipulatedRb;
-    bool _manipulatedWasKinematic;
+    bool _manipulatedWasGravity;
     float _holdDistance;
     Vector3 _manipulationTargetPos;
 
     [Header("Manipulation Follow")]
-    [SerializeField] float manipulationFollowSpeed = 15f;
+    [SerializeField] float manipulationFollowSpeed = 50f;
 
     Transform[] _activeSlots;
     Transform[] _handSlots;
@@ -116,8 +116,10 @@ public class Sock : MonoBehaviour
         _manipulatedRb = segments[_manipulatedSegmentIndex].GetComponent<Rigidbody>();
         if (_manipulatedRb != null)
         {
-            _manipulatedWasKinematic = _manipulatedRb.isKinematic;
-            _manipulatedRb.isKinematic = true;
+            _manipulatedWasGravity = _manipulatedRb.useGravity;
+            _manipulatedRb.useGravity = false;
+            _manipulatedRb.linearVelocity = Vector3.zero;
+            _manipulatedRb.angularVelocity = Vector3.zero;
         }
         _holdDistance = Vector3.Distance(cam.transform.position, segments[_manipulatedSegmentIndex].position);
         _manipulationTargetPos = segments[_manipulatedSegmentIndex].position;
@@ -134,14 +136,18 @@ public class Sock : MonoBehaviour
     void FixedUpdate()
     {
         if (_manipulatedRb == null || _manipulatedSegmentIndex < 0) return;
-        Vector3 smoothed = Vector3.Lerp(_manipulatedRb.position, _manipulationTargetPos, manipulationFollowSpeed * Time.fixedDeltaTime);
-        _manipulatedRb.MovePosition(smoothed);
+        _manipulatedRb.linearVelocity = (_manipulationTargetPos - _manipulatedRb.position) * manipulationFollowSpeed;
+        _manipulatedRb.angularVelocity = Vector3.zero;
     }
 
     public void StopManipulating()
     {
         if (_manipulatedRb != null)
-            _manipulatedRb.isKinematic = _manipulatedWasKinematic;
+        {
+            _manipulatedRb.useGravity = _manipulatedWasGravity;
+            _manipulatedRb.linearVelocity = Vector3.zero;
+            _manipulatedRb.angularVelocity = Vector3.zero;
+        }
         _manipulatedSegmentIndex = -1;
         _manipulatedRb = null;
         _simulator?.OnThrown();
