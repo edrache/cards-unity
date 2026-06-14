@@ -18,6 +18,9 @@ public class Sock : MonoBehaviour
     [SerializeField] Transform[] manipulableSegments;
 
     static readonly int OutlineEnabledId = Shader.PropertyToID("_OutlineEnabled");
+    static readonly int OutlineColorId = Shader.PropertyToID("_OutlineColor");
+
+    public static readonly List<Sock> AllSocks = new List<Sock>();
 
     Material _mat;
     Rigidbody[] _rigidbodies;
@@ -75,6 +78,13 @@ public class Sock : MonoBehaviour
                     if (segments[i] == manipulableSegments[j])
                         _manipulableIndices.Add(i);
         }
+
+        AllSocks.Add(this);
+    }
+
+    void OnDestroy()
+    {
+        AllSocks.Remove(this);
     }
 
     void LateUpdate()
@@ -173,6 +183,8 @@ public class Sock : MonoBehaviour
         _simulator?.OnThrown();
     }
 
+    public Rigidbody GetManipulatedBone() => _manipulatedRb;
+
     // ---
 
     public Material GetSharedMaterial() => sockRenderer.sharedMaterial;
@@ -191,6 +203,19 @@ public class Sock : MonoBehaviour
     }
 
     public void Unhighlight()
+    {
+        _mat.SetFloat(OutlineEnabledId, 0f);
+        _mat.DisableKeyword("DR_OUTLINE_ON");
+    }
+
+    public void ShowPairHighlight(Color color)
+    {
+        _mat.SetFloat(OutlineEnabledId, 1f);
+        _mat.EnableKeyword("DR_OUTLINE_ON");
+        _mat.SetColor(OutlineColorId, color);
+    }
+
+    public void HidePairHighlight()
     {
         _mat.SetFloat(OutlineEnabledId, 0f);
         _mat.DisableKeyword("DR_OUTLINE_ON");
