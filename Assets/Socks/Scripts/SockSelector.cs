@@ -1,49 +1,35 @@
-using DG.Tweening;
 using Rewired;
 using UnityEngine;
 
 public class SockSelector : MonoBehaviour
 {
-    [SerializeField] float maxDistance = 10f;
+    [SerializeField] float     maxDistance   = 10f;
     [SerializeField] LayerMask sockLayerMask = ~0;
-    [SerializeField] float throwForce = 8f;
-
-    [Header("Left Hand")]
-    [SerializeField] string actionLeft = "InteractLeft";
-    [SerializeField] Transform[] slotsLeft;
-
-    [Header("Right Hand")]
-    [SerializeField] string actionRight = "InteractRight";
-    [SerializeField] Transform[] slotsRight;
+    [SerializeField] float     throwForce    = 8f;
 
     [Header("Segment Manipulation")]
     [SerializeField] string actionInteract = "InteractSock";
 
     [Header("Pair / Unpair")]
-    [SerializeField] string actionPair  = "Pair";
-    [SerializeField] float pairDuration = 0.5f;
-    [SerializeField] Ease  pairEase     = Ease.InOutBack;
+    [SerializeField] string actionPair            = "Pair";
+    [SerializeField] string actionUnpair          = "Unpair";
+    [SerializeField] float  pairProximityDistance = 0.15f;
+    [SerializeField] Color  pairHighlightColor    = Color.green;
 
-    [Header("Pair Slots — Left Sock")]
-    [SerializeField] Transform[] pairSlotsLeft;
-
-    [Header("Pair Slots — Right Sock")]
-    [SerializeField] Transform[] pairSlotsRight;
-
-    [Header("Throw Pair")]
+    [Header("Pair Throw")]
     [SerializeField] SockPair sockPairPrefab;
-    [SerializeField] Transform pairSpawnPoint;
-    [SerializeField] float pairThrowForce = 8f;
+    [SerializeField] float    pairThrowForce = 8f;
 
-    Player _player;
-    Sock _current;
+    Player   _player;
+    Sock     _current;
     SockPair _currentPair;
-    Sock _heldLeft;
-    Sock _heldRight;
-    bool _isPaired;
 
     bool _isManipulating;
     Sock _manipulatingSock;
+    Sock _pairCandidate;
+
+    bool     _isHoldingPair;
+    SockPair _heldPair;
 
     void Awake() => _player = ReInput.players.GetPlayer(0);
 
@@ -51,46 +37,30 @@ public class SockSelector : MonoBehaviour
     {
         HandleManipulation();
 
-        if (_isManipulating) return;
-
-        bool pressedLeft  = _player.GetButtonDown(actionLeft);
-        bool pressedRight = _player.GetButtonDown(actionRight);
-        bool pressedPair  = _player.GetButtonDown(actionPair);
-
-        if (pressedPair) { TogglePair(); return; }
-
-        if (pressedLeft || pressedRight)
+        if (_isHoldingPair)
         {
-            if (_isPaired)
-            {
-                ThrowPair();
-                return;
-            }
-
-            if (_currentPair != null && _heldLeft == null && _heldRight == null)
-            {
-                PickUpPair();
-                return;
-            }
-
-            if (pressedLeft)
-                HandleHand(ref _heldLeft, slotsLeft);
-
-            if (pressedRight)
-                HandleHand(ref _heldRight, slotsRight);
+            HandlePairHold();
+            return;
         }
 
+        if (_isManipulating)
+        {
+            TryPair();
+            return;
+        }
+
+        TryPickUpPair();
         UpdateSelection();
         UpdateSegmentHover();
     }
 
     void HandleManipulation()
     {
-        if (_player.GetButtonDown(actionInteract) && _current != null && !_isManipulating)
+        if (_player.GetButtonDown(actionInteract) && _current != null && !_isManipulating && !_isHoldingPair)
         {
             if (_current.StartManipulating(Camera.main))
             {
-                _isManipulating = true;
+                _isManipulating   = true;
                 _manipulatingSock = _current;
             }
         }
@@ -98,14 +68,97 @@ public class SockSelector : MonoBehaviour
         if (_isManipulating)
         {
             if (_player.GetButton(actionInteract))
+            {
                 _manipulatingSock?.UpdateManipulation(Camera.main);
+                UpdatePairCandidate();
+            }
 
             if (_player.GetButtonUp(actionInteract))
-            {
-                _manipulatingSock?.StopManipulating();
-                _isManipulating = false;
-                _manipulatingSock = null;
-            }
+                EndManipulation();
+        }
+    }
+
+    void UpdatePairCandidate()
+    {
+        Rigidbody bone = _manipulatingSock?.GetManipulatedBone();
+        if (bone == null) { ClearPairCandidate(); return; }
+
+        Sock  nearest     = null;
+        float nearestDist = float.MaxValue;
+        foreach (Sock s in Sock.AllSocks)
+        {
+            if (s == _manipulatingSock || !s.gameObject.activeInHierarchy) continue;
+            float d = Vector3.Distance(bone.position, s.transform.position);
+            if (d < pairProximityDistance && d < nearestDist) { nearest = s; nearestDist = d; }
+        }
+
+        if (nearest == _pairCandidate) return;
+        _pairCandidate?.HidePairHighlight();
+        _pairCandidate = nearest;
+        _pairCandidate?.ShowPairHighlight(pairHighlightColor);
+    }
+
+    void ClearPairCandidate()
+    {
+        _pairCandidate?.HidePairHighlight();
+        _pairCandidate = null;
+    }
+
+    void EndManipulation()
+    {
+        _manipulatingSock?.StopManipulating();
+        ClearPairCandidate();
+        _isManipulating   = false;
+        _manipulatingSock = null;
+    }
+
+    void TryPair()
+    {
+        if (!_player.GetButtonDown(actionPair) || _pairCandidate == null) return;
+
+        Sock      sockA    = _manipulatingSock;
+        Sock      sockB    = _pairCandidate;
+        Rigidbody bone     = sockA.GetManipulatedBone();
+        Vector3   spawnPos = bone != null
+            ? (bone.position + sockB.transform.position) * 0.5f
+            : sockB.transform.position;
+
+        ClearPairCandidate();
+        EndManipulation();
+
+        SockPair pair = Instantiate(sockPairPrefab, spawnPos, Quaternion.identity);
+        pair.Setup(sockA, sockB);
+    }
+
+    void TryPickUpPair()
+    {
+        if (!_player.GetButtonDown(actionInteract) || _currentPair == null) return;
+
+        _currentPair.Unhighlight();
+        _currentPair.StartHold(Camera.main);
+        _heldPair      = _currentPair;
+        _currentPair   = null;
+        _isHoldingPair = true;
+    }
+
+    void HandlePairHold()
+    {
+        if (_player.GetButton(actionInteract))
+            _heldPair.UpdateHold(Camera.main);
+
+        if (_player.GetButtonDown(actionUnpair))
+        {
+            _heldPair.Decompose();
+            _heldPair      = null;
+            _isHoldingPair = false;
+            return;
+        }
+
+        if (_player.GetButtonUp(actionInteract))
+        {
+            _heldPair.StopHold(Camera.main.transform.forward * pairThrowForce);
+            _heldPair      = null;
+            _isHoldingPair = false;
         }
     }
 
@@ -116,85 +169,11 @@ public class SockSelector : MonoBehaviour
         _current.UpdateHoveredSegment(ray);
     }
 
-    void HandleHand(ref Sock held, Transform[] slots)
-    {
-        if (held != null)
-        {
-            ThrowHeld(ref held);
-        }
-        else if (_current != null)
-        {
-            _current.Unhighlight();
-            _current.PickUp(slots);
-            held = _current;
-            _current = null;
-        }
-    }
-
-    void ThrowHeld(ref Sock held)
-    {
-        held.Throw(Camera.main.transform.forward * throwForce);
-        held = null;
-    }
-
-    void ThrowPair()
-    {
-        if (sockPairPrefab == null) return;
-
-        Vector3 spawnPos = pairSpawnPoint != null
-            ? pairSpawnPoint.position
-            : (pairSlotsLeft[0].position + pairSlotsRight[0].position) * 0.5f;
-
-        SockPair pair = Instantiate(sockPairPrefab, spawnPos, Quaternion.identity);
-        pair.SetMaterials(_heldLeft.GetSharedMaterial(), _heldRight.GetSharedMaterial());
-        pair.Throw(Camera.main.transform.forward * pairThrowForce);
-
-        Destroy(_heldLeft.gameObject);
-        Destroy(_heldRight.gameObject);
-
-        _heldLeft  = null;
-        _heldRight = null;
-        _isPaired  = false;
-    }
-
-    void PickUpPair()
-    {
-        _currentPair.Unhighlight();
-
-        var (sockLeft, sockRight) = _currentPair.Decompose(_currentPair.transform.position);
-
-        sockLeft.PickUpPaired(slotsLeft, pairSlotsLeft);
-        sockRight.PickUpPaired(slotsRight, pairSlotsRight);
-
-        _heldLeft  = sockLeft;
-        _heldRight = sockRight;
-        _isPaired  = true;
-
-        Destroy(_currentPair.gameObject);
-        _currentPair = null;
-    }
-
-    void TogglePair()
-    {
-        if (_isPaired)
-        {
-            _heldLeft?.Unpair(pairDuration, pairEase);
-            _heldRight?.Unpair(pairDuration, pairEase);
-            _isPaired = false;
-        }
-        else if (_heldLeft != null && _heldRight != null)
-        {
-            _heldLeft.Pair(pairSlotsLeft, pairDuration, pairEase);
-            _heldRight.Pair(pairSlotsRight, pairDuration, pairEase);
-            _isPaired = true;
-        }
-    }
-
     void UpdateSelection()
     {
         Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, 0f));
 
-        Sock hitSock     = null;
+        Sock     hitSock = null;
         SockPair hitPair = null;
 
         if (Physics.Raycast(ray, out RaycastHit info, maxDistance, sockLayerMask))
@@ -203,9 +182,6 @@ public class SockSelector : MonoBehaviour
             if (hitSock == null)
                 hitPair = info.collider.GetComponentInParent<SockPair>();
         }
-
-        if (hitSock == _heldLeft || hitSock == _heldRight)
-            hitSock = null;
 
         if (hitSock != _current)
         {
