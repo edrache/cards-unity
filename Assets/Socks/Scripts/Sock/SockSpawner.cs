@@ -28,20 +28,32 @@ public class SockSpawner : MonoBehaviour
     Player _player;
     bool _spawning;
 
+    public event System.Action OnSpawnComplete;
+
     void Awake() => _player = ReInput.players.GetPlayer(0);
+
+    public void BeginSpawn()
+    {
+        if (!_spawning)
+            StartCoroutine(SpawnAll());
+    }
 
     void Update()
     {
-        if (!_spawning && _player.GetButtonDown(spawnActionName))
-            StartCoroutine(SpawnAll());
+        if (_player.GetButtonDown(spawnActionName))
+            BeginSpawn();
     }
 
     IEnumerator SpawnAll()
     {
-        if (sockPrefabs == null || sockPrefabs.Length == 0 || spawnZones == null || spawnZones.Length == 0 || sourceMaterial == null)
-            yield break;
-
         _spawning = true;
+
+        if (sockPrefabs == null || sockPrefabs.Length == 0 || spawnZones == null || spawnZones.Length == 0 || sourceMaterial == null)
+        {
+            _spawning = false;
+            OnSpawnComplete?.Invoke();
+            yield break;
+        }
 
         var queue = BuildShuffledQueue();
 
@@ -52,6 +64,7 @@ public class SockSpawner : MonoBehaviour
         }
 
         _spawning = false;
+        OnSpawnComplete?.Invoke();
     }
 
     List<Material> BuildShuffledQueue()
