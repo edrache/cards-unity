@@ -16,8 +16,12 @@ public class SockPair : MonoBehaviour
     Sock _sockA;
     Sock _sockB;
 
+    [SerializeField] float holdFollowSpeed = 50f;
+
     Rigidbody _rb;
     float     _holdDistance;
+    Vector3   _holdTargetPos;
+    bool      _isHeld;
 
     void Awake()
     {
@@ -60,24 +64,31 @@ public class SockPair : MonoBehaviour
         Destroy(gameObject);
     }
 
+    void FixedUpdate()
+    {
+        if (!_isHeld) return;
+        _rb.linearVelocity  = (_holdTargetPos - _rb.position) * holdFollowSpeed;
+        _rb.angularVelocity = Vector3.zero;
+    }
+
     public void StartHold(Camera cam)
     {
-        _rb.isKinematic    = true;
         _rb.linearVelocity  = Vector3.zero;
         _rb.angularVelocity = Vector3.zero;
-        _holdDistance = Vector3.Distance(cam.transform.position, transform.position);
+        _holdDistance  = Vector3.Distance(cam.transform.position, transform.position);
+        _holdTargetPos = transform.position;
+        _isHeld        = true;
     }
 
     public void UpdateHold(Camera cam)
     {
         Ray ray = cam.ScreenPointToRay(new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
-        transform.position = ray.origin + ray.direction * _holdDistance;
+        _holdTargetPos = ray.origin + ray.direction * _holdDistance;
     }
 
     public void StopHold(Vector3 throwForce)
     {
-        _rb.isKinematic   = false;
-        _rb.interpolation = RigidbodyInterpolation.Interpolate;
+        _isHeld = false;
         _rb.AddForce(throwForce, ForceMode.Impulse);
     }
 
