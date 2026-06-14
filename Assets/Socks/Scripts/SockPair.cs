@@ -15,10 +15,13 @@ public class SockPair : MonoBehaviour
     Color    _originalOutlineLeft;
     Color    _originalOutlineRight;
 
-    GameObject _prefabA;
-    GameObject _prefabB;
-    Material   _sockMatA;
-    Material   _sockMatB;
+    GameObject     _prefabA;
+    GameObject     _prefabB;
+    Material       _sockMatA;
+    Material       _sockMatB;
+
+    public SockAppearance AppearanceA { get; private set; }
+    public SockAppearance AppearanceB { get; private set; }
 
     [SerializeField] float holdFollowSpeed = 50f;
     [SerializeField] SockBlobShadow blobShadow;
@@ -50,10 +53,12 @@ public class SockPair : MonoBehaviour
 
     public void Setup(Sock sockA, Sock sockB)
     {
-        _prefabA   = sockA.SourcePrefab;
-        _prefabB   = sockB.SourcePrefab;
-        _sockMatA  = sockA.GetSharedMaterial();
-        _sockMatB  = sockB.GetSharedMaterial();
+        _prefabA    = sockA.SourcePrefab;
+        _prefabB    = sockB.SourcePrefab;
+        _sockMatA   = sockA.GetSharedMaterial();
+        _sockMatB   = sockB.GetSharedMaterial();
+        AppearanceA = sockA.Appearance;
+        AppearanceB = sockB.Appearance;
 
         if (rendererLeft  != null) rendererLeft.sharedMaterial  = _sockMatA;
         if (rendererRight != null) rendererRight.sharedMaterial = _sockMatB;
@@ -62,6 +67,19 @@ public class SockPair : MonoBehaviour
 
         Destroy(sockA.gameObject);
         Destroy(sockB.gameObject);
+
+        LogMatch();
+    }
+
+    void LogMatch()
+    {
+        bool colorMatch  = AppearanceA.detailColor == AppearanceB.detailColor;
+        bool albedoMatch = AppearanceA.albedo      == AppearanceB.albedo;
+        bool detailMatch = AppearanceA.detailMap   == AppearanceB.detailMap;
+
+        int matches = (colorMatch ? 1 : 0) + (albedoMatch ? 1 : 0) + (detailMatch ? 1 : 0);
+
+        Debug.Log($"Sock pair: {matches}/3 — color: {colorMatch}, albedo: {albedoMatch}, detailMap: {detailMatch}");
     }
 
     public void Decompose(Camera cam)

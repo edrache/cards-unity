@@ -2,6 +2,14 @@ using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 
+[System.Serializable]
+public struct SockAppearance
+{
+    public Color     detailColor;
+    public Texture2D albedo;
+    public Texture2D detailMap;
+}
+
 public class Sock : MonoBehaviour
 {
     [SerializeField] Renderer sockRenderer;
@@ -18,9 +26,13 @@ public class Sock : MonoBehaviour
     [SerializeField] Transform[] manipulableSegments;
 
     static readonly int OutlineEnabledId = Shader.PropertyToID("_OutlineEnabled");
-    static readonly int OutlineColorId = Shader.PropertyToID("_OutlineColor");
+    static readonly int OutlineColorId   = Shader.PropertyToID("_OutlineColor");
+    static readonly int DetailMapColorId = Shader.PropertyToID("_DetailMapColor");
+    static readonly int BaseMapId        = Shader.PropertyToID("_BaseMap");
+    static readonly int DetailMapId      = Shader.PropertyToID("_DetailMap");
 
-    public GameObject SourcePrefab;
+    public GameObject    SourcePrefab;
+    public SockAppearance Appearance { get; private set; }
 
     public static readonly List<Sock> AllSocks = new List<Sock>();
 
@@ -205,6 +217,12 @@ public class Sock : MonoBehaviour
     {
         sockRenderer.sharedMaterial = mat;
         _mat = sockRenderer.material;
+        Appearance = new SockAppearance
+        {
+            detailColor = mat.GetColor(DetailMapColorId),
+            albedo      = mat.GetTexture(BaseMapId) as Texture2D,
+            detailMap   = mat.GetTexture(DetailMapId) as Texture2D,
+        };
         Unhighlight();
     }
 

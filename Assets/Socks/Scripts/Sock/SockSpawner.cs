@@ -6,7 +6,7 @@ using UnityEngine;
 public class SockSpawner : MonoBehaviour
 {
     [SerializeField] GameObject[] sockPrefabs;
-    [SerializeField] BoxCollider spawnZone;
+    [SerializeField] BoxCollider[] spawnZones;
     [SerializeField] Material sourceMaterial;
     [SerializeField] string spawnActionName = "SpawnSock";
 
@@ -14,12 +14,13 @@ public class SockSpawner : MonoBehaviour
     [SerializeField] int pairCount = 5;
     [SerializeField] float spawnInterval = 0.5f;
 
+    [Header("Colors")]
+    [SerializeField] Color[] sockColors;
+
     [Header("Textures")]
     [SerializeField] Texture2D[] albedoTextures;
     [SerializeField] Texture2D[] detailMapTextures;
 
-    static readonly int BaseColorId      = Shader.PropertyToID("_BaseColor");
-    static readonly int ColorId          = Shader.PropertyToID("_Color");
     static readonly int DetailMapColorId = Shader.PropertyToID("_DetailMapColor");
     static readonly int BaseMapId        = Shader.PropertyToID("_BaseMap");
     static readonly int DetailMapId      = Shader.PropertyToID("_DetailMap");
@@ -37,7 +38,7 @@ public class SockSpawner : MonoBehaviour
 
     IEnumerator SpawnAll()
     {
-        if (sockPrefabs == null || sockPrefabs.Length == 0 || spawnZone == null || sourceMaterial == null)
+        if (sockPrefabs == null || sockPrefabs.Length == 0 || spawnZones == null || spawnZones.Length == 0 || sourceMaterial == null)
             yield break;
 
         _spawning = true;
@@ -59,16 +60,10 @@ public class SockSpawner : MonoBehaviour
 
         for (int i = 0; i < pairCount; i++)
         {
-            float hue    = (float)i / pairCount;
-            float detHue = (hue + 0.5f) % 1f;
-
             Material mat = new Material(sourceMaterial);
-            Color mainColor   = Color.HSVToRGB(hue,    0.65f, 0.9f);
-            Color detailColor = Color.HSVToRGB(detHue, 0.55f, 1.0f);
 
-            mat.SetColor(BaseColorId,      mainColor);
-            mat.SetColor(ColorId,          mainColor);
-            mat.SetColor(DetailMapColorId, detailColor);
+            if (sockColors != null && sockColors.Length > 0)
+                mat.SetColor(DetailMapColorId, sockColors[Random.Range(0, sockColors.Length)]);
 
             if (albedoTextures != null && albedoTextures.Length > 0)
                 mat.SetTexture(BaseMapId, albedoTextures[Random.Range(0, albedoTextures.Length)]);
@@ -91,7 +86,7 @@ public class SockSpawner : MonoBehaviour
 
     void SpawnSock(Material mat)
     {
-        Bounds b = spawnZone.bounds;
+        Bounds b = spawnZones[Random.Range(0, spawnZones.Length)].bounds;
         Vector3 pos = new Vector3(
             Random.Range(b.min.x, b.max.x),
             Random.Range(b.min.y, b.max.y),
