@@ -22,7 +22,11 @@ public class Sock : MonoBehaviour
 
     public static readonly List<Sock> AllSocks = new List<Sock>();
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetAllSocks() => AllSocks.Clear();
+
     Material _mat;
+    Color _originalOutlineColor;
     Rigidbody[] _rigidbodies;
     Collider[] _colliders;
     SockSimulator _simulator;
@@ -51,6 +55,7 @@ public class Sock : MonoBehaviour
             sockRenderer = GetComponentInChildren<Renderer>();
 
         _mat         = sockRenderer.material;
+        _originalOutlineColor = _mat.GetColor(OutlineColorId);
         _rigidbodies = GetComponentsInChildren<Rigidbody>();
         Unhighlight();
         _colliders            = GetComponentsInChildren<Collider>();
@@ -219,6 +224,7 @@ public class Sock : MonoBehaviour
     {
         _mat.SetFloat(OutlineEnabledId, 0f);
         _mat.DisableKeyword("DR_OUTLINE_ON");
+        _mat.SetColor(OutlineColorId, _originalOutlineColor);
     }
 
     public void PickUp(Transform[] slots)

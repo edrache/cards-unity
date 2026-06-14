@@ -190,6 +190,8 @@ public class SockSelector : MonoBehaviour
             _current?.Highlight();
         }
 
+        if (_currentPair != null && !_currentPair) _currentPair = null;
+
         if (hitPair != _currentPair)
         {
             _currentPair?.Unhighlight();
