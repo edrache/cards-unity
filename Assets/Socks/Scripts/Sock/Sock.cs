@@ -161,9 +161,10 @@ public class Sock : MonoBehaviour
         return true;
     }
 
-    public void UpdateManipulation(Camera cam)
+    public void UpdateManipulation(Camera cam, float targetDistance, float approachSpeed)
     {
         if (_manipulatedSegmentIndex < 0 || segments[_manipulatedSegmentIndex] == null) return;
+        _holdDistance = Mathf.MoveTowards(_holdDistance, targetDistance, approachSpeed * Time.deltaTime);
         Ray ray = cam.ScreenPointToRay(new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
         _manipulationTargetPos = ray.origin + ray.direction * _holdDistance;
     }

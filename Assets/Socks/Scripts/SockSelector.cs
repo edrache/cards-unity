@@ -12,8 +12,12 @@ public class SockSelector : MonoBehaviour
     [Header("Pair / Unpair")]
     [SerializeField] string actionPair            = "Pair";
     [SerializeField] string actionUnpair          = "Unpair";
-    [SerializeField] float  pairProximityDistance = 0.15f;
+    [SerializeField] float  pairProximityDistance = 0.5f;
     [SerializeField] Color  pairHighlightColor    = Color.green;
+
+    [Header("Hold Distance")]
+    [SerializeField] float holdCameraDistance = 2f;
+    [SerializeField] float holdApproachSpeed  = 3f;
 
     [Header("Pair Throw")]
     [SerializeField] SockPair sockPairPrefab;
@@ -68,7 +72,7 @@ public class SockSelector : MonoBehaviour
         {
             if (_player.GetButton(actionInteract))
             {
-                _manipulatingSock?.UpdateManipulation(Camera.main);
+                _manipulatingSock?.UpdateManipulation(Camera.main, holdCameraDistance, holdApproachSpeed);
                 UpdatePairCandidate();
             }
 
@@ -82,13 +86,18 @@ public class SockSelector : MonoBehaviour
         Rigidbody bone = _manipulatingSock?.GetManipulatedBone();
         if (bone == null) { ClearPairCandidate(); return; }
 
-        Sock  nearest     = null;
-        float nearestDist = float.MaxValue;
-        foreach (Sock s in Sock.AllSocks)
+        Ray          ray  = Camera.main.ScreenPointToRay(new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, 0f));
+        RaycastHit[] hits = Physics.RaycastAll(ray, maxDistance);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        Sock nearest = null;
+        foreach (RaycastHit hit in hits)
         {
-            if (s == _manipulatingSock || !s.gameObject.activeInHierarchy) continue;
-            float d = Vector3.Distance(bone.position, s.transform.position);
-            if (d < pairProximityDistance && d < nearestDist) { nearest = s; nearestDist = d; }
+            Sock hitSock = hit.collider.GetComponentInParent<Sock>();
+            if (hitSock == null || hitSock == _manipulatingSock) continue;
+            if (Vector3.Distance(bone.position, hit.point) <= pairProximityDistance)
+                nearest = hitSock;
+            break;
         }
 
         if (nearest == _pairCandidate) return;
@@ -143,7 +152,7 @@ public class SockSelector : MonoBehaviour
     void HandlePairHold()
     {
         if (_player.GetButton(actionInteract))
-            _heldPair.UpdateHold(Camera.main);
+            _heldPair.UpdateHold(Camera.main, holdCameraDistance, holdApproachSpeed);
 
         if (_player.GetButtonDown(actionUnpair))
         {

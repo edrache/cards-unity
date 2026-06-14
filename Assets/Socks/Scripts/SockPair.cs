@@ -80,8 +80,9 @@ public class SockPair : MonoBehaviour
         _isHeld        = true;
     }
 
-    public void UpdateHold(Camera cam)
+    public void UpdateHold(Camera cam, float targetDistance, float approachSpeed)
     {
+        _holdDistance = Mathf.MoveTowards(_holdDistance, targetDistance, approachSpeed * Time.deltaTime);
         Ray ray = cam.ScreenPointToRay(new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
         _holdTargetPos = ray.origin + ray.direction * _holdDistance;
     }
