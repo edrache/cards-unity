@@ -23,6 +23,12 @@ public class SockPair : MonoBehaviour
     public SockAppearance AppearanceA { get; private set; }
     public SockAppearance AppearanceB { get; private set; }
 
+    [Header("Match Result")]
+    public int  matchScore;
+    public bool colorMatched;
+    public bool albedoMatched;
+    public bool detailMapMatched;
+
     [SerializeField] float holdFollowSpeed = 50f;
     [SerializeField] SockBlobShadow blobShadow;
     [SerializeField] float decomposeDelay  = 0.3f;
@@ -73,13 +79,12 @@ public class SockPair : MonoBehaviour
 
     void LogMatch()
     {
-        bool colorMatch  = AppearanceA.detailColor == AppearanceB.detailColor;
-        bool albedoMatch = AppearanceA.albedo      == AppearanceB.albedo;
-        bool detailMatch = AppearanceA.detailMap   == AppearanceB.detailMap;
+        colorMatched      = AppearanceA.detailColor == AppearanceB.detailColor;
+        albedoMatched     = AppearanceA.albedo      == AppearanceB.albedo;
+        detailMapMatched  = AppearanceA.detailMap   == AppearanceB.detailMap;
+        matchScore        = (colorMatched ? 1 : 0) + (albedoMatched ? 1 : 0) + (detailMapMatched ? 1 : 0);
 
-        int matches = (colorMatch ? 1 : 0) + (albedoMatch ? 1 : 0) + (detailMatch ? 1 : 0);
-
-        Debug.Log($"Sock pair: {matches}/3 — color: {colorMatch}, albedo: {albedoMatch}, detailMap: {detailMatch}");
+        Debug.Log($"Sock pair: {matchScore}/3 — color: {colorMatched}, albedo: {albedoMatched}, detailMap: {detailMapMatched}");
     }
 
     public void Decompose(Camera cam)
