@@ -6,34 +6,30 @@ public class SockPair : MonoBehaviour
     [SerializeField] Renderer rendererLeft;
     [SerializeField] Renderer rendererRight;
 
-    [Header("Prefaby skarpet do odrodzenia przy podnoszeniu")]
-    [SerializeField] GameObject sockPrefabLeft;
-    [SerializeField] GameObject sockPrefabRight;
-
     static readonly int OutlineColorId = Shader.PropertyToID("_OutlineColor");
 
     Material _matLeft;
     Material _matRight;
-    Color _originalOutlineLeft;
-    Color _originalOutlineRight;
+    Color    _originalOutlineLeft;
+    Color    _originalOutlineRight;
 
-    Material _storedMaterialLeft;
-    Material _storedMaterialRight;
+    Sock _sockA;
+    Sock _sockB;
 
     Rigidbody _rb;
+    float     _holdDistance;
 
     void Awake()
     {
-        _rb = GetComponentInChildren<Rigidbody>();
-        CacheMaterials();
+        _rb = GetComponent<Rigidbody>();
     }
 
     void CacheMaterials()
     {
         if (rendererLeft != null)
         {
-            _matLeft              = rendererLeft.material;
-            _originalOutlineLeft  = _matLeft.GetColor(OutlineColorId);
+            _matLeft             = rendererLeft.material;
+            _originalOutlineLeft = _matLeft.GetColor(OutlineColorId);
         }
         if (rendererRight != null)
         {
@@ -42,15 +38,47 @@ public class SockPair : MonoBehaviour
         }
     }
 
-    public void SetMaterials(Material left, Material right)
+    public void Setup(Sock sockA, Sock sockB)
     {
-        _storedMaterialLeft  = left;
-        _storedMaterialRight = right;
+        _sockA = sockA;
+        _sockB = sockB;
 
-        if (rendererLeft  != null) rendererLeft.sharedMaterial  = left;
-        if (rendererRight != null) rendererRight.sharedMaterial = right;
-
+        if (rendererLeft  != null) rendererLeft.sharedMaterial  = sockA.GetSharedMaterial();
+        if (rendererRight != null) rendererRight.sharedMaterial = sockB.GetSharedMaterial();
         CacheMaterials();
+
+        sockA.gameObject.SetActive(false);
+        sockB.gameObject.SetActive(false);
+    }
+
+    public void Decompose()
+    {
+        _sockA.transform.position = transform.position;
+        _sockB.transform.position = transform.position;
+        _sockA.gameObject.SetActive(true);
+        _sockB.gameObject.SetActive(true);
+        Destroy(gameObject);
+    }
+
+    public void StartHold(Camera cam)
+    {
+        _rb.isKinematic    = true;
+        _rb.linearVelocity  = Vector3.zero;
+        _rb.angularVelocity = Vector3.zero;
+        _holdDistance = Vector3.Distance(cam.transform.position, transform.position);
+    }
+
+    public void UpdateHold(Camera cam)
+    {
+        Ray ray = cam.ScreenPointToRay(new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
+        transform.position = ray.origin + ray.direction * _holdDistance;
+    }
+
+    public void StopHold(Vector3 throwForce)
+    {
+        _rb.isKinematic   = false;
+        _rb.interpolation = RigidbodyInterpolation.Interpolate;
+        _rb.AddForce(throwForce, ForceMode.Impulse);
     }
 
     public void Highlight()
@@ -63,25 +91,5 @@ public class SockPair : MonoBehaviour
     {
         _matLeft?.SetColor(OutlineColorId,  _originalOutlineLeft);
         _matRight?.SetColor(OutlineColorId, _originalOutlineRight);
-    }
-
-    public void Throw(Vector3 force) => _rb.AddForce(force, ForceMode.Impulse);
-
-    // Tworzy dwie indywidualne skarpety z materiałami tej pary.
-    public (Sock left, Sock right) Decompose(Vector3 spawnPos)
-    {
-        GameObject prefabL = sockPrefabLeft;
-        GameObject prefabR = sockPrefabRight != null ? sockPrefabRight : sockPrefabLeft;
-
-        Sock left  = Instantiate(prefabL, spawnPos, Quaternion.identity).GetComponent<Sock>();
-        Sock right = Instantiate(prefabR, spawnPos, Quaternion.identity).GetComponent<Sock>();
-
-        Material matLeft  = _storedMaterialLeft  ?? rendererLeft?.sharedMaterial;
-        Material matRight = _storedMaterialRight ?? rendererRight?.sharedMaterial;
-
-        if (matLeft  != null) left.SetMaterial(matLeft);
-        if (matRight != null) right.SetMaterial(matRight);
-
-        return (left, right);
     }
 }
