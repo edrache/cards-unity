@@ -7,10 +7,15 @@ public class GameStarter : MonoBehaviour
     [SerializeField] CanvasGroup keyArtCanvas;
     [SerializeField] float fadeDuration = 0.5f;
 
+    [Header("Audio")]
+    [SerializeField] AudioSource audioSource;
+    [SerializeField] float audioDelay = 1f;
+
     void Start()
     {
         spawner.OnSpawnComplete += HandleSpawnComplete;
         spawner.BeginSpawn();
+        audioSource.PlayDelayed(audioDelay);
     }
 
     void OnDestroy()
