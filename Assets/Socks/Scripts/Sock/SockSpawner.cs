@@ -99,9 +99,14 @@ public class SockSpawner : MonoBehaviour
         );
         Quaternion rot = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
 
-        GameObject go = Instantiate(sockPrefabs[Random.Range(0, sockPrefabs.Length)], pos, rot);
+        GameObject prefab = sockPrefabs[Random.Range(0, sockPrefabs.Length)];
+        GameObject go     = Instantiate(prefab, pos, rot);
 
         Sock sock = go.GetComponent<Sock>();
-        if (sock != null) sock.SetMaterial(mat);
+        if (sock != null)
+        {
+            sock.SourcePrefab = prefab;
+            sock.SetMaterial(mat);
+        }
     }
 }

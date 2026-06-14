@@ -134,6 +134,9 @@ public class SockSelector : MonoBehaviour
         ClearPairCandidate();
         EndManipulation();
 
+        sockA.gameObject.SetActive(false);
+        sockB.gameObject.SetActive(false);
+
         SockPair pair = Instantiate(sockPairPrefab, spawnPos, Quaternion.identity);
         pair.Setup(sockA, sockB);
     }
@@ -156,7 +159,7 @@ public class SockSelector : MonoBehaviour
 
         if (_player.GetButtonDown(actionUnpair))
         {
-            _heldPair.Decompose();
+            _heldPair.Decompose(Camera.main);
             _heldPair      = null;
             _isHoldingPair = false;
             return;

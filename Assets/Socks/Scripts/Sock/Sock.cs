@@ -20,6 +20,8 @@ public class Sock : MonoBehaviour
     static readonly int OutlineEnabledId = Shader.PropertyToID("_OutlineEnabled");
     static readonly int OutlineColorId = Shader.PropertyToID("_OutlineColor");
 
+    public GameObject SourcePrefab;
+
     public static readonly List<Sock> AllSocks = new List<Sock>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -45,6 +47,8 @@ public class Sock : MonoBehaviour
 
     [Header("Manipulation Follow")]
     [SerializeField] float manipulationFollowSpeed = 50f;
+
+    [SerializeField] SockBlobShadow blobShadow;
 
     Transform[] _activeSlots;
     Transform[] _handSlots;
@@ -158,6 +162,7 @@ public class Sock : MonoBehaviour
         }
         _holdDistance = Vector3.Distance(cam.transform.position, segments[_manipulatedSegmentIndex].position);
         _manipulationTargetPos = segments[_manipulatedSegmentIndex].position;
+        blobShadow?.SetVisible(true);
         return true;
     }
 
@@ -186,6 +191,7 @@ public class Sock : MonoBehaviour
         }
         _manipulatedSegmentIndex = -1;
         _manipulatedRb = null;
+        blobShadow?.SetVisible(false);
         _simulator?.OnThrown();
     }
 
@@ -244,6 +250,7 @@ public class Sock : MonoBehaviour
             TweenSegmentToSlot(segments[i], slots[i], pickUpDuration, pickUpEase);
 
         _isHeld = true;
+        blobShadow?.SetVisible(true);
     }
 
     public void PickUpPaired(Transform[] handSlots, Transform[] pairSlots)
@@ -263,6 +270,7 @@ public class Sock : MonoBehaviour
             skinnedMesh.SetBlendShapeWeight(blendShapeIndex, 100f);
 
         _isHeld = true;
+        blobShadow?.SetVisible(true);
     }
 
     public void Pair(Transform[] targetSlots, float duration, Ease ease)
@@ -290,6 +298,7 @@ public class Sock : MonoBehaviour
         _simulator?.OnThrown();
 
         _isHeld = false;
+        blobShadow?.SetVisible(false);
 
         SetColliders(true);
         SetKinematic(false);
