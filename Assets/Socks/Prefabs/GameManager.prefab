@@ -49,10 +49,20 @@ MonoBehaviour:
   sockPrefabs:
   - {fileID: 3622177971730950113, guid: 6c1b9419f36524867aea7ee411435163, type: 3}
   spawnZone: {fileID: 1863396074420588297}
-  sourceMaterial: {fileID: 2100000, guid: e29e7833077984128af382ced0a1a674, type: 2}
+  sourceMaterial: {fileID: 2100000, guid: f21429b8f604a451bbe2c494c0648c08, type: 2}
   spawnActionName: SpawnSock
   pairCount: 20
   spawnInterval: 0.1
+  albedoTextures:
+  - {fileID: 2800000, guid: 5de18c5fb8b824bd697760a7196f5cda, type: 3}
+  detailMapTextures:
+  - {fileID: 2800000, guid: 20cf585e1036c4218becdac961db34fa, type: 3}
+  - {fileID: 2800000, guid: 7fcddb9d1ee7f48ba86765449d3f4b2f, type: 3}
+  - {fileID: 2800000, guid: bd708b0a473ec4a30b9336302a9c737b, type: 3}
+  - {fileID: 2800000, guid: b49029590791a4bccb51c1ac71567cf0, type: 3}
+  - {fileID: 2800000, guid: 202a6b11e16df4d94968e82a66f9629c, type: 3}
+  - {fileID: 2800000, guid: ae74caa1776994230b48b73ff6f697f0, type: 3}
+  - {fileID: 2800000, guid: 97e9a547840a74663928c57948622e9e, type: 3}
 --- !u!114 &2542066189261921369
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -69,25 +79,66 @@ MonoBehaviour:
   sockLayerMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  throwForce: 0.3
+  throwForce: 0.05
   actionLeft: InteractLeft
-  slotCholewkaLeft: {fileID: 0}
-  slotSrodstopieLeft: {fileID: 0}
-  slotNosekLeft: {fileID: 0}
+  slotsLeft:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   actionRight: InteractRight
-  slotCholewkaRight: {fileID: 0}
-  slotSrodstopieRight: {fileID: 0}
-  slotNosekRight: {fileID: 0}
+  slotsRight:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  actionInteract: InteractSock
   actionPair: Pair
   pairDuration: 0.5
   pairEase: 28
-  pairSlotCholewkaLeft: {fileID: 0}
-  pairSlotSrodstopieLeft: {fileID: 0}
-  pairSlotNosekLeft: {fileID: 0}
-  pairSlotCholewkaRight: {fileID: 0}
-  pairSlotSrodstopieRight: {fileID: 0}
-  pairSlotNosekRight: {fileID: 0}
-  sockPairPrefab: {fileID: 841922794809623722, guid: 5b4996a10d5ef45fe9d681bfb616ed4f, type: 3}
+  pairSlotsLeft:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  pairSlotsRight:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  sockPairPrefab: {fileID: 2569291373312832355, guid: 7449be79d87a54918a29d307e5400e48, type: 3}
   pairSpawnPoint: {fileID: 0}
   pairThrowForce: 2
 --- !u!1 &4995296097535773816
@@ -117,7 +168,7 @@ Transform:
   m_GameObject: {fileID: 4995296097535773816}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.07756996, y: 1.035, z: 0.29137993}
+  m_LocalPosition: {x: -0.07756996, y: 0.187, z: -0.339}
   m_LocalScale: {x: 0.80555, y: 0.80555, z: 0.80555}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -150,5 +201,5 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 0.21, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 0.68205947, y: 0.20999993, z: 0.61806047}
+  m_Center: {x: -0.022709921, y: 0, z: 0.20335715}
