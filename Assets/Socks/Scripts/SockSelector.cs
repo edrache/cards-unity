@@ -5,7 +5,6 @@ public class SockSelector : MonoBehaviour
 {
     [SerializeField] float     maxDistance   = 10f;
     [SerializeField] LayerMask sockLayerMask = ~0;
-    [SerializeField] float     throwForce    = 8f;
 
     [Header("Segment Manipulation")]
     [SerializeField] string actionInteract = "InteractSock";
@@ -114,7 +113,7 @@ public class SockSelector : MonoBehaviour
 
     void TryPair()
     {
-        if (!_player.GetButtonDown(actionPair) || _pairCandidate == null) return;
+        if (sockPairPrefab == null || !_player.GetButtonDown(actionPair) || _pairCandidate == null) return;
 
         Sock      sockA    = _manipulatingSock;
         Sock      sockB    = _pairCandidate;
