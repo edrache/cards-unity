@@ -954,6 +954,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5882776789951339143, guid: 6211cc7d220801f41981b269f9b5f341, type: 3}
   m_PrefabInstance: {fileID: 146024120}
   m_PrefabAsset: {fileID: 0}
+--- !u!65 &155280090 stripped
+BoxCollider:
+  m_CorrespondingSourceObject: {fileID: 6316313243041041094, guid: d78ec6ea463834f4c9d3b11662579f50, type: 3}
+  m_PrefabInstance: {fileID: 3363317173653159077}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &160378656
 GameObject:
   m_ObjectHideFlags: 0
@@ -14352,33 +14357,13 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 610347292215493293, guid: d78ec6ea463834f4c9d3b11662579f50, type: 3}
-      propertyPath: sockSizes.Array.size
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 610347292215493293, guid: d78ec6ea463834f4c9d3b11662579f50, type: 3}
-      propertyPath: sockSizes.Array.data[0].scale
+      propertyPath: spawnZones.Array.size
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 610347292215493293, guid: d78ec6ea463834f4c9d3b11662579f50, type: 3}
-      propertyPath: sockSizes.Array.data[1].scale
-      value: 0.3
-      objectReference: {fileID: 0}
-    - target: {fileID: 610347292215493293, guid: d78ec6ea463834f4c9d3b11662579f50, type: 3}
-      propertyPath: sockSizes.Array.data[2].scale
-      value: 0.6
-      objectReference: {fileID: 0}
-    - target: {fileID: 610347292215493293, guid: d78ec6ea463834f4c9d3b11662579f50, type: 3}
-      propertyPath: sockSizes.Array.data[0].pairCount
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 610347292215493293, guid: d78ec6ea463834f4c9d3b11662579f50, type: 3}
-      propertyPath: sockSizes.Array.data[1].pairCount
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 610347292215493293, guid: d78ec6ea463834f4c9d3b11662579f50, type: 3}
-      propertyPath: sockSizes.Array.data[2].pairCount
-      value: 10
-      objectReference: {fileID: 0}
+      propertyPath: 'spawnZones.Array.data[0]'
+      value: 
+      objectReference: {fileID: 155280090}
     - target: {fileID: 1646750753055640959, guid: d78ec6ea463834f4c9d3b11662579f50, type: 3}
       propertyPath: m_LocalPosition.x
       value: -3.36567

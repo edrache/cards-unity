@@ -351,6 +351,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SockSimulator
   minActiveTimeAfterThrow: 1.5
   sleepVelocityThreshold: 0.05
+  wakeUpRadius: 0.05
   _state: 0
 --- !u!1 &3730869190696984777
 GameObject:

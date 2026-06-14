@@ -75,7 +75,7 @@ public class Sock : MonoBehaviour
         _rigidbodies = GetComponentsInChildren<Rigidbody>();
         Unhighlight();
         _colliders            = GetComponentsInChildren<Collider>();
-        _simulator            = GetComponent<SockSimulator>();
+        _simulator            = GetComponentInChildren<SockSimulator>();
 
         _segmentRenderers = new Renderer[segments.Length];
         for (int i = 0; i < segments.Length; i++)
@@ -162,7 +162,7 @@ public class Sock : MonoBehaviour
     public bool StartManipulating(Camera cam)
     {
         if (_hoveredSegmentIndex < 0 || _isHeld) return false;
-        _simulator?.WakeUp();
+        _simulator?.OnPickedUp();
         _manipulatedSegmentIndex = _hoveredSegmentIndex;
         _manipulatedRb = segments[_manipulatedSegmentIndex].GetComponent<Rigidbody>();
         if (_manipulatedRb != null)
