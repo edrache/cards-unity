@@ -2,22 +2,20 @@ using UnityEngine;
 using Rewired;
 
 [RequireComponent(typeof(Rigidbody))]
-[RequireComponent(typeof(Animator))]
 public class CharacterMover : MonoBehaviour
 {
     [SerializeField] float moveSpeed = 5f;
     [SerializeField] float flipThreshold = 0.05f;
     [SerializeField] int playerId = 0;
+    [SerializeField] Animator animator;
 
     Rigidbody _rb;
-    Animator _animator;
     Player _player;
     static readonly int SpeedHash = Animator.StringToHash("Speed");
 
     void Awake()
     {
         _rb = GetComponent<Rigidbody>();
-        _animator = GetComponent<Animator>();
         _player = ReInput.players.GetPlayer(playerId);
     }
 
@@ -30,7 +28,7 @@ public class CharacterMover : MonoBehaviour
         _rb.linearVelocity = new Vector3(input.x * moveSpeed, _rb.linearVelocity.y, input.z * moveSpeed);
 
         float speed = input.magnitude;
-        _animator.SetFloat(SpeedHash, speed);
+        animator.SetFloat(SpeedHash, speed);
 
         // Flip sprite based on horizontal direction
         if (Mathf.Abs(h) > flipThreshold)
