@@ -19,6 +19,13 @@ public class GameManager : MonoBehaviour
     [SerializeField] string actionSimulation = "Simulation";
     [SerializeField] int playerId = 0;
 
+    [Header("Spawn Points")]
+    [SerializeField] Transform policjantSpawn;
+    [SerializeField] Transform zlodziejSpawn;
+
+    [Header("Caught Popup")]
+    [SerializeField] GameObject caughtPopup;
+
     [Header("Camera Target Group")]
     [SerializeField] CinemachineTargetGroup targetGroup;
     [SerializeField] float weightPlayer = 1f;
@@ -37,6 +44,7 @@ public class GameManager : MonoBehaviour
     {
         _player = ReInput.players.GetPlayer(playerId);
         SetComponentsActive(false);
+        if (caughtPopup != null) caughtPopup.SetActive(true);
     }
 
     void Update()
@@ -92,6 +100,11 @@ public class GameManager : MonoBehaviour
         _gameStarted = true;
     }
 
+    // Button-friendly overloads (no bool parameter)
+    public void ChoosePolicjant() => ChoosePolicjant(true);
+    public void ChooseZlodziej() => ChooseZlodziej(true);
+    public void StartSimulation() => StartSimulation(true);
+
     void SetCameraWeights(float policjantWeight, float zlodziejWeight)
     {
         if (targetGroup == null) return;
@@ -110,8 +123,14 @@ public class GameManager : MonoBehaviour
         _caught = false;
         _gameStarted = false;
 
+        if (caughtPopup != null) caughtPopup.SetActive(false);
+
+        // Disable agents before teleporting to avoid NavMesh errors
         policjant.GetComponent<UnityEngine.AI.NavMeshAgent>().enabled = false;
         zlodziej.GetComponent<UnityEngine.AI.NavMeshAgent>().enabled = false;
+
+        if (policjantSpawn != null) policjant.transform.position = policjantSpawn.position;
+        if (zlodziejSpawn != null) zlodziej.transform.position = zlodziejSpawn.position;
 
         zlodziej.GetComponent<ZlodziejFlee>().OnUncaught();
         policjant.GetComponent<PolicjantChase>().OnUncaught();
@@ -129,8 +148,7 @@ public class GameManager : MonoBehaviour
         PolicjantChase chase = policjant.GetComponent<PolicjantChase>();
         if (chase.enabled) chase.OnCaught();
 
-        Debug.Log("Zlodziej zlapany!");
-        // TODO: show game over UI
+        if (caughtPopup != null) caughtPopup.SetActive(true);
     }
 
     void SetComponentsActive(bool active)

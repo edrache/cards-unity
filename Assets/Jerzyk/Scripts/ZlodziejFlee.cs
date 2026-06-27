@@ -5,8 +5,10 @@ using UnityEngine.AI;
 public class ZlodziejFlee : MonoBehaviour
 {
     [SerializeField] Transform policjant;
-    [SerializeField] float fleeDistance = 8f;
-    [SerializeField] float updateRate = 0.2f;
+    [SerializeField] float updateRate = 0.25f;
+    [SerializeField] float fleeRadius = 10f;
+    [SerializeField] int candidateCount = 12;
+    [SerializeField] float dangerRadius = 5f;   // below this distance thief panics and uses more candidates
     [SerializeField] Animator animator;
 
     NavMeshAgent _agent;
@@ -37,7 +39,6 @@ public class ZlodziejFlee : MonoBehaviour
         if (animator != null)
             animator.SetFloat(SpeedHash, speed);
 
-        // Flip sprite based on movement direction
         if (_agent.velocity.x != 0f)
         {
             Vector3 scale = transform.localScale;
@@ -48,12 +49,55 @@ public class ZlodziejFlee : MonoBehaviour
 
     void UpdateFleeDestination()
     {
-        Vector3 dirAway = (transform.position - policjant.position).normalized;
-        Vector3 fleeTarget = transform.position + dirAway * fleeDistance;
+        Vector3 myPos = transform.position;
+        Vector3 threatPos = policjant.position;
+        float threatDist = Vector3.Distance(myPos, threatPos);
 
-        // Sample valid NavMesh point near the flee target
-        if (NavMesh.SamplePosition(fleeTarget, out NavMeshHit hit, fleeDistance, NavMesh.AllAreas))
-            _agent.SetDestination(hit.position);
+        // More candidates when policjant is close
+        int samples = threatDist < dangerRadius ? candidateCount * 2 : candidateCount;
+
+        Vector3 bestPoint = myPos;
+        float bestScore = float.MinValue;
+
+        for (int i = 0; i < samples; i++)
+        {
+            // Spread candidates evenly around 360°, offset by index so we cover all directions
+            float angle = (360f / samples) * i;
+            Vector3 dir = Quaternion.Euler(0, angle, 0) * Vector3.forward;
+            Vector3 candidate = myPos + dir * fleeRadius;
+
+            if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, fleeRadius * 0.5f, NavMesh.AllAreas))
+                continue;
+
+            // Check the path is actually reachable
+            NavMeshPath path = new NavMeshPath();
+            if (!_agent.CalculatePath(hit.position, path))
+                continue;
+            if (path.status != NavMeshPathStatus.PathComplete)
+                continue;
+
+            float score = Score(hit.position, threatPos);
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestPoint = hit.position;
+            }
+        }
+
+        _agent.SetDestination(bestPoint);
+    }
+
+    float Score(Vector3 candidate, Vector3 threatPos)
+    {
+        // Distance from threat — further is better
+        float distFromThreat = Vector3.Distance(candidate, threatPos);
+
+        // Alignment with "away" direction — dot product in [−1, 1], scaled up
+        Vector3 awayDir = (transform.position - threatPos).normalized;
+        Vector3 candidateDir = (candidate - transform.position).normalized;
+        float alignment = Vector3.Dot(awayDir, candidateDir); // −1..1
+
+        return distFromThreat + alignment * 3f;
     }
 
     public void OnCaught()
