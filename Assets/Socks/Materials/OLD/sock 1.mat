@@ -6,7 +6,7 @@ Texture2D:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: z__GradientRampTex{"mode":0,"colorKeys":[{"color":{"r":0.5471698045730591,"g":0.5128172039985657,"b":0.4929690361022949,"a":1.0},"time":0.2647135257720947},{"color":{"r":0.8490529656410217,"g":0.8372287750244141,"b":0.8278409838676453,"a":1.0},"time":0.45294880867004397},{"color":{"r":1.0,"g":0.9994403719902039,"b":0.9952830076217651,"a":1.0},"time":0.994125247001648}],"alphaKeys":[{"alpha":1.0,"time":0.0},{"alpha":1.0,"time":1.0}]}
+  m_Name: z__GradientRampTex{"mode":0,"colorKeys":[{"color":{"r":0.4245283007621765,"g":0.3792452812194824,"b":0.2830188572406769,"a":1.0},"time":0.14706645905971528},{"color":{"r":0.7169811725616455,"g":0.6440854668617249,"b":0.4915153682231903,"a":1.0},"time":0.32646676898002627},{"color":{"r":0.7735849022865295,"g":0.7273644208908081,"b":0.6324907541275024,"a":1.0},"time":0.4294193983078003},{"color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0},"time":0.994125247001648}],"alphaKeys":[{"alpha":1.0,"time":0.0},{"alpha":1.0,"time":1.0}]}
   m_ImageContentsHash:
     serializedVersion: 2
     Hash: 00000000000000000000000000000000
@@ -40,7 +40,7 @@ Texture2D:
   m_ColorSpace: 1
   m_PlatformBlob: 
   image data: 1024
-  _typelessdata: ff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c837eff8c847fff8e8580ff908782ff918984ff938b86ff948c87ff968e89ff98908bff99918dff9b938fff9c9590ff9e9792ffa09894ffa19a96ffa39c97ffa49d99ffa69f9bffa8a19dffa9a39fffaba4a0ffaca6a2ffaea8a4ffb0aaa6ffb1aba8ffb3ada9ffb4afabffb6b0adffb8b2afffb9b4b0ffbbb6b2ffbcb7b4ffbeb9b6ffc0bbb8ffc1bdb9ffc3bebbffc4c0bdffc6c2bfffc8c3c0ffc9c5c2ffcbc7c4ffccc9c6ffcecac8ffd0ccc9ffd1cecbffd3cfcdffd4d1cfffd6d3d0ffd8d5d2ffd9d6d3ffd9d6d4ffd9d6d4ffd9d7d4ffdad7d4ffdad7d5ffdad7d5ffdbd8d5ffdbd8d6ffdbd8d6ffdbd9d6ffdcd9d7ffdcd9d7ffdcdad7ffdddad8ffdddad8ffdddad8ffdddbd9ffdedbd9ffdedbd9ffdedcd9ffdfdcdaffdfdcdaffdfdddaffdfdddbffe0dddbffe0dddbffe0dedcffe0dedcffe1dedcffe1dfddffe1dfddffe2dfddffe2e0ddffe2e0deffe2e0deffe3e0deffe3e1dfffe3e1dfffe4e1dfffe4e2e0ffe4e2e0ffe4e2e0ffe5e3e1ffe5e3e1ffe5e3e1ffe5e3e1ffe6e4e2ffe6e4e2ffe6e4e2ffe7e5e3ffe7e5e3ffe7e5e3ffe7e6e4ffe8e6e4ffe8e6e4ffe8e6e5ffe9e7e5ffe9e7e5ffe9e7e6ffe9e8e6ffeae8e6ffeae8e6ffeae9e7ffeae9e7ffebe9e7ffebe9e8ffebeae8ffeceae8ffeceae9ffecebe9ffecebe9ffedebeaffedeceaffedeceaffeeeceaffeeecebffeeedebffeeedebffefedecffefeeecffefeeecfff0eeedfff0efedfff0efedfff0efeefff1efeefff1f0eefff1f0eefff1f0effff2f1effff2f1effff2f1f0fff3f2f0fff3f2f0fff3f2f1fff3f2f1fff4f3f1fff4f3f2fff4f3f2fff5f4f2fff5f4f3fff5f4f3fff5f5f3fff6f5f3fff6f5f4fff6f5f4fff6f6f4fff7f6f5fff7f6f5fff7f7f5fff8f7f6fff8f7f6fff8f8f6fff8f8f7fff9f8f7fff9f8f7fff9f9f7fffaf9f8fffaf9f8fffafaf8fffafaf9fffbfaf9fffbfbf9fffbfbfafffcfbfafffcfbfafffcfcfbfffcfcfbfffdfcfbfffdfdfbfffdfdfcfffdfdfcfffefefcfffefefdfffefefdfffffefdfffffffefffffffefffffffe
+  _typelessdata: ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6c6148ff6d6149ff6f634aff70644bff72664cff74674dff75694fff776a50ff786c51ff7a6d52ff7c6f53ff7d7054ff7f7256ff817357ff827558ff847659ff86785aff87795bff897b5dff8a7c5eff8c7d5fff8e7f60ff8f8061ff918262ff938363ff948565ff968666ff978867ff998968ff9b8b69ff9c8c6aff9e8e6cffa08f6dffa1916effa3926fffa49470ffa69571ffa89773ffa99874ffab9a75ffad9b76ffae9c77ffb09e78ffb29f7affb3a17bffb5a27cffb6a47dffb7a57effb8a680ffb8a681ffb9a782ffb9a884ffbaa985ffbbaa87ffbbab88ffbcab89ffbcac8bffbdad8cffbdae8dffbeaf8fffbeaf90ffbfb092ffbfb193ffc0b294ffc1b396ffc1b397ffc2b498ffc2b59affc3b69bffc3b79cffc4b79effc4b89fffc5b9a1ffc5baa2ffc6baa2ffc6bba3ffc7bba4ffc7bca4ffc7bca5ffc8bda6ffc8bda6ffc9bea7ffc9bea7ffc9bfa8ffcabfa9ffcac0a9ffcbc0aaffcbc0abffcbc1abffccc1acffccc2adffcdc2adffcdc3aeffcdc3afffcec4afffcec4b0ffcfc5b1ffcfc5b1ffcfc6b2ffd0c6b3ffd0c7b3ffd1c7b4ffd1c8b4ffd1c8b5ffd2c9b6ffd2c9b6ffd3cab7ffd3cab8ffd3cbb8ffd4cbb9ffd4ccbaffd5ccbaffd5cdbbffd6cdbcffd6cebcffd6cebdffd7cebeffd7cfbeffd8cfbfffd8d0c0ffd8d0c0ffd9d1c1ffd9d1c1ffdad2c2ffdad2c3ffdad3c3ffdbd3c4ffdbd4c5ffdcd4c5ffdcd5c6ffdcd5c7ffddd6c7ffddd6c8ffded7c9ffded7c9ffded8caffdfd8cbffdfd9cbffe0d9ccffe0dacdffe0dacdffe1dbceffe1dbcfffe2dccfffe2dcd0ffe2dcd0ffe3ddd1ffe3ddd2ffe4ded2ffe4ded3ffe4dfd4ffe5dfd4ffe5e0d5ffe6e0d6ffe6e1d6ffe6e1d7ffe7e2d8ffe7e2d8ffe8e3d9ffe8e3daffe8e4daffe9e4dbffe9e5dcffeae5dcffeae6ddffeae6ddffebe7deffebe7dfffece8dfffece8e0ffece9e1ffede9e1ffedeae2ffeeeae3ffeeeae3ffeeebe4ffefebe5ffefece5fff0ece6fff0ede7fff0ede7fff1eee8fff1eee9fff2efe9fff2efeafff2f0eafff3f0ebfff3f1ecfff4f1ecfff4f2edfff4f2eefff5f3eefff5f3effff6f4f0fff6f4f0fff6f5f1fff7f5f2fff7f6f2fff8f6f3fff8f7f4fff8f7f4fff9f8f5fff9f8f6fffaf8f6fffaf9f7fffaf9f8fffbfaf8fffbfaf9fffcfbf9fffcfbfafffcfcfbfffdfcfbfffdfdfcfffefdfdfffefefdfffefefeffffffffffffffffffffffff
   m_StreamData:
     serializedVersion: 2
     offset: 0
@@ -71,7 +71,6 @@ Material:
   m_Parent: {fileID: 2100000, guid: f21429b8f604a451bbe2c494c0648c08, type: 2}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
-  - DR_OUTLINE_ON
   - _BASEMAP_PREMULTIPLY
   - _DETAILMAPBLENDINGMODE_MULTIPLY
   - _NORMALMAP
@@ -85,6 +84,7 @@ Material:
     RenderType: Opaque
   disabledShaderPasses:
   - MOTIONVECTORS
+  - SRPDEFAULTUNLIT
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -101,7 +101,8 @@ Material:
     m_Floats:
     - _DetailMapBlendingMode: 0
     - _DetailMapImpact: 1
-    - _SelfShadingSize: 0
+    - _OutlineEnabled: 0
+    - _SelfShadingSize: 0.307
     - _TextureBlendingMode: 0
     - _TextureImpact: 1
     m_Colors:
