@@ -11,6 +11,11 @@ namespace CardsUnity
         [SerializeField] private Camera pointerCamera;
         [SerializeField] private Transform dragger;
         [SerializeField] private float hoverRadiusPixels = 60f;
+        [Header("Grab Reposition")]
+        [SerializeField] private float grabDistanceFromCamera = 1.5f;
+        [SerializeField] private float repositionWhenFartherThan = 2f;
+        [SerializeField] private float grabRepositionDuration = 0.2f;
+        [SerializeField] private GrabRepositionEase grabRepositionEase = GrabRepositionEase.EaseOutCubic;
 
         public Transform Dragger => dragger;
 
@@ -29,6 +34,18 @@ namespace CardsUnity
         private Vector3 dragPlanePoint;
         private Vector3 dragPlaneNormal;
         private Vector3 lastPointerCameraPosition;
+        private bool isRepositioningDragger;
+        private float repositionElapsed;
+        private Vector3 repositionStartPosition;
+
+        private enum GrabRepositionEase
+        {
+            Linear,
+            EaseOutQuad,
+            EaseInOutQuad,
+            EaseOutCubic,
+            EaseInOutCubic
+        }
 
         private void Awake()
         {
@@ -43,6 +60,8 @@ namespace CardsUnity
 
             DisableAllAttachments();
             stateMachine = new SockGrabStateMachine();
+            isRepositioningDragger = false;
+            repositionElapsed = 0f;
 
             if (wasDragging)
                 DragEnded?.Invoke();
@@ -54,6 +73,9 @@ namespace CardsUnity
         private void OnValidate()
         {
             hoverRadiusPixels = Mathf.Max(0f, hoverRadiusPixels);
+            grabDistanceFromCamera = Mathf.Max(0f, grabDistanceFromCamera);
+            repositionWhenFartherThan = Mathf.Max(0f, repositionWhenFartherThan);
+            grabRepositionDuration = Mathf.Max(0f, grabRepositionDuration);
         }
 
         private void Update()
@@ -204,6 +226,8 @@ namespace CardsUnity
                 return;
             }
 
+            BeginDraggerReposition(pointerScreenPosition, grabWorldPosition);
+
             DragStarted?.Invoke(pointerScreenPosition);
         }
 
@@ -214,6 +238,13 @@ namespace CardsUnity
             dragPlanePoint += cameraDelta;
             dragPlaneNormal = -pointerCamera.transform.forward;
             lastPointerCameraPosition = cameraPosition;
+
+            if (isRepositioningDragger)
+            {
+                UpdateDraggerReposition(pointerScreenPosition);
+                DragUpdated?.Invoke(pointerScreenPosition);
+                return;
+            }
 
             Ray ray = pointerCamera.ScreenPointToRay(pointerScreenPosition);
             if (SockGrabMath.TryGetPointOnPlane(ray, dragPlanePoint, dragPlaneNormal, out Vector3 worldPoint))
@@ -227,8 +258,87 @@ namespace CardsUnity
             if (TryGetActiveHandle(out SockGrabAttachmentHandle handle) && handle.Attachment != null)
                 handle.Attachment.enabled = false;
 
+            isRepositioningDragger = false;
+            repositionElapsed = 0f;
             stateMachine.EndDrag();
             DragEnded?.Invoke();
+        }
+
+        private void BeginDraggerReposition(Vector2 pointerScreenPosition, Vector3 grabWorldPosition)
+        {
+            repositionStartPosition = grabWorldPosition;
+            repositionElapsed = 0f;
+            bool hasTargetPoint = TryGetPointAtCameraDistance(pointerScreenPosition, out Vector3 targetPoint);
+            float distanceFromCamera = Vector3.Distance(pointerCamera.transform.position, grabWorldPosition);
+
+            if (distanceFromCamera <= repositionWhenFartherThan)
+            {
+                isRepositioningDragger = false;
+                dragPlanePoint = dragger.position;
+                return;
+            }
+
+            if (grabRepositionDuration <= 0f || !hasTargetPoint)
+            {
+                isRepositioningDragger = false;
+                if (hasTargetPoint)
+                    dragger.position = targetPoint;
+                dragPlanePoint = dragger.position;
+                return;
+            }
+
+            isRepositioningDragger = true;
+        }
+
+        private void UpdateDraggerReposition(Vector2 pointerScreenPosition)
+        {
+            if (!TryGetPointAtCameraDistance(pointerScreenPosition, out Vector3 targetPoint))
+            {
+                isRepositioningDragger = false;
+                dragPlanePoint = dragger.position;
+                return;
+            }
+
+            repositionElapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(repositionElapsed / grabRepositionDuration);
+            float easedT = EvaluateEase(t);
+            dragger.position = Vector3.LerpUnclamped(repositionStartPosition, targetPoint, easedT);
+
+            if (t >= 1f)
+            {
+                isRepositioningDragger = false;
+                dragPlanePoint = dragger.position;
+            }
+        }
+
+        private bool TryGetPointAtCameraDistance(Vector2 pointerScreenPosition, out Vector3 worldPoint)
+        {
+            if (pointerCamera == null)
+            {
+                worldPoint = dragger != null ? dragger.position : Vector3.zero;
+                return false;
+            }
+
+            Ray ray = pointerCamera.ScreenPointToRay(pointerScreenPosition);
+            worldPoint = ray.GetPoint(grabDistanceFromCamera);
+            return true;
+        }
+
+        private float EvaluateEase(float t)
+        {
+            switch (grabRepositionEase)
+            {
+                case GrabRepositionEase.EaseOutQuad:
+                    return 1f - (1f - t) * (1f - t);
+                case GrabRepositionEase.EaseInOutQuad:
+                    return t < 0.5f ? 2f * t * t : 1f - Mathf.Pow(-2f * t + 2f, 2f) * 0.5f;
+                case GrabRepositionEase.EaseOutCubic:
+                    return 1f - Mathf.Pow(1f - t, 3f);
+                case GrabRepositionEase.EaseInOutCubic:
+                    return t < 0.5f ? 4f * t * t * t : 1f - Mathf.Pow(-2f * t + 2f, 3f) * 0.5f;
+                default:
+                    return t;
+            }
         }
 
         private bool TryGetActiveHandle(out SockGrabAttachmentHandle handle)
