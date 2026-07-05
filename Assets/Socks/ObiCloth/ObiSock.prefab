@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &263179557012671131
+--- !u!1 &6651693191916273795
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,8 +8,19 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1245398009127484282}
-  - component: {fileID: 2961773279840281841}
+  - component: {fileID: 4547161830094056642}
+  - component: {fileID: 1327083172551093259}
+  - component: {fileID: 6206266011445378740}
+  - component: {fileID: 7358318597069859131}
+  - component: {fileID: 8408250311724873376}
+  - component: {fileID: 2127827941837800583}
+  - component: {fileID: 4393294889024612325}
+  - component: {fileID: 7241367203962057135}
+  - component: {fileID: 8369101768202199577}
+  - component: {fileID: 7939567427416476129}
+  - component: {fileID: 2972219924578124946}
+  - component: {fileID: 611485526149798647}
+  - component: {fileID: 8145993156793290490}
   m_Layer: 0
   m_Name: ObiSock
   m_TagString: Untagged
@@ -17,229 +28,41 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1245398009127484282
+--- !u!4 &4547161830094056642
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 263179557012671131}
+  m_GameObject: {fileID: 6651693191916273795}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.002, z: 0.917}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 827993312645515829}
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2961773279840281841
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 263179557012671131}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9d174fab52f0c4b8399f25d5c3ea524c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Obi::Obi.ObiSolver
-  simulateWhenInvisible: 1
-  m_Backend: 1
-  substeps: 4
-  maxStepsPerFrame: 1
-  synchronization: 0
-  parameters:
-    mode: 0
-    interpolation: 0
-    gravity: {x: 0, y: -9.81, z: 0}
-    ambientWind: {x: 0, y: 0, z: 0}
-    foamGravityScale: 1
-    damping: 0.3
-    maxAnisotropy: 3
-    sleepThreshold: 0.0005
-    maxVelocity: 50
-    maxAngularVelocity: 20
-    collisionMargin: 0.02
-    maxDepenetration: 10
-    colliderCCD: 0
-    particleCCD: 0
-    shockPropagation: 0
-    surfaceCollisionIterations: 8
-    surfaceCollisionTolerance: 0.005
-    diffusionMask: {x: 1, y: 1, z: 1, w: 1}
-  m_MaxSurfaceChunks: 32768
-  maxQueryResults: 8192
-  maxFoamParticles: 8192
-  maxParticleNeighbors: 128
-  maxParticleContacts: 6
-  useLimits: 0
-  killOffLimitsParticles: 0
-  boundaryLimits:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 5, y: 5, z: 5}
-  gravity: {x: 0, y: -9.81, z: 0}
-  gravitySpace: 1
-  ambientWind: {x: 0, y: 0, z: 0}
-  windSpace: 1
-  foamSubsteps: 1
-  foamMinNeighbors: 3
-  foamCollisions: 0
-  maxFoamVelocityStretch: 0.3
-  foamRadiusScale: 1
-  foamFade: {x: 0.05, y: 0.8}
-  foamAccelAgingRange: {x: 0.5, y: 0.8}
-  foamAccelAging: 4
-  foamVolumeDensity: 0.1
-  foamAmbientDensity: 0.02
-  foamScatterColor: {r: 0.8, g: 0.75, b: 0.7, a: 1}
-  foamAmbientColor: {r: 0.4, g: 0.5, b: 0.6, a: 1}
-  worldLinearInertiaScale: 0
-  worldAngularInertiaScale: 0
-  synchronousSpatialQueries: 0
-  distanceConstraintParameters:
-    evaluationOrder: 1
-    iterations: 1
-    SORFactor: 2
-    enabled: 1
-  bendingConstraintParameters:
-    evaluationOrder: 1
-    iterations: 1
-    SORFactor: 1
-    enabled: 1
-  particleCollisionConstraintParameters:
-    evaluationOrder: 0
-    iterations: 1
-    SORFactor: 0.4
-    enabled: 1
-  particleFrictionConstraintParameters:
-    evaluationOrder: 1
-    iterations: 1
-    SORFactor: 2
-    enabled: 1
-  collisionConstraintParameters:
-    evaluationOrder: 0
-    iterations: 1
-    SORFactor: 1
-    enabled: 1
-  frictionConstraintParameters:
-    evaluationOrder: 1
-    iterations: 1
-    SORFactor: 1
-    enabled: 1
-  skinConstraintParameters:
-    evaluationOrder: 0
-    iterations: 1
-    SORFactor: 1
-    enabled: 1
-  volumeConstraintParameters:
-    evaluationOrder: 1
-    iterations: 1
-    SORFactor: 1.95
-    enabled: 1
-  shapeMatchingConstraintParameters:
-    evaluationOrder: 1
-    iterations: 1
-    SORFactor: 2
-    enabled: 1
-  tetherConstraintParameters:
-    evaluationOrder: 1
-    iterations: 1
-    SORFactor: 1
-    enabled: 1
-  pinConstraintParameters:
-    evaluationOrder: 1
-    iterations: 1
-    SORFactor: 1
-    enabled: 1
-  pinholeConstraintParameters:
-    evaluationOrder: 1
-    iterations: 1
-    SORFactor: 1
-    enabled: 1
-  stitchConstraintParameters:
-    evaluationOrder: 1
-    iterations: 1
-    SORFactor: 1
-    enabled: 1
-  densityConstraintParameters:
-    evaluationOrder: 1
-    iterations: 1
-    SORFactor: 1.48
-    enabled: 1
-  stretchShearConstraintParameters:
-    evaluationOrder: 0
-    iterations: 1
-    SORFactor: 0.35
-    enabled: 1
-  bendTwistConstraintParameters:
-    evaluationOrder: 0
-    iterations: 1
-    SORFactor: 0.1
-    enabled: 1
-  chainConstraintParameters:
-    evaluationOrder: 0
-    iterations: 1
-    SORFactor: 1
-    enabled: 0
---- !u!1 &5716496177448660487
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 827993312645515829}
-  - component: {fileID: 830817030068696142}
-  - component: {fileID: 4175058667117944725}
-  - component: {fileID: 8608457903837990142}
-  - component: {fileID: 2389242813959569321}
-  - component: {fileID: 8366328869633807494}
-  - component: {fileID: 2316220318661526363}
-  m_Layer: 0
-  m_Name: Obi Cloth
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &827993312645515829
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5716496177448660487}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1245398009127484282}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &830817030068696142
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
+--- !u!114 &1327083172551093259
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5716496177448660487}
+  m_GameObject: {fileID: 6651693191916273795}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 206ce0b7d5b3944cdbc83ba88739df98, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Obi::Obi.ObiCloth
   solverIndices:
-    serializedContents: 000000000100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f000000100000001100000012000000130000001400000015000000160000001700000018000000190000001a0000001b0000001c0000001d0000001e0000001f000000200000002100000022000000230000002400000025000000260000002700000028000000290000002a0000002b0000002c0000002d0000002e0000002f000000300000003100000032000000330000003400000035000000360000003700000038000000390000003a0000003b0000003c0000003d0000003e0000003f000000400000004100000042000000430000004400000045000000460000004700000048000000490000004a0000004b0000004c0000004d0000004e0000004f000000500000005100000052000000530000005400000055000000560000005700000058000000590000005a0000005b0000005c0000005d0000005e0000005f000000600000006100000062000000630000006400000065000000660000006700000068000000690000006a0000006b0000006c0000006d0000006e0000006f000000700000007100000072000000730000007400000075000000760000007700000078000000790000007a0000007b0000007c0000007d0000007e0000007f000000800000008100000082000000830000008400000085000000860000008700000088000000890000008a0000008b0000008c0000008d0000008e000000
+    serializedContents: 000000000100000002000000030000000400000005000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f000000100000001100000012000000130000001400000015000000160000001700000018000000190000001a0000001b0000001c0000001d0000001e0000001f000000200000002100000022000000230000002400000025000000260000002700000028000000290000002a0000002b0000002c0000002d0000002e0000002f000000300000003100000032000000330000003400000035000000360000003700000038000000390000003a0000003b0000003c0000003d0000003e0000003f000000400000004100000042000000430000004400000045000000460000004700000048000000490000004a0000004b0000004c0000004d0000004e0000004f000000500000005100000052000000530000005400000055000000560000005700000058000000590000005a0000005b0000005c0000005d0000005e0000005f000000600000006100000062000000630000006400000065000000660000006700000068000000690000006a0000006b0000006c0000006d0000006e0000006f000000700000007100000072000000730000007400000075000000760000007700000078000000790000007a0000007b0000007c0000007d0000007e0000007f000000800000008100000082000000830000008400000085000000860000008700000088000000890000008a0000008b0000008c0000008d0000008e0000008f000000900000009100000092000000930000009400000095000000960000009700000098000000990000009a0000009b0000009c0000009d0000009e0000009f000000a0000000a1000000a2000000a3000000a4000000a5000000a6000000a7000000a8000000a9000000aa000000ab000000ac000000ad000000ae000000af000000b0000000b1000000b2000000b3000000b4000000b5000000b6000000b7000000b8000000b9000000ba000000bb000000bc000000bd000000be000000bf000000c0000000c1000000c2000000c3000000c4000000c5000000c6000000c7000000c8000000c9000000ca000000cb000000cc000000cd000000ce000000cf000000d0000000d1000000d2000000d3000000d4000000d5000000d6000000d7000000d8000000d9000000da000000db000000dc000000dd000000de000000df000000e0000000e1000000e2000000e3000000e4000000e5000000e6000000e7000000e8000000e9000000ea000000eb000000ec000000ed000000ee000000ef000000f0000000f1000000f2000000f3000000f4000000f5000000f6000000f7000000f8000000f9000000fa000000fb000000fc000000fd000000fe000000ff000000000100000101000002010000030100000401000005010000060100000701000008010000090100000a0100000b0100000c0100000d0100000e0100000f010000100100001101000012010000130100001401000015010000160100001701000018010000190100001a0100001b0100001c0100001d0100001e0100001f010000200100002101000022010000230100002401000025010000260100002701000028010000290100002a0100002b0100002c0100002d0100002e0100002f010000300100003101000032010000330100003401000035010000360100003701000038010000390100003a0100003b0100003c0100003d0100003e0100003f010000400100004101000042010000430100004401000045010000460100004701000048010000490100004a0100004b0100004c0100004d0100004e0100004f010000500100005101000052010000530100005401000055010000560100005701000058010000590100005a0100005b0100005c0100005d0100005e0100005f010000600100006101000062010000630100006401000065010000660100006701000068010000690100006a0100006b0100006c0100006d0100006e0100006f010000700100007101000072010000730100007401000075010000760100007701000078010000790100007a0100007b0100007c0100007d0100007e0100007f010000800100008101000082010000830100008401000085010000860100008701000088010000890100008a0100008b0100008c0100008d0100008e0100008f010000900100009101000092010000930100009401000095010000960100009701000098010000990100009a0100009b0100009c0100009d0100009e0100009f010000a0010000a1010000a2010000a3010000a4010000a5010000a6010000a7010000a8010000a9010000aa010000ab010000ac010000ad010000ae010000af010000b0010000b1010000b2010000b3010000b4010000b5010000b6010000b7010000b8010000b9010000ba010000bb010000bc010000bd010000be010000bf010000c0010000c1010000c2010000c3010000c4010000c5010000c6010000c7010000c8010000c9010000ca010000cb010000cc010000cd010000ce010000cf010000d0010000d1010000d2010000d3010000d4010000d5010000d6010000d7010000d8010000d9010000da010000
     m_AlignBytes: 16
   groupID: 1
   m_CollisionMaterial: {fileID: 0}
   m_SurfaceCollisions: 0
   m_MassScale: 1
-  m_SelfCollisions: 0
+  m_SelfCollisions: 1
   m_OneSided: 0
   _distanceConstraintsEnabled: 1
   _stretchingScale: 1
@@ -248,12 +71,12 @@ MonoBehaviour:
   _bendConstraintsEnabled: 1
   _bendCompliance: 0
   _maxBending: 0
-  _plasticYield: 0
-  _plasticCreep: 0
+  _plasticYield: 0.1
+  _plasticCreep: 1
   _aerodynamicsEnabled: 1
   _drag: 0.05
   _lift: 0.05
-  m_ClothBlueprint: {fileID: 11400000, guid: 7c7b7638219584c7bbf4b6a4561aad72, type: 2}
+  m_ClothBlueprint: {fileID: 11400000, guid: fc2a996bc2c9e4d94b318b38751d4256, type: 2}
   _volumeConstraintsEnabled: 1
   _compressionCompliance: 1
   _pressure: 1.5
@@ -261,13 +84,13 @@ MonoBehaviour:
   _tetherCompliance: 0
   _tetherScale: 1
   m_renderer: {fileID: 0}
---- !u!23 &4175058667117944725
+--- !u!23 &6206266011445378740
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5716496177448660487}
+  m_GameObject: {fileID: 6651693191916273795}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -310,21 +133,21 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &8608457903837990142
+--- !u!33 &7358318597069859131
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5716496177448660487}
+  m_GameObject: {fileID: 6651693191916273795}
   m_Mesh: {fileID: 3966875149087513853, guid: 5794223d6d66643a8912ef5d76dac9a2, type: 3}
---- !u!114 &2389242813959569321
+--- !u!114 &8408250311724873376
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5716496177448660487}
+  m_GameObject: {fileID: 6651693191916273795}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1c11d42a3c977407fa40f26f519abb13, type: 3}
@@ -334,35 +157,35 @@ MonoBehaviour:
   radius: 0.25
   falloff: 1
   maxInfluences: 4
-  cloth: {fileID: 830817030068696142}
+  cloth: {fileID: 1327083172551093259}
   customSkinMap: {fileID: 0}
---- !u!114 &8366328869633807494
+--- !u!114 &2127827941837800583
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5716496177448660487}
-  m_Enabled: 1
+  m_GameObject: {fileID: 6651693191916273795}
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4d03c9194b7ab4aaba4dfa5afec22c69, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Obi::Obi.ObiParticleAttachment
-  m_Actor: {fileID: 830817030068696142}
+  m_Actor: {fileID: 1327083172551093259}
   m_Target: {fileID: 0}
-  m_ParticleGroup: {fileID: -2901483335935825671, guid: 7c7b7638219584c7bbf4b6a4561aad72, type: 2}
+  m_ParticleGroup: {fileID: 0}
   m_AttachmentType: 0
   m_ConstrainOrientation: 0
   m_Projection: 0
   m_Compliance: 0.1
   breakThreshold: Infinity
---- !u!114 &2316220318661526363
+--- !u!114 &4393294889024612325
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5716496177448660487}
+  m_GameObject: {fileID: 6651693191916273795}
   m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c8b45ebbf86be4df6b0e6cd933812af2, type: 3}
@@ -379,3 +202,123 @@ MonoBehaviour:
     renderingLayerMask: 4294967295
   <particleColor>k__BackingField: {r: 1, g: 1, b: 1, a: 1}
   <radiusScale>k__BackingField: 1
+--- !u!114 &7241367203962057135
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6651693191916273795}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d03c9194b7ab4aaba4dfa5afec22c69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Obi::Obi.ObiParticleAttachment
+  m_Actor: {fileID: 1327083172551093259}
+  m_Target: {fileID: 0}
+  m_ParticleGroup: {fileID: 1913498882022567347, guid: fc2a996bc2c9e4d94b318b38751d4256, type: 2}
+  m_AttachmentType: 1
+  m_ConstrainOrientation: 0
+  m_Projection: 0
+  m_Compliance: 0
+  breakThreshold: Infinity
+--- !u!114 &8369101768202199577
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6651693191916273795}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d03c9194b7ab4aaba4dfa5afec22c69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Obi::Obi.ObiParticleAttachment
+  m_Actor: {fileID: 1327083172551093259}
+  m_Target: {fileID: 0}
+  m_ParticleGroup: {fileID: -8493444663592589436, guid: fc2a996bc2c9e4d94b318b38751d4256, type: 2}
+  m_AttachmentType: 1
+  m_ConstrainOrientation: 0
+  m_Projection: 0
+  m_Compliance: 0
+  breakThreshold: Infinity
+--- !u!114 &7939567427416476129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6651693191916273795}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d03c9194b7ab4aaba4dfa5afec22c69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Obi::Obi.ObiParticleAttachment
+  m_Actor: {fileID: 1327083172551093259}
+  m_Target: {fileID: 0}
+  m_ParticleGroup: {fileID: 8453216419205453355, guid: fc2a996bc2c9e4d94b318b38751d4256, type: 2}
+  m_AttachmentType: 1
+  m_ConstrainOrientation: 0
+  m_Projection: 0
+  m_Compliance: 0
+  breakThreshold: Infinity
+--- !u!114 &2972219924578124946
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6651693191916273795}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d03c9194b7ab4aaba4dfa5afec22c69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Obi::Obi.ObiParticleAttachment
+  m_Actor: {fileID: 1327083172551093259}
+  m_Target: {fileID: 0}
+  m_ParticleGroup: {fileID: 1939679123263131257, guid: fc2a996bc2c9e4d94b318b38751d4256, type: 2}
+  m_AttachmentType: 1
+  m_ConstrainOrientation: 0
+  m_Projection: 0
+  m_Compliance: 0
+  breakThreshold: Infinity
+--- !u!114 &611485526149798647
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6651693191916273795}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d03c9194b7ab4aaba4dfa5afec22c69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Obi::Obi.ObiParticleAttachment
+  m_Actor: {fileID: 1327083172551093259}
+  m_Target: {fileID: 0}
+  m_ParticleGroup: {fileID: -4091635372576733891, guid: fc2a996bc2c9e4d94b318b38751d4256, type: 2}
+  m_AttachmentType: 1
+  m_ConstrainOrientation: 0
+  m_Projection: 0
+  m_Compliance: 0
+  breakThreshold: Infinity
+--- !u!114 &8145993156793290490
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6651693191916273795}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d03c9194b7ab4aaba4dfa5afec22c69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Obi::Obi.ObiParticleAttachment
+  m_Actor: {fileID: 1327083172551093259}
+  m_Target: {fileID: 0}
+  m_ParticleGroup: {fileID: 4945394425980728887, guid: fc2a996bc2c9e4d94b318b38751d4256, type: 2}
+  m_AttachmentType: 1
+  m_ConstrainOrientation: 0
+  m_Projection: 0
+  m_Compliance: 0
+  breakThreshold: Infinity

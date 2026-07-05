@@ -1,5 +1,61 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7943824061531568729
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 775ad4994fda946d1a5936c7e2dfc785, type: 3}
+  m_Name: Grab_2
+  m_EditorClassIdentifier: Obi::Obi.ObiParticleGroup
+  particleIndices: 07000000080000000a000000
+  m_Blueprint: {fileID: 11400000}
+--- !u!114 &-7151292530338525278
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 775ad4994fda946d1a5936c7e2dfc785, type: 3}
+  m_Name: Grab_3
+  m_EditorClassIdentifier: Obi::Obi.ObiParticleGroup
+  particleIndices: 0e0000000f00000010000000360000003800000039000000
+  m_Blueprint: {fileID: 11400000}
+--- !u!114 &-3036394700351505166
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 775ad4994fda946d1a5936c7e2dfc785, type: 3}
+  m_Name: Grab_6
+  m_EditorClassIdentifier: Obi::Obi.ObiParticleGroup
+  particleIndices: 16000000170000001800000025000000
+  m_Blueprint: {fileID: 11400000}
+--- !u!114 &-1955923235958326461
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 775ad4994fda946d1a5936c7e2dfc785, type: 3}
+  m_Name: Grab_4
+  m_EditorClassIdentifier: Obi::Obi.ObiParticleGroup
+  particleIndices: 1c0000001d0000001e0000002c0000002d000000
+  m_Blueprint: {fileID: 11400000}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2041,6 +2097,12 @@ MonoBehaviour:
     batches: []
   groups:
   - {fileID: 735150401585462124}
+  - {fileID: 7790786487393960512}
+  - {fileID: -7943824061531568729}
+  - {fileID: -7151292530338525278}
+  - {fileID: -1955923235958326461}
+  - {fileID: 7175681144374035301}
+  - {fileID: -3036394700351505166}
   inputMesh: {fileID: 3966875149087513853, guid: 5794223d6d66643a8912ef5d76dac9a2, type: 3}
   scale: {x: 1, y: 1, z: 1}
   rotation: {x: 0, y: 0, z: 0, w: 1}
@@ -10468,3 +10530,31 @@ MonoBehaviour:
       e33: 1
     m_AlignBytes: 16
   checksum: 2447338662
+--- !u!114 &7175681144374035301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 775ad4994fda946d1a5936c7e2dfc785, type: 3}
+  m_Name: Grab_5
+  m_EditorClassIdentifier: Obi::Obi.ObiParticleGroup
+  particleIndices: 130000001400000020000000
+  m_Blueprint: {fileID: 11400000}
+--- !u!114 &7790786487393960512
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 775ad4994fda946d1a5936c7e2dfc785, type: 3}
+  m_Name: Grab_1
+  m_EditorClassIdentifier: Obi::Obi.ObiParticleGroup
+  particleIndices: 
+  m_Blueprint: {fileID: 11400000}
