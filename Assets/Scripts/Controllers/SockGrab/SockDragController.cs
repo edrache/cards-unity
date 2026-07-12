@@ -58,6 +58,9 @@ namespace CardsUnity
             bool wasDragging = stateMachine.CurrentState == SockGrabState.Dragging;
             bool wasHovering = stateMachine.CurrentState == SockGrabState.Hovering;
 
+            if (wasDragging && TryGetActiveHandle(out SockGrabAttachmentHandle handle) && handle.Attachment != null)
+                NotifySockReleased(handle.Attachment.actor);
+
             DisableAllAttachments();
             stateMachine = new SockGrabStateMachine();
             isRepositioningDragger = false;
@@ -219,10 +222,12 @@ namespace CardsUnity
             lastPointerCameraPosition = pointerCamera.transform.position;
 
             dragger.position = grabWorldPosition;
+            NotifySockGrabbed(handle.Attachment.actor);
             handle.Attachment.enabled = true;
             if (!stateMachine.TryBeginDrag())
             {
                 handle.Attachment.enabled = false;
+                NotifySockReleased(handle.Attachment.actor);
                 return;
             }
 
@@ -256,12 +261,38 @@ namespace CardsUnity
         private void EndDrag()
         {
             if (TryGetActiveHandle(out SockGrabAttachmentHandle handle) && handle.Attachment != null)
+            {
                 handle.Attachment.enabled = false;
+                NotifySockReleased(handle.Attachment.actor);
+            }
 
             isRepositioningDragger = false;
             repositionElapsed = 0f;
             stateMachine.EndDrag();
             DragEnded?.Invoke();
+        }
+
+        private void NotifySockGrabbed(ObiActor actor)
+        {
+            if (actor == null)
+                return;
+
+            ObiSockSleeper sleeper = actor.GetComponent<ObiSockSleeper>();
+            if (sleeper == null)
+                return;
+
+            sleeper.OnGrabbed();
+            ObiSockSleeper.WakeNearby(sleeper);
+        }
+
+        private void NotifySockReleased(ObiActor actor)
+        {
+            if (actor == null)
+                return;
+
+            ObiSockSleeper sleeper = actor.GetComponent<ObiSockSleeper>();
+            if (sleeper != null)
+                sleeper.OnReleased();
         }
 
         private void BeginDraggerReposition(Vector2 pointerScreenPosition, Vector3 grabWorldPosition)

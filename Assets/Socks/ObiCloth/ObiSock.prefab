@@ -21,6 +21,7 @@ GameObject:
   - component: {fileID: 2972219924578124946}
   - component: {fileID: 611485526149798647}
   - component: {fileID: 8145993156793290490}
+  - component: {fileID: 522233220471571234}
   m_Layer: 0
   m_Name: ObiSock
   m_TagString: Untagged
@@ -322,3 +323,19 @@ MonoBehaviour:
   m_Projection: 0
   m_Compliance: 1
   breakThreshold: Infinity
+--- !u!114 &522233220471571234
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6651693191916273795}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8695c0b11eac4946b776016673b37929, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sleepVelocityThreshold: 0.05
+  minRestTimeBeforeSleep: 0.5
+  wakeUpRadius: 0.4
+  minActiveTimeAfterWake: 1
