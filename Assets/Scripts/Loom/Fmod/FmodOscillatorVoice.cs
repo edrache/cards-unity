@@ -88,7 +88,7 @@ namespace Loom.Fmod
             CreateDspGraph();
         }
 
-        public Note Note { get; }
+        public Note Note { get; private set; }
 
         public FmodOscillatorWaveform Waveform { get; private set; }
 
@@ -210,6 +210,18 @@ namespace Loom.Fmod
             Waveform = waveform;
         }
 
+        public void SetNote(Note note)
+        {
+            ThrowIfReleased();
+            float frequencyHz = FmodOscillatorSettings.ResolveFrequencyHz(
+                note,
+                Octave);
+
+            SetOscillatorFrequency(frequencyHz);
+            Note = note;
+            FrequencyHz = frequencyHz;
+        }
+
         public void SetGain(float gain)
         {
             ThrowIfReleased();
@@ -262,6 +274,29 @@ namespace Loom.Fmod
 
         public void Start()
         {
+            StartCore(
+                default,
+                "FMOD.System.playDSP(OSCILLATOR, default Core output)");
+        }
+
+        public void Start(FMOD.ChannelGroup targetChannelGroup)
+        {
+            if (!targetChannelGroup.hasHandle())
+            {
+                throw new ArgumentException(
+                    "Target FMOD ChannelGroup must have a valid handle.",
+                    nameof(targetChannelGroup));
+            }
+
+            StartCore(
+                targetChannelGroup,
+                "FMOD.System.playDSP(OSCILLATOR, target Studio bus ChannelGroup)");
+        }
+
+        private void StartCore(
+            FMOD.ChannelGroup targetChannelGroup,
+            string playOperation)
+        {
             ThrowIfReleased();
 
             SynchronizeScheduledStop();
@@ -273,8 +308,12 @@ namespace Loom.Fmod
             ResetPlaybackState();
 
             FmodResult.Ensure(
-                coreSystem.playDSP(oscillator, default, true, out channel),
-                "FMOD.System.playDSP(OSCILLATOR)");
+                coreSystem.playDSP(
+                    oscillator,
+                    targetChannelGroup,
+                    true,
+                    out channel),
+                playOperation);
 
             try
             {

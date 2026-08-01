@@ -102,5 +102,195 @@ namespace Loom.Tests.PlayMode
                 voice?.Dispose();
             }
         }
+
+        [UnityTest]
+        public IEnumerator InstrumentPlaysEightVoicesAndCleansStolenAndReleasedResources()
+        {
+            var listenerObject = new GameObject("LOOM Polyphony Test Listener")
+            {
+                hideFlags = HideFlags.DontSave
+            };
+            listenerObject.AddComponent<StudioListener>();
+
+            Fmod.FmodOscillatorInstrument instrument = null;
+            FMOD.Studio.Bus synthBus = default;
+            bool restoreMute = false;
+            bool originalMute = false;
+
+            try
+            {
+                instrument = new Fmod.FmodOscillatorInstrument(
+                    RuntimeManager.CoreSystem,
+                    RuntimeManager.StudioSystem,
+                    new Fmod.FmodAdsrEnvelope(0.01d, 0.02d, 0.5f, 0.05d),
+                    new Fmod.FmodOscillatorSettings(gain: 0.01f));
+                var handles = new Core.VoiceHandle[
+                    Fmod.FmodOscillatorInstrument.DefaultVoiceCapacity];
+
+                for (int i = 0; i < handles.Length; i++)
+                {
+                    handles[i] = instrument.NoteOn(new Core.Note(60 + i), 100);
+                }
+
+                Assert.That(instrument.VoiceCapacity, Is.EqualTo(8));
+                Assert.That(instrument.CreatedVoiceCount, Is.EqualTo(8));
+                Assert.That(instrument.ActiveVoiceCount, Is.EqualTo(8));
+                Assert.That(instrument.OwnedVoiceCount, Is.EqualTo(8));
+                Assert.That(handles, Is.Unique);
+
+                Assert.That(
+                    RuntimeManager.StudioSystem.getBus(
+                        Fmod.FmodOscillatorInstrument.SynthBusPath,
+                        out synthBus),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(synthBus.isValid(), Is.True);
+                Assert.That(
+                    synthBus.getChannelGroup(out FMOD.ChannelGroup synthGroup),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(synthGroup.hasHandle(), Is.True);
+                Assert.That(
+                    synthGroup.getNumChannels(out int routedChannelCount),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(routedChannelCount, Is.GreaterThanOrEqualTo(8));
+                Assert.That(
+                    synthBus.getMute(out originalMute),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                restoreMute = true;
+                Assert.That(
+                    synthBus.setMute(true),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(
+                    synthBus.getMute(out bool isMuted),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(isMuted, Is.True);
+
+                yield return new WaitForSecondsRealtime(0.05f);
+
+                Assert.That(instrument.ActiveVoiceCount, Is.EqualTo(8));
+                Assert.That(
+                    synthGroup.getAudibility(out float mutedAudibility),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(mutedAudibility, Is.Zero.Within(0.0001f));
+                Assert.That(
+                    synthBus.setMute(originalMute),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                restoreMute = false;
+
+                Core.VoiceHandle ninth = instrument.NoteOn(new Core.Note(72), 100);
+
+                Assert.That(instrument.CreatedVoiceCount, Is.EqualTo(8));
+                Assert.That(instrument.ActiveVoiceCount, Is.EqualTo(8));
+                Assert.That(instrument.OwnedVoiceCount, Is.EqualTo(8));
+                Assert.That(instrument.NoteOff(handles[0]), Is.False);
+                Assert.That(instrument.NoteOff(handles[1]), Is.True);
+                Assert.That(instrument.NoteOff(ninth), Is.True);
+
+                instrument.AllNotesOff();
+                Assert.That(instrument.OwnedVoiceCount, Is.Zero);
+
+                yield return new WaitForSecondsRealtime(0.15f);
+
+                Assert.That(instrument.ActiveVoiceCount, Is.Zero);
+                Assert.That(instrument.CreatedVoiceCount, Is.EqualTo(8));
+                instrument.Dispose();
+                Assert.That(instrument.CreatedVoiceCount, Is.Zero);
+            }
+            finally
+            {
+                if (restoreMute && synthBus.isValid())
+                {
+                    synthBus.setMute(originalMute);
+                }
+
+                instrument?.Dispose();
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator InstrumentReacquiresSynthBusAfterMasterBankReload()
+        {
+            var listenerObject = new GameObject("LOOM Bank Reload Test Listener")
+            {
+                hideFlags = HideFlags.DontSave
+            };
+            listenerObject.AddComponent<StudioListener>();
+
+            Fmod.FmodOscillatorInstrument instrument = null;
+            const string MasterBankName = "Master";
+
+            try
+            {
+                Assert.That(RuntimeManager.HasBankLoaded(MasterBankName), Is.True);
+                instrument = new Fmod.FmodOscillatorInstrument(
+                    RuntimeManager.CoreSystem,
+                    RuntimeManager.StudioSystem,
+                    new Fmod.FmodAdsrEnvelope(0.01d, 0.01d, 0.5f, 0.03d),
+                    new Fmod.FmodOscillatorSettings(gain: 0.01f),
+                    voiceCapacity: 1);
+
+                Core.VoiceHandle first = instrument.NoteOn(
+                    new Core.Note(60),
+                    100);
+                yield return new WaitForSecondsRealtime(0.04f);
+                Assert.Throws<System.InvalidOperationException>(
+                    () => instrument.PrepareForBankReload());
+                Assert.That(instrument.NoteOff(first), Is.True);
+                yield return new WaitForSecondsRealtime(0.1f);
+                Assert.That(instrument.ActiveVoiceCount, Is.Zero);
+
+                Assert.That(
+                    RuntimeManager.StudioSystem.getBus(
+                        Fmod.FmodOscillatorInstrument.SynthBusPath,
+                        out FMOD.Studio.Bus busBeforeReload),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(busBeforeReload.isValid(), Is.True);
+
+                instrument.PrepareForBankReload();
+                RuntimeManager.UnloadBank(MasterBankName);
+                yield return null;
+
+                Assert.That(RuntimeManager.HasBankLoaded(MasterBankName), Is.False);
+
+                RuntimeManager.LoadBank(MasterBankName);
+                yield return null;
+
+                Assert.That(RuntimeManager.HasBankLoaded(MasterBankName), Is.True);
+                instrument.RestoreAfterBankReload();
+                Assert.That(
+                    RuntimeManager.StudioSystem.getBus(
+                        Fmod.FmodOscillatorInstrument.SynthBusPath,
+                        out FMOD.Studio.Bus busAfterReload),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(busAfterReload.isValid(), Is.True);
+
+                Core.VoiceHandle second = instrument.NoteOn(
+                    new Core.Note(67),
+                    100);
+                yield return new WaitForSecondsRealtime(0.04f);
+
+                Assert.That(instrument.ActiveVoiceCount, Is.EqualTo(1));
+                Assert.That(
+                    busAfterReload.getChannelGroup(
+                        out FMOD.ChannelGroup synthGroup),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(
+                    synthGroup.getNumChannels(out int routedChannelCount),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(routedChannelCount, Is.GreaterThanOrEqualTo(1));
+                Assert.That(instrument.NoteOff(second), Is.True);
+
+                yield return new WaitForSecondsRealtime(0.1f);
+
+                Assert.That(instrument.ActiveVoiceCount, Is.Zero);
+            }
+            finally
+            {
+                instrument?.Dispose();
+                if (!RuntimeManager.HasBankLoaded(MasterBankName))
+                {
+                    RuntimeManager.LoadBank(MasterBankName);
+                }
+            }
+        }
     }
 }

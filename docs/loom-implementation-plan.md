@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.7
+**Plan version:** 1.9
 **Last updated:** 2026-08-01  
 **Current milestone:** M1 — Playable polyphonic synth playground
 **Current status:** READY
-**Next action:** Add fixed-size eight-voice polyphony behind the Core `IInstrument` contract, with stable `VoiceHandle` ownership, deterministic oldest-voice stealing, exact note-off targeting, and resource-cleanup tests; keep default Core routing until the dedicated `MUS_Synth` item.
+**Next action:** Add computer-keyboard note input in `Loom.Unity` with a documented fixed key-to-MIDI mapping, suppress repeated key-downs, retain the exact `VoiceHandle` per pressed key for key-up, and add focused adapter tests; leave focus-loss, domain-reload, and shutdown panic behavior to the dedicated lifecycle item.
 
 ## Purpose
 
@@ -67,9 +67,11 @@ The first product is an engine playground. It must let a developer play notes an
 | Pitch-to-frequency conversion | `Note.FrequencyHz` returns `double` using twelve-tone equal temperament and A4 = MIDI 69 = 440 Hz; conversion to FMOD `float` occurs explicitly at the adapter boundary |
 | Logical note event | `NoteEvent` stores a playable velocity from 1 through 127 and a non-overflowing `[StartTick, EndTick)` interval in `long` ticks |
 | Voice ownership | `IInstrument.NoteOn` returns a non-zero stable `VoiceHandle`; `NoteOff` consumes that exact handle, `AllNotesOff` invalidates outstanding handles, and the instrument owns disposable resources |
-| Initial oscillator voice | `FmodOscillatorVoice` owns one configurable `DSP_TYPE.OSCILLATOR` plus one `DSP_TYPE.MULTIBAND_EQ` low-pass, starts its channel paused before applying gain and filter, checks every `FMOD.RESULT`, and stops the channel before releasing both DSPs; routing remains on the default Core output until the dedicated `MUS_Synth` work item |
+| Initial oscillator voice | `FmodOscillatorVoice` owns one configurable `DSP_TYPE.OSCILLATOR` plus one `DSP_TYPE.MULTIBAND_EQ` low-pass, starts its channel paused before applying gain and filter, checks every `FMOD.RESULT`, accepts an explicit target `ChannelGroup`, and stops the channel before releasing both DSPs; its parameterless `Start` remains a focused standalone Core-output path |
 | Initial ADSR envelope | `FmodAdsrEnvelope` stores validated seconds and a normalized sustain level, resolves durations against FMOD's runtime sample rate, and schedules linear `addFadePoint` segments in the parent ChannelGroup clock domain; voice start and note-off use a one-buffer scheduling lead, release begins continuously from the calculated future envelope level, and `setDelay` stops the channel at release end |
 | Initial synth controls | FMOD oscillator waveform values map explicitly to sine, square, saw up, saw down, triangle, and noise. Octave is an integer from -4 through +4 and must keep the resolved oscillator rate within FMOD's 1–22000 Hz range; gain is 0–1. The resonant low-pass uses supported Multiband EQ band A at 24 dB/octave, with cutoff 20–22000 Hz and Q 0.1–10, instead of deprecated `DSP_TYPE.LOWPASS` |
+| Initial polyphony | `FmodOscillatorInstrument` implements `IInstrument` with a preallocated fixed pool of eight reusable voice DSP graphs by default. Process-wide opaque handle IDs prevent cross-instrument ownership collisions, while a separate local monotonic start order makes oldest-voice stealing deterministic. `NoteOff` consumes only the exact owned handle, completed releases are reclaimed before stealing, velocity scales the configured per-voice gain, and instrument disposal releases every pooled graph |
+| Studio bus routing | `FmodOscillatorInstrument` requires valid Core and Studio systems and routes every pooled voice through one locked `bus:/MUS_Synth` ChannelGroup. Locking is paired with checked `flushCommands` and `unlockChannelGroup`; `PrepareForBankReload` requires zero active voices and releases the lifecycle-bound handles, while `RestoreAfterBankReload` reacquires them only after the Master Bank is loaded |
 
 ## Target Assemblies and Ownership
 
@@ -142,8 +144,8 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Implement one FMOD oscillator voice with explicit lifecycle and result checking.
 - [x] `DONE` Add ADSR amplitude control using DSP-clock-aligned fade points or an equivalent verified FMOD graph.
 - [x] `DONE` Add waveform selection, gain, octave, cutoff, and resonance controls supported by the initial graph.
-- [ ] `NOT STARTED` Add fixed-size polyphony and deterministic voice stealing.
-- [ ] `NOT STARTED` Route every voice through `bus:/MUS_Synth`.
+- [x] `DONE` Add fixed-size polyphony and deterministic voice stealing.
+- [x] `DONE` Route every voice through `bus:/MUS_Synth`.
 - [ ] `NOT STARTED` Add computer-keyboard note input.
 - [ ] `NOT STARTED` Add a demo UI and scene.
 - [ ] `NOT STARTED` Add shutdown, domain-reload, focus-loss, and `AllNotesOff` handling.
@@ -179,6 +181,12 @@ The first product is an engine playground. It must let a developer play notes an
 - The single-voice graph now owns a supported `MULTIBAND_EQ` DSP configured as band-A `LOWPASS_24DB`; the deprecated `LOWPASS` and `LOWPASS_SIMPLE` DSP types are not used. Live setters update waveform, gain, octave-derived oscillator rate, cutoff, and resonance only after the corresponding checked FMOD operation succeeds.
 - Eleven new EditMode cases cover waveform-native-value mapping, defaults, null settings, invalid control values, octave resolution, and FMOD frequency limits. The complete `Loom.Tests.EditMode` assembly passed 46/46 tests on 2026-08-01.
 - The PlayMode synth-control test created Saw Up at +1 octave with a 12 kHz/Q 1.5 filter, then changed the active voice to Square at -1 octave, gain 0.03, cutoff 2.4 kHz, and Q 3.0 before completing ADSR release. The complete PlayMode assembly passed 2/2 tests with no FMOD errors or warnings, and both owned DSP handles released cleanly.
+- `FmodOscillatorInstrument` now provides the Core `IInstrument` contract through a preallocated eight-slot DSP pool, returns process-wide unique opaque handles, consumes exact handles on note-off, and selects the locally oldest occupied slot when all eight voices are in use. A ninth note invalidates, stops, retunes, and reuses the first slot without a managed allocation; completed ADSR releases are reclaimed before any active voice is stolen.
+- Thirteen focused EditMode cases cover capacity and velocity validation, distinct cross-instrument ownership, stable note inputs, exact note-off, deterministic ninth-note stealing, completed-release reuse, `AllNotesOff`, idempotent disposal, and cleanup after a failed voice start. The complete `Loom.Tests.EditMode` assembly passed 59/59 tests on 2026-08-01.
+- The live FMOD polyphony test played eight simultaneous notes from the preallocated pool, forced and verified reuse of the deterministic oldest slot for a ninth pitch, released targeted handles, ran `AllNotesOff`, observed all channels complete, and verified that instrument disposal released all eight graphs. The complete PlayMode assembly passed 3/3 tests with no FMOD errors or warnings on 2026-08-01.
+- `FmodStudioBusRouting` now resolves `bus:/MUS_Synth`, locks and materializes its ChannelGroup with a checked Studio command flush, validates the cached lifecycle-bound group before each note start, and pairs every successful lock with an unlock during bank reload or disposal. The successful note-start path reuses the cached group without managed allocations.
+- The routed polyphony PlayMode test observed all eight live Core channels in the same `MUS_Synth` ChannelGroup, set only that Studio bus to muted, and measured its ChannelGroup audibility at zero while all eight voices remained active.
+- The bank lifecycle test rejected reload preparation while a voice was active, released the route after the voice completed, unloaded and reloaded the actual `Master` bank through `RuntimeManager`, restored the route, and played a new channel through the reacquired `MUS_Synth` group. The complete suites passed 60/60 EditMode and 4/4 PlayMode tests with no FMOD errors or warnings on 2026-08-01.
 
 ## M2 — Deterministic Transport and Step Sequencer
 
@@ -316,3 +324,7 @@ Before ending a task that changed LOOM:
 - Verified the ADSR work with five focused EditMode tests, the complete 35/35 EditMode suite, and the complete 2/2 PlayMode suite; the runtime release test produced no FMOD errors or warnings.
 - Added validated live waveform, gain, octave, cutoff, and resonance controls to the single oscillator voice, using FMOD's supported Multiband EQ low-pass replacement and explicit ownership of both DSP handles.
 - Verified the synth controls with eleven new EditMode cases, the complete 46/46 EditMode suite, and the complete 2/2 PlayMode suite; active parameter changes and final cleanup produced no FMOD errors or warnings.
+- Added preallocated fixed-size eight-voice `IInstrument` polyphony with process-wide unique handles, exact note-off ownership, allocation-free successful note starts, deterministic local oldest-slot reuse, velocity-scaled gain, completed-release reuse, and explicit graph cleanup.
+- Verified polyphony and resource ownership with thirteen focused contract cases, the complete 59/59 EditMode suite, and the complete 3/3 PlayMode suite; the live ninth-note steal and final disposal produced no FMOD errors or warnings.
+- Routed every pooled oscillator voice through one persistent `MUS_Synth` Studio ChannelGroup with checked lock/flush/unlock ownership and explicit safe bank-reload boundaries.
+- Verified eight-channel bus membership, zero audibility under `MUS_Synth` mute, active-voice reload rejection, real Master Bank unload/load and route restoration, the complete 60/60 EditMode suite, and the complete 4/4 PlayMode suite without FMOD errors or warnings.
