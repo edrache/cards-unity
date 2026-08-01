@@ -108,6 +108,16 @@ namespace Loom.Unity
         }
 
         /// <summary>
+        /// Clears every retained physical-key state before stopping all voices.
+        /// Repeated calls are safe and allow fresh key-downs after focus returns.
+        /// </summary>
+        public void Panic()
+        {
+            Array.Clear(activeVoices, 0, activeVoices.Length);
+            instrument.AllNotesOff();
+        }
+
+        /// <summary>
         /// Resolves the fixed chromatic mapping. Z through M cover MIDI 60-71;
         /// Q through U, with number-row accidentals, cover MIDI 72-83.
         /// </summary>

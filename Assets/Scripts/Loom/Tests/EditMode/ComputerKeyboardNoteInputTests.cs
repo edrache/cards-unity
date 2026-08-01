@@ -112,6 +112,48 @@ namespace Loom.Tests.EditMode
         }
 
         [Test]
+        public void PanicStopsEveryVoiceAndAllowsFreshKeyDowns()
+        {
+            using (var instrument = new RecordingInstrument())
+            {
+                var input = new Unity.ComputerKeyboardNoteInput(instrument);
+
+                Assert.That(input.HandleKeyDown(KeyCode.Z), Is.True);
+                Assert.That(input.HandleKeyDown(KeyCode.X), Is.True);
+                Assert.That(instrument.ActiveVoiceCount, Is.EqualTo(2));
+
+                input.Panic();
+
+                Assert.That(instrument.AllNotesOffCount, Is.EqualTo(1));
+                Assert.That(instrument.ActiveVoiceCount, Is.Zero);
+                Assert.That(input.HandleKeyDown(KeyCode.Z), Is.True);
+
+                input.Panic();
+
+                Assert.That(instrument.AllNotesOffCount, Is.EqualTo(2));
+                Assert.That(instrument.ActiveVoiceCount, Is.Zero);
+            }
+        }
+
+        [Test]
+        public void PanicClearsPressedStateBeforeInstrumentFailure()
+        {
+            using (var instrument = new RecordingInstrument
+            {
+                ThrowOnAllNotesOff = true
+            })
+            {
+                var input = new Unity.ComputerKeyboardNoteInput(instrument);
+                Assert.That(input.HandleKeyDown(KeyCode.Q), Is.True);
+
+                Assert.Throws<InvalidOperationException>(() => input.Panic());
+
+                instrument.ThrowOnAllNotesOff = false;
+                Assert.That(input.HandleKeyDown(KeyCode.Q), Is.True);
+            }
+        }
+
+        [Test]
         public void UnmappedKeysDoNotReachInstrument()
         {
             using (var instrument = new RecordingInstrument())
@@ -169,6 +211,12 @@ namespace Loom.Tests.EditMode
 
             public bool ReturnInvalidVoice { get; set; }
 
+            public bool ThrowOnAllNotesOff { get; set; }
+
+            public int AllNotesOffCount { get; private set; }
+
+            public int ActiveVoiceCount => activeVoices.Count;
+
             public Core.VoiceHandle NoteOn(Core.Note note, byte velocity)
             {
                 NoteOnCount++;
@@ -195,6 +243,13 @@ namespace Loom.Tests.EditMode
 
             public void AllNotesOff()
             {
+                AllNotesOffCount++;
+                if (ThrowOnAllNotesOff)
+                {
+                    throw new InvalidOperationException(
+                        "The test instrument rejected panic.");
+                }
+
                 activeVoices.Clear();
             }
 

@@ -2,6 +2,7 @@ using System.Collections;
 using FMODUnity;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
 namespace Loom.Tests.PlayMode
@@ -312,6 +313,81 @@ namespace Loom.Tests.PlayMode
                     RuntimeManager.LoadBank(MasterBankName);
                 }
             }
+        }
+
+        [UnityTest]
+        public IEnumerator DemoPanicsAndShutsDownIdempotently()
+        {
+            yield return SceneManager.LoadSceneAsync(
+                "scn_loom",
+                LoadSceneMode.Single);
+            yield return null;
+
+            Demo.LoomSynthDemoController controller =
+                Object.FindFirstObjectByType<Demo.LoomSynthDemoController>();
+            Assert.That(controller, Is.Not.Null);
+            Assert.That(controller.Instrument, Is.Not.Null);
+
+            Fmod.FmodOscillatorInstrument focusInstrument =
+                controller.Instrument;
+            focusInstrument.NoteOn(new Core.Note(60), 100);
+            Assert.That(focusInstrument.OwnedVoiceCount, Is.EqualTo(1));
+
+            controller.SendMessage(
+                "OnApplicationFocus",
+                false,
+                SendMessageOptions.RequireReceiver);
+
+            Assert.That(focusInstrument.OwnedVoiceCount, Is.Zero);
+            Assert.That(controller.Instrument, Is.SameAs(focusInstrument));
+
+            focusInstrument.NoteOn(new Core.Note(64), 100);
+            controller.SendMessage(
+                "OnApplicationPause",
+                true,
+                SendMessageOptions.RequireReceiver);
+            Assert.That(focusInstrument.OwnedVoiceCount, Is.Zero);
+
+            focusInstrument.NoteOn(new Core.Note(67), 100);
+            controller.enabled = false;
+
+            Assert.That(controller.Instrument, Is.Null);
+            Assert.That(focusInstrument.CreatedVoiceCount, Is.Zero);
+
+            controller.enabled = false;
+            controller.enabled = true;
+            yield return null;
+
+            Fmod.FmodOscillatorInstrument reloadInstrument =
+                controller.Instrument;
+            Assert.That(reloadInstrument, Is.Not.Null);
+            reloadInstrument.NoteOn(new Core.Note(69), 100);
+
+            controller.SendMessage(
+                "HandleBeforeAssemblyReload",
+                SendMessageOptions.RequireReceiver);
+
+            Assert.That(controller.Instrument, Is.Null);
+            Assert.That(reloadInstrument.CreatedVoiceCount, Is.Zero);
+
+            controller.enabled = false;
+            controller.enabled = true;
+            yield return null;
+
+            Fmod.FmodOscillatorInstrument quitInstrument =
+                controller.Instrument;
+            Assert.That(quitInstrument, Is.Not.Null);
+            quitInstrument.NoteOn(new Core.Note(72), 100);
+
+            controller.SendMessage(
+                "OnApplicationQuit",
+                SendMessageOptions.RequireReceiver);
+
+            Assert.That(controller.Instrument, Is.Null);
+            Assert.That(quitInstrument.CreatedVoiceCount, Is.Zero);
+
+            Object.Destroy(controller.gameObject);
+            yield return null;
         }
     }
 }

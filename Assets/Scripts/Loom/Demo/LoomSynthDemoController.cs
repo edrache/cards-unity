@@ -5,6 +5,10 @@ using Loom.Fmod;
 using UnityEngine;
 using UnityEngine.UIElements;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 namespace Loom.Demo
 {
     [RequireComponent(typeof(UIDocument))]
@@ -64,11 +68,19 @@ namespace Loom.Demo
         private float nextStatusRefreshTime;
         private int lastDisplayedActiveVoiceCount = -1;
         private bool uiIsBound;
+        private bool isShutdown = true;
+
+#if UNITY_EDITOR
+        private bool isSubscribedToAssemblyReload;
+#endif
 
         public FmodOscillatorInstrument Instrument => instrument;
 
         private void OnEnable()
         {
+            isShutdown = false;
+            SubscribeToAssemblyReload();
+
             try
             {
                 CreateInstrument();
@@ -78,7 +90,7 @@ namespace Loom.Demo
             }
             catch (Exception exception)
             {
-                DisposeInstrument();
+                Shutdown();
                 Debug.LogException(exception, this);
                 enabled = false;
             }
@@ -97,8 +109,48 @@ namespace Loom.Demo
 
         private void OnDisable()
         {
-            UnbindUi();
-            DisposeInstrument();
+            Shutdown();
+        }
+
+        private void OnDestroy()
+        {
+            Shutdown();
+        }
+
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            if (!hasFocus)
+            {
+                Panic();
+            }
+        }
+
+        private void OnApplicationPause(bool isPaused)
+        {
+            if (isPaused)
+            {
+                Panic();
+            }
+        }
+
+        private void OnApplicationQuit()
+        {
+            Shutdown();
+        }
+
+        public void Panic()
+        {
+            if (keyboardInput == null)
+            {
+                return;
+            }
+
+            keyboardInput.Panic();
+            lastDisplayedActiveVoiceCount = -1;
+            if (instrument != null && voiceStatusLabel != null)
+            {
+                RefreshVoiceStatus();
+            }
         }
 
         private void CreateInstrument()
@@ -192,6 +244,72 @@ namespace Loom.Demo
             instrument.Dispose();
             instrument = null;
         }
+
+        private void Shutdown()
+        {
+            if (isShutdown)
+            {
+                return;
+            }
+
+            isShutdown = true;
+            UnsubscribeFromAssemblyReload();
+            UnbindUi();
+
+            try
+            {
+                Panic();
+            }
+            finally
+            {
+                try
+                {
+                    DisposeInstrument();
+                }
+                finally
+                {
+                    if (instrument != null)
+                    {
+                        isShutdown = false;
+                    }
+                }
+            }
+        }
+
+        private void SubscribeToAssemblyReload()
+        {
+#if UNITY_EDITOR
+            if (isSubscribedToAssemblyReload)
+            {
+                return;
+            }
+
+            AssemblyReloadEvents.beforeAssemblyReload +=
+                HandleBeforeAssemblyReload;
+            isSubscribedToAssemblyReload = true;
+#endif
+        }
+
+        private void UnsubscribeFromAssemblyReload()
+        {
+#if UNITY_EDITOR
+            if (!isSubscribedToAssemblyReload)
+            {
+                return;
+            }
+
+            AssemblyReloadEvents.beforeAssemblyReload -=
+                HandleBeforeAssemblyReload;
+            isSubscribedToAssemblyReload = false;
+#endif
+        }
+
+#if UNITY_EDITOR
+        private void HandleBeforeAssemblyReload()
+        {
+            Shutdown();
+        }
+#endif
 
         private void OnWaveformChanged(ChangeEvent<string> changeEvent)
         {
