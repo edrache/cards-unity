@@ -27,7 +27,8 @@ Read these files before changing LOOM:
 
 1. `docs/loom-implementation-plan.md` — canonical execution plan, current status, next action, and acceptance criteria.
 2. `docs/loom-design-doc.md` — product intent and high-level architecture.
-3. `AGENTS.md` — working rules for agents.
+3. `docs/coding-standards.md` — coding, structure, naming, and automated-check rules.
+4. `AGENTS.md` — working rules for agents.
 
 If implementation and the plan disagree, investigate the repository and update the plan in the same change. Do not silently treat stale plan entries as complete.
 
@@ -123,4 +124,5 @@ For audio milestones, compilation alone is insufficient. Record manual or automa
 - Preserve unrelated user changes and untracked art assets.
 - Do not regenerate `.meta` files without a corresponding Unity asset operation.
 - Keep generated caches, FMOD banks, logs, and local user state out of source control according to `.gitignore`.
+- Run `python3 scripts/check_coding_standards.py` after changing first-party LOOM code, structure, or assets.
 - Prefer focused incremental changes that leave the project compiling.

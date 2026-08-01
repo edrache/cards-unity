@@ -80,7 +80,8 @@ namespace Loom.Fmod
             {
                 cachedBus.clearHandle();
                 throw new InvalidOperationException(
-                    $"FMOD Studio bus '{busPath}' resolved to an invalid handle. Ensure its bank is loaded before creating or restoring the instrument.");
+                    $"FMOD Studio bus '{busPath}' resolved to an invalid handle. "
+                    + "Ensure its bank is loaded before creating or restoring the instrument.");
             }
 
             EnsureBusResult(

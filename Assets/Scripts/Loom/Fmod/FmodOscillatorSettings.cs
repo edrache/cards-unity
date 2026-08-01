@@ -74,7 +74,8 @@ namespace Loom.Fmod
                 throw new ArgumentOutOfRangeException(
                     nameof(octave),
                     octave,
-                    $"The transposed oscillator frequency must be between {MinimumFrequencyHz} and {MaximumFrequencyHz} Hz.");
+                    "The transposed oscillator frequency must be between "
+                    + $"{MinimumFrequencyHz} and {MaximumFrequencyHz} Hz.");
             }
 
             return (float)frequencyHz;

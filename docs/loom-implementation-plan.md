@@ -1,6 +1,6 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.12
+**Plan version:** 1.13
 **Last updated:** 2026-08-01  
 **Current milestone:** M2 — Deterministic transport and step sequencer
 **Current status:** READY
@@ -75,6 +75,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Computer keyboard input | `ComputerKeyboardNoteInput` polls Unity's legacy `Input` API, which is available because the project enables both input backends. Its fixed chromatic layout maps `Z S X D C V G B H N J M` to MIDI 60-71 and `Q 2 W 3 E R 5 T 6 Y 7 U` to MIDI 72-83; repeated key-downs are suppressed and each key-up consumes the exact retained `VoiceHandle`. `Panic` clears retained key state before calling `AllNotesOff`, so a failed native cleanup cannot leave a key logically stuck |
 | Synth demo | `Assets/Scenes/scn_loom.unity` is the build-index-zero playground. A UI Toolkit document and `LoomSynthDemoController` own the eight-voice routed instrument, poll the keyboard adapter, display the two-octave layout, and apply waveform, ADSR, gain, octave, cutoff, and resonance changes at runtime |
 | Demo lifecycle | Focus loss and application pause call the shared panic path without destroying the synth. Disable, destroy, application quit, and Editor assembly reload call one idempotent shutdown path that panics, disposes the instrument, and releases every pooled DSP and Studio bus handle |
+| Coding standard | `docs/coding-standards.md` is the canonical first-party LOOM coding, structure, and naming standard. `.editorconfig` supplies scoped IDE/Roslyn rules; `scripts/check_coding_standards.py` provides dependency-free deterministic checks; GitHub Actions runs the same checker on pushes and pull requests |
 
 ## Target Assemblies and Ownership
 
@@ -113,6 +114,7 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Confirm Unity loads the bank and resolves `bus:/MUS_Synth`.
 - [x] `DONE` Create the LOOM folder layout and assembly definitions.
 - [x] `DONE` Confirm all assemblies compile with the intended dependency boundaries.
+- [x] `DONE` Formalize and automatically verify the first-party LOOM coding standard.
 
 ### Acceptance criteria
 
@@ -122,6 +124,7 @@ The first product is an engine playground. It must let a developer play notes an
 - Runtime code can acquire the Core system and the `MUS_Synth` Studio bus channel group.
 - `Loom.Core` compiles without Unity or FMOD references.
 - EditMode and PlayMode test assemblies are discoverable.
+- First-party coding, structure, and naming rules are documented and pass the repository checker.
 
 ### Verification evidence
 
@@ -135,6 +138,9 @@ The first product is an engine playground. It must let a developer play notes an
 - `Assets/Scripts/Loom/` contains the planned `Loom.Core`, `Loom.Fmod`, `Loom.Unity`, `Loom.Demo`, `Loom.Tests.EditMode`, and `Loom.Tests.PlayMode` assemblies.
 - `Loom.Core` uses `noEngineReferences: true`; `AssemblyBoundaryTests` verified that it references neither Unity nor FMOD.
 - Unity Test Runner discovered and passed both EditMode assembly-boundary tests and the PlayMode runtime-assembly availability test on 2026-08-01 (3 passed, 0 failed, 0 skipped).
+- `docs/coding-standards.md`, the scoped `.editorconfig`, the dependency-free checker, and the GitHub Actions workflow formalize and enforce first-party LOOM conventions without reformatting imported packages.
+- On 2026-08-01, `python3 scripts/check_coding_standards.py` passed all 38 checked text files plus Unity metadata parity; `git diff --check` also passed.
+- The open Unity 6000.3.10f1 Editor imported the two line-wrap-only C# changes, completed compilation, and reported zero Console errors.
 
 ## M1 — Playable Polyphonic Synth Playground
 
@@ -351,3 +357,6 @@ Before ending a task that changed LOOM:
 - Added one idempotent demo shutdown path and a keyboard panic operation covering focus loss, application pause, disable/destroy, application quit, and Editor assembly reload while preserving fresh key-down behavior after focus returns.
 - Verified lifecycle behavior with 32/32 focused input cases, the dedicated PlayMode lifecycle test, three real note-bearing Play/Stop cycles, 93/93 complete EditMode tests, and 5/5 complete PlayMode tests without invalid handles or leaked DSP errors.
 - Completed M1 and advanced the current milestone to the ready M2 `MusicalTime` foundation item.
+- Formalized the first-party LOOM coding, structure, naming, testing, and asset conventions in `docs/coding-standards.md` and linked it from both agent instruction files.
+- Added a LOOM-scoped `.editorconfig`, a dependency-free repository checker, and a GitHub Actions workflow that runs the checker for pushes and pull requests.
+- Verified the coding standard across 38 text files plus Unity metadata parity, passed `git diff --check`, and confirmed a clean compile with zero Console errors in the open Unity Editor before returning the active milestone to M2.
