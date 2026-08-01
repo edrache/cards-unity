@@ -1,0 +1,23 @@
+{
+    "name": "Loom.Tests.EditMode",
+    "rootNamespace": "Loom.Tests.EditMode",
+    "references": [
+        "Loom.Core",
+        "Loom.Fmod",
+        "Loom.Unity"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

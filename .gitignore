@@ -59,6 +59,7 @@ crashlytics-build.properties
 
 # Ignore locally generated FMOD cache files.
 /[Aa]ssets/Plugins/FMOD/Cache/*
+/fmod/loom/.cache/
 
 # Ignore generated FMOD banks in StreamingAssets.
 /[Aa]ssets/StreamingAssets/**/*.bank

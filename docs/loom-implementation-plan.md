@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.0  
+**Plan version:** 1.2
 **Last updated:** 2026-08-01  
-**Current milestone:** M0 — Repository and FMOD foundation  
-**Current status:** READY  
-**Next action:** Configure and verify the FMOD Studio project connection, create `Master/MUS_Synth`, build the Master Bank, and confirm Unity can resolve `bus:/MUS_Synth`.
+**Current milestone:** M1 — Playable polyphonic synth playground
+**Current status:** READY
+**Next action:** Define the immutable `Note`, `NoteEvent`, and `VoiceHandle` data contracts plus the `IInstrument` ownership contract in `Loom.Core`, with focused EditMode tests; do not implement FMOD voice rendering yet.
 
 ## Purpose
 
@@ -52,6 +52,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Unity | 6000.3.10f1 |
 | FMOD integration | 2.03.07 |
 | FMOD project | `fmod/loom/loom.fspro` |
+| FMOD bank output | `fmod/loom/Build/<platform>`; generated banks are ignored build artifacts |
 | Initial platforms | macOS and Windows desktop |
 | Initial synthesis | Built-in FMOD oscillator/DSP graph; no samples required |
 | Studio bus | `bus:/MUS_Synth` |
@@ -78,7 +79,7 @@ The first product is an engine playground. It must let a developer play notes an
 
 | Milestone | Deliverable | Status |
 |---|---|---|
-| M0 | Repository rules and verified FMOD foundation | READY |
+| M0 | Repository rules and verified FMOD foundation | DONE |
 | M1 | Playable polyphonic synth playground | NOT STARTED |
 | M2 | Deterministic transport and step sequencer | NOT STARTED |
 | M3 | Multiple tracks, scale, harmony, and routing | NOT STARTED |
@@ -94,12 +95,12 @@ The first product is an engine playground. It must let a developer play notes an
 
 - [x] `DONE` Record agent workflow and architectural invariants in `AGENTS.md` and `CLAUDE.md`.
 - [x] `DONE` Create this canonical implementation plan.
-- [ ] `READY` Configure the Unity FMOD integration to use `fmod/loom/loom.fspro`.
-- [ ] `READY` Create the Studio mixer bus `Master/MUS_Synth`.
-- [ ] `READY` Build the Master Bank for desktop.
-- [ ] `NOT STARTED` Confirm Unity loads the bank and resolves `bus:/MUS_Synth`.
-- [ ] `NOT STARTED` Create the LOOM folder layout and assembly definitions.
-- [ ] `NOT STARTED` Confirm all assemblies compile with the intended dependency boundaries.
+- [x] `DONE` Configure the Unity FMOD integration to use `fmod/loom/loom.fspro`.
+- [x] `DONE` Create the Studio mixer bus `Master/MUS_Synth`.
+- [x] `DONE` Build the Master Bank for desktop.
+- [x] `DONE` Confirm Unity loads the bank and resolves `bus:/MUS_Synth`.
+- [x] `DONE` Create the LOOM folder layout and assembly definitions.
+- [x] `DONE` Confirm all assemblies compile with the intended dependency boundaries.
 
 ### Acceptance criteria
 
@@ -114,7 +115,14 @@ The first product is an engine playground. It must let a developer play notes an
 
 - FMOD project exists and uses serialization model `Studio.02.03.00`.
 - FMOD for Unity wrapper declares version `0x00020307`.
-- As of 2026-08-01, the Unity FMOD settings serialized on disk still show an empty `sourceProjectPath`; connection is not yet verified.
+- Unity FMOD settings use repository-relative paths `fmod/loom/loom.fspro` and `fmod/loom/Build`.
+- FMOD Studio contains the `Master/MUS_Synth` group bus and builds `Master.bank` plus `Master.strings.bank` under `fmod/loom/Build/Desktop`.
+- In macOS Play Mode on 2026-08-01, `RuntimeManager.CoreSystem.getVersion` returned `FMOD_OK`, version `0x00020307`, build `150747`.
+- In the same run, `RuntimeManager.StudioSystem.getBus("bus:/MUS_Synth")` returned `FMOD_OK`, the bus handle was valid, and no FMOD errors or warnings were present in the Unity Console.
+- Exiting that Play Mode run produced no FMOD errors or warnings; two unrelated TextCore font-assignment errors remained in the existing project.
+- `Assets/Scripts/Loom/` contains the planned `Loom.Core`, `Loom.Fmod`, `Loom.Unity`, `Loom.Demo`, `Loom.Tests.EditMode`, and `Loom.Tests.PlayMode` assemblies.
+- `Loom.Core` uses `noEngineReferences: true`; `AssemblyBoundaryTests` verified that it references neither Unity nor FMOD.
+- Unity Test Runner discovered and passed both EditMode assembly-boundary tests and the PlayMode runtime-assembly availability test on 2026-08-01 (3 passed, 0 failed, 0 skipped).
 
 ## M1 — Playable Polyphonic Synth Playground
 
@@ -251,7 +259,6 @@ Before ending a task that changed LOOM:
 - Studio bus channel groups are not permanent handles across all bank/lifecycle operations; adapter ownership must be tested.
 - Unity's interactive Editor is normally open, so batchmode cannot be assumed available against the same workspace.
 - Windows output and timing require verification on Windows hardware; macOS-only testing is not sufficient for a desktop milestone.
-- Generated FMOD bank location and build policy must be verified during M0 and then documented here.
 
 ## Changelog
 
@@ -263,3 +270,10 @@ Before ending a task that changed LOOM:
 - Selected the built-in FMOD oscillator/DSP path for the first synth spike, with no sample dependency.
 - Recorded the existing FMOD project at `fmod/loom/loom.fspro` and the unverified Unity project-link state.
 - Added plan-maintenance and handoff rules for future agents.
+- Configured Unity to read the repository-relative FMOD Studio project and its generated bank output.
+- Added `Master/MUS_Synth`, built the Desktop Master Bank, and verified both FMOD Core access and Studio bus resolution in macOS Play Mode.
+- Confirmed generated banks remain ignored build artifacts under `fmod/loom/Build/<platform>`.
+- Verified a clean FMOD shutdown after leaving Play Mode and started the LOOM assembly scaffold work item.
+- Created the full LOOM folder and assembly scaffold with explicit one-way dependencies.
+- Added assembly-boundary and availability smoke tests; all two EditMode tests and one PlayMode test passed in the open Unity Editor.
+- Completed M0 and advanced the current milestone to M1.
