@@ -7,7 +7,7 @@ namespace Loom.Fmod
     public sealed class FmodOscillatorVoice : IDisposable
     {
         private readonly FMOD.System coreSystem;
-        private readonly FmodAdsrEnvelopeSamples envelopeSamples;
+        private FmodAdsrEnvelopeSamples envelopeSamples;
         private FMOD.DSP oscillator;
         private FMOD.DSP lowPassFilter;
         private FMOD.Channel channel;
@@ -102,7 +102,7 @@ namespace Loom.Fmod
 
         public float Resonance { get; private set; }
 
-        public FmodAdsrEnvelope Envelope { get; }
+        public FmodAdsrEnvelope Envelope { get; private set; }
 
         public int SampleRate { get; }
 
@@ -208,6 +208,25 @@ namespace Loom.Fmod
 
             SetOscillatorWaveform(waveform);
             Waveform = waveform;
+        }
+
+        public void SetEnvelope(FmodAdsrEnvelope envelope)
+        {
+            ThrowIfReleased();
+            if (envelope == null)
+            {
+                throw new ArgumentNullException(nameof(envelope));
+            }
+
+            SynchronizeScheduledStop();
+            if (channel.hasHandle())
+            {
+                throw new InvalidOperationException(
+                    "The ADSR envelope can only change while the voice is idle.");
+            }
+
+            Envelope = envelope;
+            envelopeSamples = envelope.ResolveSampleFrames(SampleRate);
         }
 
         public void SetNote(Note note)

@@ -204,6 +204,48 @@ namespace Loom.Tests.EditMode
         }
 
         [Test]
+        public void SynthControlsReachEveryPreallocatedVoice()
+        {
+            var voices = new List<FakeVoice>();
+            using (var instrument = CreateInstrument(3, voices))
+            {
+                var envelope = new Fmod.FmodAdsrEnvelope(
+                    0.02d,
+                    0.15d,
+                    0.6f,
+                    0.4d);
+
+                instrument.SetEnvelope(envelope);
+                instrument.SetWaveform(Fmod.FmodOscillatorWaveform.Triangle);
+                instrument.SetGain(0.25f);
+                instrument.SetOctave(-1);
+                instrument.SetCutoffHz(3200f);
+                instrument.SetResonance(1.5f);
+
+                Assert.That(instrument.Envelope, Is.SameAs(envelope));
+                Assert.That(
+                    instrument.Waveform,
+                    Is.EqualTo(Fmod.FmodOscillatorWaveform.Triangle));
+                Assert.That(instrument.Gain, Is.EqualTo(0.25f));
+                Assert.That(instrument.Octave, Is.EqualTo(-1));
+                Assert.That(instrument.CutoffHz, Is.EqualTo(3200f));
+                Assert.That(instrument.Resonance, Is.EqualTo(1.5f));
+
+                foreach (FakeVoice voice in voices)
+                {
+                    Assert.That(voice.Envelope, Is.SameAs(envelope));
+                    Assert.That(
+                        voice.Waveform,
+                        Is.EqualTo(Fmod.FmodOscillatorWaveform.Triangle));
+                    Assert.That(voice.MaximumGain, Is.EqualTo(0.25f));
+                    Assert.That(voice.Octave, Is.EqualTo(-1));
+                    Assert.That(voice.CutoffHz, Is.EqualTo(3200f));
+                    Assert.That(voice.Resonance, Is.EqualTo(1.5f));
+                }
+            }
+        }
+
+        [Test]
         public void DisposeImmediatelyCleansEveryVoiceAndIsIdempotent()
         {
             var voices = new List<FakeVoice>();
@@ -286,7 +328,49 @@ namespace Loom.Tests.EditMode
 
             public Exception StartFailure { get; set; }
 
+            public Fmod.FmodAdsrEnvelope Envelope { get; private set; }
+
+            public Fmod.FmodOscillatorWaveform Waveform { get; private set; }
+
+            public float MaximumGain { get; private set; }
+
+            public int Octave { get; private set; }
+
+            public float CutoffHz { get; private set; }
+
+            public float Resonance { get; private set; }
+
             public bool IsStarted => isStarted;
+
+            public void SetEnvelope(Fmod.FmodAdsrEnvelope envelope)
+            {
+                Envelope = envelope;
+            }
+
+            public void SetWaveform(Fmod.FmodOscillatorWaveform waveform)
+            {
+                Waveform = waveform;
+            }
+
+            public void SetMaximumGain(float gain)
+            {
+                MaximumGain = gain;
+            }
+
+            public void SetOctave(int octave)
+            {
+                Octave = octave;
+            }
+
+            public void SetCutoffHz(float cutoffHz)
+            {
+                CutoffHz = cutoffHz;
+            }
+
+            public void SetResonance(float resonance)
+            {
+                Resonance = resonance;
+            }
 
             public void Prepare(Core.Note note, byte velocity)
             {

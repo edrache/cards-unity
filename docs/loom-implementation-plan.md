@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.9
+**Plan version:** 1.11
 **Last updated:** 2026-08-01  
 **Current milestone:** M1 — Playable polyphonic synth playground
 **Current status:** READY
-**Next action:** Add computer-keyboard note input in `Loom.Unity` with a documented fixed key-to-MIDI mapping, suppress repeated key-downs, retain the exact `VoiceHandle` per pressed key for key-up, and add focused adapter tests; leave focus-loss, domain-reload, and shutdown panic behavior to the dedicated lifecycle item.
+**Next action:** Complete the final M1 lifecycle item: add one idempotent panic path that clears `ComputerKeyboardNoteInput` state and calls `FmodOscillatorInstrument.AllNotesOff` on focus loss, disable/destroy, domain reload, and shutdown; then verify repeated Play Mode entry/exit without invalid handles or leaked DSPs and record the remaining Windows hardware verification status.
 
 ## Purpose
 
@@ -72,6 +72,8 @@ The first product is an engine playground. It must let a developer play notes an
 | Initial synth controls | FMOD oscillator waveform values map explicitly to sine, square, saw up, saw down, triangle, and noise. Octave is an integer from -4 through +4 and must keep the resolved oscillator rate within FMOD's 1–22000 Hz range; gain is 0–1. The resonant low-pass uses supported Multiband EQ band A at 24 dB/octave, with cutoff 20–22000 Hz and Q 0.1–10, instead of deprecated `DSP_TYPE.LOWPASS` |
 | Initial polyphony | `FmodOscillatorInstrument` implements `IInstrument` with a preallocated fixed pool of eight reusable voice DSP graphs by default. Process-wide opaque handle IDs prevent cross-instrument ownership collisions, while a separate local monotonic start order makes oldest-voice stealing deterministic. `NoteOff` consumes only the exact owned handle, completed releases are reclaimed before stealing, velocity scales the configured per-voice gain, and instrument disposal releases every pooled graph |
 | Studio bus routing | `FmodOscillatorInstrument` requires valid Core and Studio systems and routes every pooled voice through one locked `bus:/MUS_Synth` ChannelGroup. Locking is paired with checked `flushCommands` and `unlockChannelGroup`; `PrepareForBankReload` requires zero active voices and releases the lifecycle-bound handles, while `RestoreAfterBankReload` reacquires them only after the Master Bank is loaded |
+| Computer keyboard input | `ComputerKeyboardNoteInput` polls Unity's legacy `Input` API, which is available because the project enables both input backends. Its fixed chromatic layout maps `Z S X D C V G B H N J M` to MIDI 60-71 and `Q 2 W 3 E R 5 T 6 Y 7 U` to MIDI 72-83; repeated key-downs are suppressed and each key-up consumes the exact retained `VoiceHandle`. Focus-loss and panic state clearing remain in the dedicated lifecycle item |
+| Synth demo | `Assets/Scenes/scn_loom.unity` is the build-index-zero playground. A UI Toolkit document and `LoomSynthDemoController` own the eight-voice routed instrument, poll the keyboard adapter, display the two-octave layout, and apply waveform, ADSR, gain, octave, cutoff, and resonance changes at runtime |
 
 ## Target Assemblies and Ownership
 
@@ -146,9 +148,9 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Add waveform selection, gain, octave, cutoff, and resonance controls supported by the initial graph.
 - [x] `DONE` Add fixed-size polyphony and deterministic voice stealing.
 - [x] `DONE` Route every voice through `bus:/MUS_Synth`.
-- [ ] `NOT STARTED` Add computer-keyboard note input.
-- [ ] `NOT STARTED` Add a demo UI and scene.
-- [ ] `NOT STARTED` Add shutdown, domain-reload, focus-loss, and `AllNotesOff` handling.
+- [x] `DONE` Add computer-keyboard note input.
+- [x] `DONE` Add a demo UI and scene.
+- [ ] `READY` Add shutdown, domain-reload, focus-loss, and `AllNotesOff` handling.
 
 ### Acceptance criteria
 
@@ -159,6 +161,11 @@ The first product is an engine playground. It must let a developer play notes an
 - Voice stealing is repeatable and documented.
 - Repeated Play Mode entry/exit produces no invalid-handle or leaked-DSP errors.
 - The demo runs in the macOS Editor and has a documented Windows verification path.
+
+### Desktop verification path
+
+- macOS Editor: open `Assets/Scenes/scn_loom.unity`, enter Play Mode, click the Game view, play both documented keyboard rows, change every synth control while notes are active, mute `bus:/MUS_Synth`, and confirm the voice counter and Console remain healthy through exit.
+- Windows: switch to a Windows x86_64 standalone target, confirm the Desktop FMOD banks are available, build with `scn_loom` at build index zero, run the player, repeat the key/control/bus-mute checks, then inspect the Player log after shutdown. This remains a hardware verification task rather than a macOS inference.
 
 ### Verification evidence
 
@@ -187,6 +194,11 @@ The first product is an engine playground. It must let a developer play notes an
 - `FmodStudioBusRouting` now resolves `bus:/MUS_Synth`, locks and materializes its ChannelGroup with a checked Studio command flush, validates the cached lifecycle-bound group before each note start, and pairs every successful lock with an unlock during bank reload or disposal. The successful note-start path reuses the cached group without managed allocations.
 - The routed polyphony PlayMode test observed all eight live Core channels in the same `MUS_Synth` ChannelGroup, set only that Studio bus to muted, and measured its ChannelGroup audibility at zero while all eight voices remained active.
 - The bank lifecycle test rejected reload preparation while a voice was active, released the route after the voice completed, unloaded and reloaded the actual `Master` bank through `RuntimeManager`, restored the route, and played a new channel through the reacquired `MUS_Synth` group. The complete suites passed 60/60 EditMode and 4/4 PlayMode tests with no FMOD errors or warnings on 2026-08-01.
+- `ComputerKeyboardNoteInput` adds an allocation-free 24-key polling loop in `Loom.Unity`, validates velocity, ignores unmapped and repeated key-downs, retains one stable handle per pressed key, clears stale pressed state even when a stolen voice rejects note-off, and rejects invalid handles returned by an instrument.
+- Thirty focused EditMode cases verify every key-to-MIDI mapping entry, constructor guards, velocity forwarding, repeated key-down and key-up suppression, exact per-key handle release, unmapped-key isolation, stolen-voice recovery, and invalid-handle rejection. The complete suites passed 90/90 EditMode and 4/4 PlayMode tests on 2026-08-01; the console contained no LOOM or FMOD errors or warnings.
+- `scn_loom` now contains a `LOOM Synth Demo` root with a `UIDocument` and `LoomSynthDemoController`; its responsive UI Toolkit layout presents oscillator, envelope, filter, routing/status, active-voice, and two-octave keyboard panels. The scene validates with zero missing scripts or broken prefabs and is enabled at build index zero.
+- In the macOS Editor runtime smoke on 2026-08-01, the controller created all eight routed voices, resolved the styled UI at 1440x810, applied Triangle, gain 0.2, octave +1, cutoff 4.2 kHz, Q 1.8, and attack 0.08 seconds through live UI callbacks, and completed an actual C4 note-on/note-off using stable handle 1.
+- The instrument control broadcast is covered by 15/15 focused EditMode cases. After the demo change, the complete suites passed 91/91 EditMode and 4/4 PlayMode tests with no failures or invalid-handle/leaked-DSP errors. The long-lived Editor process emitted one FMOD Live Update port warning because that same Unity process still owned port 9264 after an earlier suspended manual visualization; the final lifecycle item must recheck shutdown from a fresh Editor audio state.
 
 ## M2 — Deterministic Transport and Step Sequencer
 
@@ -328,3 +340,6 @@ Before ending a task that changed LOOM:
 - Verified polyphony and resource ownership with thirteen focused contract cases, the complete 59/59 EditMode suite, and the complete 3/3 PlayMode suite; the live ninth-note steal and final disposal produced no FMOD errors or warnings.
 - Routed every pooled oscillator voice through one persistent `MUS_Synth` Studio ChannelGroup with checked lock/flush/unlock ownership and explicit safe bank-reload boundaries.
 - Verified eight-channel bus membership, zero audibility under `MUS_Synth` mute, active-voice reload rejection, real Master Bank unload/load and route restoration, the complete 60/60 EditMode suite, and the complete 4/4 PlayMode suite without FMOD errors or warnings.
+- Added the fixed two-octave computer-keyboard adapter with repeated key-down suppression and exact per-key voice ownership; verified all 30 focused cases, the complete 90/90 EditMode suite, and the complete 4/4 PlayMode suite.
+- Added the build-index-zero UI Toolkit synth playground in `scn_loom`, with live waveform, ADSR, gain, octave, cutoff, resonance, keyboard-layout, routing, and active-voice feedback wired to the routed eight-voice FMOD instrument.
+- Verified the demo scene structure, resolved runtime styling and live callbacks, a real scene note-on/note-off, 15/15 focused instrument cases, 91/91 complete EditMode tests, and 4/4 complete PlayMode tests; advanced M1 to its final lifecycle/panic item.

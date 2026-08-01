@@ -1,0 +1,77 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="project://database/Assets/Scripts/Loom/Demo/LoomSynthDemo.uss?fileID=7433441132597879392&amp;guid=4cc03b6d1967a43fc9c435ba8aaa2101&amp;type=3#LoomSynthDemo" />
+    <ui:VisualElement name="root" class="root">
+        <ui:VisualElement class="scanline scanline--one" />
+        <ui:VisualElement class="scanline scanline--two" />
+        <ui:VisualElement class="shell">
+            <ui:VisualElement class="header">
+                <ui:VisualElement>
+                    <ui:Label text="LOOM / SYNTH LAB" class="eyebrow" />
+                    <ui:Label text="POLYPHONIC SIGNAL PLAYGROUND" class="title" />
+                    <ui:Label text="FMOD CORE OSCILLATORS · SAMPLE-ACCURATE ENVELOPES" class="subtitle" />
+                </ui:VisualElement>
+                <ui:VisualElement class="status-stack">
+                    <ui:Label name="engine-status" text="INITIALIZING FMOD…" class="status status--online" />
+                    <ui:Label name="voice-status" text="VOICES  00 / 08" class="status" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement class="workspace">
+                <ui:VisualElement class="module module--oscillator">
+                    <ui:Label text="01 / OSCILLATOR" class="module-title" />
+                    <ui:DropdownField name="waveform-field" label="WAVEFORM" class="control" />
+                    <ui:Slider name="gain-slider" label="GAIN" low-value="0" high-value="1" value="0.08" show-input-field="true" class="control" />
+                    <ui:SliderInt name="octave-slider" label="OCTAVE" low-value="-4" high-value="4" value="0" show-input-field="true" class="control" />
+                    <ui:VisualElement class="signal-card">
+                        <ui:Label text="SIGNAL PATH" class="micro-label" />
+                        <ui:Label text="OSC  →  LPF  →  ADSR  →  MUS_SYNTH" class="signal-text" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="module module--envelope">
+                    <ui:Label text="02 / ENVELOPE" class="module-title" />
+                    <ui:Slider name="attack-slider" label="ATTACK  s" low-value="0.001" high-value="2" value="0.01" show-input-field="true" class="control" />
+                    <ui:Slider name="decay-slider" label="DECAY  s" low-value="0" high-value="2" value="0.1" show-input-field="true" class="control" />
+                    <ui:Slider name="sustain-slider" label="SUSTAIN" low-value="0" high-value="1" value="0.7" show-input-field="true" class="control" />
+                    <ui:Slider name="release-slider" label="RELEASE  s" low-value="0.001" high-value="3" value="0.2" show-input-field="true" class="control" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="module module--filter">
+                    <ui:Label text="03 / FILTER" class="module-title" />
+                    <ui:Slider name="cutoff-slider" label="CUTOFF  Hz" low-value="20" high-value="22000" value="8000" show-input-field="true" class="control" />
+                    <ui:Slider name="resonance-slider" label="RESONANCE  Q" low-value="0.1" high-value="10" value="0.707" show-input-field="true" class="control" />
+                    <ui:VisualElement class="filter-visual">
+                        <ui:VisualElement class="filter-line filter-line--flat" />
+                        <ui:VisualElement class="filter-line filter-line--drop" />
+                        <ui:VisualElement class="filter-dot" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement class="keyboard-panel">
+                <ui:VisualElement class="keyboard-copy">
+                    <ui:Label text="PLAY TWO CHROMATIC OCTAVES" class="module-title" />
+                    <ui:Label text="Click the Game view, then use the computer keyboard. Key-up releases the exact voice started by key-down." class="keyboard-hint" />
+                </ui:VisualElement>
+                <ui:VisualElement class="key-rows">
+                    <ui:VisualElement class="key-row">
+                        <ui:Label text="Q" class="key" /><ui:Label text="2" class="key key--sharp" /><ui:Label text="W" class="key" /><ui:Label text="3" class="key key--sharp" /><ui:Label text="E" class="key" /><ui:Label text="R" class="key" /><ui:Label text="5" class="key key--sharp" /><ui:Label text="T" class="key" /><ui:Label text="6" class="key key--sharp" /><ui:Label text="Y" class="key" /><ui:Label text="7" class="key key--sharp" /><ui:Label text="U" class="key" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="key-row key-row--lower">
+                        <ui:Label text="Z" class="key" /><ui:Label text="S" class="key key--sharp" /><ui:Label text="X" class="key" /><ui:Label text="D" class="key key--sharp" /><ui:Label text="C" class="key" /><ui:Label text="V" class="key" /><ui:Label text="G" class="key key--sharp" /><ui:Label text="B" class="key" /><ui:Label text="H" class="key key--sharp" /><ui:Label text="N" class="key" /><ui:Label text="J" class="key key--sharp" /><ui:Label text="M" class="key" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="note-row">
+                        <ui:Label text="C4" /><ui:Label text="C#" /><ui:Label text="D" /><ui:Label text="D#" /><ui:Label text="E" /><ui:Label text="F" /><ui:Label text="F#" /><ui:Label text="G" /><ui:Label text="G#" /><ui:Label text="A" /><ui:Label text="A#" /><ui:Label text="B4" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement class="footer">
+                <ui:Label text="48 kHz TARGET" />
+                <ui:Label text="8 PREALLOCATED VOICES" />
+                <ui:Label text="BUS / MUS_SYNTH" />
+                <ui:Label text="LOOM M1" class="footer-accent" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

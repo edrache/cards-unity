@@ -138,6 +138,27 @@ namespace Loom.Tests.PlayMode
                 Assert.That(instrument.OwnedVoiceCount, Is.EqualTo(8));
                 Assert.That(handles, Is.Unique);
 
+                var updatedEnvelope = new Fmod.FmodAdsrEnvelope(
+                    0.02d,
+                    0.04d,
+                    0.65f,
+                    0.08d);
+                instrument.SetEnvelope(updatedEnvelope);
+                instrument.SetWaveform(Fmod.FmodOscillatorWaveform.Triangle);
+                instrument.SetGain(0.02f);
+                instrument.SetOctave(-1);
+                instrument.SetCutoffHz(2400f);
+                instrument.SetResonance(1.25f);
+
+                Assert.That(instrument.Envelope, Is.SameAs(updatedEnvelope));
+                Assert.That(
+                    instrument.Waveform,
+                    Is.EqualTo(Fmod.FmodOscillatorWaveform.Triangle));
+                Assert.That(instrument.Gain, Is.EqualTo(0.02f));
+                Assert.That(instrument.Octave, Is.EqualTo(-1));
+                Assert.That(instrument.CutoffHz, Is.EqualTo(2400f));
+                Assert.That(instrument.Resonance, Is.EqualTo(1.25f));
+
                 Assert.That(
                     RuntimeManager.StudioSystem.getBus(
                         Fmod.FmodOscillatorInstrument.SynthBusPath,

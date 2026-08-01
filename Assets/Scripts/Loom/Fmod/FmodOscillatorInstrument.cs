@@ -54,6 +54,12 @@ namespace Loom.Fmod
             }
 
             ValidateVoiceCapacity(voiceCapacity);
+            Envelope = envelope;
+            Waveform = settings.Waveform;
+            Gain = settings.Gain;
+            Octave = settings.Octave;
+            CutoffHz = settings.CutoffHz;
+            Resonance = settings.Resonance;
             busRouting = new FmodStudioBusRouting(
                 studioSystem,
                 SynthBusPath);
@@ -104,8 +110,26 @@ namespace Loom.Fmod
             }
 
             busRouting = null;
+            Envelope = FmodAdsrEnvelope.Default;
+            Waveform = FmodOscillatorSettings.Default.Waveform;
+            Gain = FmodOscillatorSettings.Default.Gain;
+            Octave = FmodOscillatorSettings.Default.Octave;
+            CutoffHz = FmodOscillatorSettings.Default.CutoffHz;
+            Resonance = FmodOscillatorSettings.Default.Resonance;
             voiceSlots = CreateVoiceSlots(voiceCapacity, voiceFactory);
         }
+
+        public FmodAdsrEnvelope Envelope { get; private set; }
+
+        public FmodOscillatorWaveform Waveform { get; private set; }
+
+        public float Gain { get; private set; }
+
+        public int Octave { get; private set; }
+
+        public float CutoffHz { get; private set; }
+
+        public float Resonance { get; private set; }
 
         public int VoiceCapacity => voiceSlots.Length;
 
@@ -161,6 +185,82 @@ namespace Loom.Fmod
 
                 return count;
             }
+        }
+
+        public void SetEnvelope(FmodAdsrEnvelope envelope)
+        {
+            ThrowIfDisposed();
+            if (envelope == null)
+            {
+                throw new ArgumentNullException(nameof(envelope));
+            }
+
+            for (int i = 0; i < voiceSlots.Length; i++)
+            {
+                voiceSlots[i].Voice?.SetEnvelope(envelope);
+            }
+
+            Envelope = envelope;
+        }
+
+        public void SetWaveform(FmodOscillatorWaveform waveform)
+        {
+            ThrowIfDisposed();
+            FmodOscillatorSettings.ValidateWaveform(waveform);
+            for (int i = 0; i < voiceSlots.Length; i++)
+            {
+                voiceSlots[i].Voice?.SetWaveform(waveform);
+            }
+
+            Waveform = waveform;
+        }
+
+        public void SetGain(float gain)
+        {
+            ThrowIfDisposed();
+            FmodOscillatorSettings.ValidateGain(gain);
+            for (int i = 0; i < voiceSlots.Length; i++)
+            {
+                voiceSlots[i].Voice?.SetMaximumGain(gain);
+            }
+
+            Gain = gain;
+        }
+
+        public void SetOctave(int octave)
+        {
+            ThrowIfDisposed();
+            FmodOscillatorSettings.ValidateOctave(octave);
+            for (int i = 0; i < voiceSlots.Length; i++)
+            {
+                voiceSlots[i].Voice?.SetOctave(octave);
+            }
+
+            Octave = octave;
+        }
+
+        public void SetCutoffHz(float cutoffHz)
+        {
+            ThrowIfDisposed();
+            FmodOscillatorSettings.ValidateCutoffHz(cutoffHz);
+            for (int i = 0; i < voiceSlots.Length; i++)
+            {
+                voiceSlots[i].Voice?.SetCutoffHz(cutoffHz);
+            }
+
+            CutoffHz = cutoffHz;
+        }
+
+        public void SetResonance(float resonance)
+        {
+            ThrowIfDisposed();
+            FmodOscillatorSettings.ValidateResonance(resonance);
+            for (int i = 0; i < voiceSlots.Length; i++)
+            {
+                voiceSlots[i].Voice?.SetResonance(resonance);
+            }
+
+            Resonance = resonance;
         }
 
         public VoiceHandle NoteOn(Note note, byte velocity)
@@ -577,6 +677,18 @@ namespace Loom.Fmod
     {
         bool IsStarted { get; }
 
+        void SetEnvelope(FmodAdsrEnvelope envelope);
+
+        void SetWaveform(FmodOscillatorWaveform waveform);
+
+        void SetMaximumGain(float gain);
+
+        void SetOctave(int octave);
+
+        void SetCutoffHz(float cutoffHz);
+
+        void SetResonance(float resonance);
+
         void Prepare(Note note, byte velocity);
 
         void Start();
@@ -590,8 +702,10 @@ namespace Loom.Fmod
         : IOscillatorInstrumentVoice
     {
         private readonly FmodOscillatorVoice voice;
-        private readonly float maximumGain;
+        private float maximumGain;
         private readonly FmodStudioBusRouting busRouting;
+        private FmodAdsrEnvelope pendingEnvelope;
+        private byte currentVelocity;
 
         public FmodOscillatorInstrumentVoice(
             FmodOscillatorVoice voice,
@@ -600,14 +714,66 @@ namespace Loom.Fmod
         {
             this.voice = voice ?? throw new ArgumentNullException(nameof(voice));
             this.maximumGain = maximumGain;
+            pendingEnvelope = voice.Envelope;
             this.busRouting = busRouting
                 ?? throw new ArgumentNullException(nameof(busRouting));
         }
 
         public bool IsStarted => voice.IsStarted;
 
+        public void SetEnvelope(FmodAdsrEnvelope envelope)
+        {
+            pendingEnvelope = envelope
+                ?? throw new ArgumentNullException(nameof(envelope));
+            if (!voice.IsStarted)
+            {
+                voice.SetEnvelope(envelope);
+            }
+        }
+
+        public void SetWaveform(FmodOscillatorWaveform waveform)
+        {
+            voice.SetWaveform(waveform);
+        }
+
+        public void SetMaximumGain(float gain)
+        {
+            maximumGain = gain;
+            if (voice.IsStarted)
+            {
+                voice.SetGain(
+                    maximumGain
+                    * (currentVelocity / (float)NoteEvent.MaxVelocity));
+            }
+            else
+            {
+                voice.SetGain(maximumGain);
+            }
+        }
+
+        public void SetOctave(int octave)
+        {
+            voice.SetOctave(octave);
+        }
+
+        public void SetCutoffHz(float cutoffHz)
+        {
+            voice.SetCutoffHz(cutoffHz);
+        }
+
+        public void SetResonance(float resonance)
+        {
+            voice.SetResonance(resonance);
+        }
+
         public void Prepare(Note note, byte velocity)
         {
+            if (!ReferenceEquals(voice.Envelope, pendingEnvelope))
+            {
+                voice.SetEnvelope(pendingEnvelope);
+            }
+
+            currentVelocity = velocity;
             voice.SetNote(note);
             voice.SetGain(
                 maximumGain * (velocity / (float)NoteEvent.MaxVelocity));
