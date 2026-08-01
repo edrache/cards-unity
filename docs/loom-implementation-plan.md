@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.4
+**Plan version:** 1.5
 **Last updated:** 2026-08-01  
 **Current milestone:** M1 — Playable polyphonic synth playground
 **Current status:** READY
-**Next action:** Implement one immediately playable FMOD oscillator voice in `Loom.Fmod` with explicit create/start/stop/release lifecycle and contextual checks for every `FMOD.RESULT`; add focused verification for audible output and clean release, but do not add ADSR or polyphony yet.
+**Next action:** Add ADSR amplitude control to `FmodOscillatorVoice` using DSP-clock-aligned fade points or an equivalent verified FMOD graph; verify attack, decay, sustain, release, and click-free note-off without adding polyphony yet.
 
 ## Purpose
 
@@ -67,6 +67,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Pitch-to-frequency conversion | `Note.FrequencyHz` returns `double` using twelve-tone equal temperament and A4 = MIDI 69 = 440 Hz; conversion to FMOD `float` occurs explicitly at the adapter boundary |
 | Logical note event | `NoteEvent` stores a playable velocity from 1 through 127 and a non-overflowing `[StartTick, EndTick)` interval in `long` ticks |
 | Voice ownership | `IInstrument.NoteOn` returns a non-zero stable `VoiceHandle`; `NoteOff` consumes that exact handle, `AllNotesOff` invalidates outstanding handles, and the instrument owns disposable resources |
+| Initial oscillator voice | `FmodOscillatorVoice` owns one sine `DSP_TYPE.OSCILLATOR`, starts its channel paused before applying gain, checks every `FMOD.RESULT`, and stops the channel before releasing the DSP; routing remains on the default Core output until the dedicated `MUS_Synth` work item |
 
 ## Target Assemblies and Ownership
 
@@ -136,7 +137,7 @@ The first product is an engine playground. It must let a developer play notes an
 
 - [x] `DONE` Define `Note`, `NoteEvent`, `VoiceHandle`, and `IInstrument` contracts in Core.
 - [x] `DONE` Implement MIDI-note-to-frequency conversion with tests.
-- [ ] `NOT STARTED` Implement one FMOD oscillator voice with explicit lifecycle and result checking.
+- [x] `DONE` Implement one FMOD oscillator voice with explicit lifecycle and result checking.
 - [ ] `NOT STARTED` Add ADSR amplitude control using DSP-clock-aligned fade points or an equivalent verified FMOD graph.
 - [ ] `NOT STARTED` Add waveform selection, gain, octave, cutoff, and resonance controls supported by the initial graph.
 - [ ] `NOT STARTED` Add fixed-size polyphony and deterministic voice stealing.
@@ -163,6 +164,11 @@ The first product is an engine playground. It must let a developer play notes an
 - `Note.FrequencyHz` implements twelve-tone equal-temperament conversion as `440 * 2^((midi - 69) / 12)` in `double`, without adding mutable state to `Note`.
 - Focused tests cover A0, A3, A4, middle C, MIDI endpoints 0 and 127, strict monotonicity across the complete MIDI range, and the 2:1 frequency ratio for every twelve-semitone interval.
 - On 2026-08-01, `NoteContractTests` passed 18/18 cases and the complete `Loom.Tests.EditMode` assembly passed 24/24 tests after the final formatting pass.
+- `FmodOscillatorVoice` creates a built-in sine oscillator DSP, converts the Core frequency to FMOD `float`, starts the channel paused, applies normalized gain before unpausing, and exposes explicit `Start`, `Stop`, `Release`, and idempotent `Dispose` behavior.
+- `FmodOperationException` preserves the failed operation, `FMOD.RESULT`, and native FMOD error text; construction/start cleanup failures surface both the primary and cleanup errors instead of ignoring a result.
+- Five focused EditMode cases verify invalid-system rejection, gain validation, and contextual error reporting; the complete `Loom.Tests.EditMode` assembly passed 29/29 tests on 2026-08-01.
+- The PlayMode oscillator test intentionally played an A4 sine at 440 Hz for 0.5 seconds, observed an active FMOD channel, stopped it, released the DSP, and repeated `Release` safely. The complete PlayMode assembly passed 2/2 tests with no FMOD errors or warnings after the final run.
+- The PlayMode test creates a temporary non-persistent `StudioListener`; the production demo scene remains unchanged in this work item.
 
 ## M2 — Deterministic Transport and Step Sequencer
 
@@ -294,3 +300,5 @@ Before ending a task that changed LOOM:
 - Added focused Note and instrument contract tests; the complete EditMode assembly passed 16/16 tests in the open Unity Editor.
 - Added double-precision MIDI-note-to-frequency conversion using A4 = 440 Hz and verified reference notes, endpoints, monotonicity, and octave ratios across the full MIDI range.
 - Re-ran the complete EditMode assembly after the conversion change; all 24 tests passed.
+- Added the first immediately playable FMOD Core sine-oscillator voice with explicit channel/DSP ownership, contextual result checking, bounded gain, and failure cleanup.
+- Added focused EditMode and PlayMode verification; final suites passed 29/29 EditMode and 2/2 PlayMode, including a 0.5-second 440 Hz output and clean repeated release.

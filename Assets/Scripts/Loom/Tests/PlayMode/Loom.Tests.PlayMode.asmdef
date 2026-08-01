@@ -5,7 +5,8 @@
         "Loom.Core",
         "Loom.Fmod",
         "Loom.Unity",
-        "Loom.Demo"
+        "Loom.Demo",
+        "FMODUnity"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
