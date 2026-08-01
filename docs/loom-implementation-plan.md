@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.2
+**Plan version:** 1.4
 **Last updated:** 2026-08-01  
 **Current milestone:** M1 — Playable polyphonic synth playground
 **Current status:** READY
-**Next action:** Define the immutable `Note`, `NoteEvent`, and `VoiceHandle` data contracts plus the `IInstrument` ownership contract in `Loom.Core`, with focused EditMode tests; do not implement FMOD voice rendering yet.
+**Next action:** Implement one immediately playable FMOD oscillator voice in `Loom.Fmod` with explicit create/start/stop/release lifecycle and contextual checks for every `FMOD.RESULT`; add focused verification for audible output and clean release, but do not add ADSR or polyphony yet.
 
 ## Purpose
 
@@ -63,6 +63,10 @@ The first product is an engine playground. It must let a developer play notes an
 | Scheduler lookahead | 200 ms initial tuning value |
 | Determinism contract | Identical logical event stream for identical seed, state, and mutation log |
 | Core boundary | Pure C#, with no Unity or FMOD references |
+| Resolved pitch contract | `Note` stores a validated MIDI note number from 0 through 127; scale-degree resolution remains a later Conductor concern |
+| Pitch-to-frequency conversion | `Note.FrequencyHz` returns `double` using twelve-tone equal temperament and A4 = MIDI 69 = 440 Hz; conversion to FMOD `float` occurs explicitly at the adapter boundary |
+| Logical note event | `NoteEvent` stores a playable velocity from 1 through 127 and a non-overflowing `[StartTick, EndTick)` interval in `long` ticks |
+| Voice ownership | `IInstrument.NoteOn` returns a non-zero stable `VoiceHandle`; `NoteOff` consumes that exact handle, `AllNotesOff` invalidates outstanding handles, and the instrument owns disposable resources |
 
 ## Target Assemblies and Ownership
 
@@ -80,7 +84,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Milestone | Deliverable | Status |
 |---|---|---|
 | M0 | Repository rules and verified FMOD foundation | DONE |
-| M1 | Playable polyphonic synth playground | NOT STARTED |
+| M1 | Playable polyphonic synth playground | IN PROGRESS |
 | M2 | Deterministic transport and step sequencer | NOT STARTED |
 | M3 | Multiple tracks, scale, harmony, and routing | NOT STARTED |
 | M4 | Quantized mutation layer and game-facing API | NOT STARTED |
@@ -130,8 +134,8 @@ The first product is an engine playground. It must let a developer play notes an
 
 ### Work items
 
-- [ ] `NOT STARTED` Define `Note`, `NoteEvent`, `VoiceHandle`, and `IInstrument` contracts in Core.
-- [ ] `NOT STARTED` Implement MIDI-note-to-frequency conversion with tests.
+- [x] `DONE` Define `Note`, `NoteEvent`, `VoiceHandle`, and `IInstrument` contracts in Core.
+- [x] `DONE` Implement MIDI-note-to-frequency conversion with tests.
 - [ ] `NOT STARTED` Implement one FMOD oscillator voice with explicit lifecycle and result checking.
 - [ ] `NOT STARTED` Add ADSR amplitude control using DSP-clock-aligned fade points or an equivalent verified FMOD graph.
 - [ ] `NOT STARTED` Add waveform selection, gain, octave, cutoff, and resonance controls supported by the initial graph.
@@ -150,6 +154,15 @@ The first product is an engine playground. It must let a developer play notes an
 - Voice stealing is repeatable and documented.
 - Repeated Play Mode entry/exit produces no invalid-handle or leaked-DSP errors.
 - The demo runs in the macOS Editor and has a documented Windows verification path.
+
+### Verification evidence
+
+- `Note`, `NoteEvent`, and `VoiceHandle` are immutable value types in `Loom.Core`; constructor guards cover MIDI pitch, playable velocity, negative ticks, zero duration, interval overflow, and invalid zero voice IDs.
+- `IInstrument` defines explicit `NoteOn`/`NoteOff` handle ownership, `AllNotesOff`, and `IDisposable` lifecycle semantics without Unity or FMOD dependencies.
+- On 2026-08-01, the open Unity Editor discovered 14 focused contract test cases and passed the complete `Loom.Tests.EditMode` assembly: 16 passed, 0 failed, 0 skipped, including the two existing assembly-boundary tests.
+- `Note.FrequencyHz` implements twelve-tone equal-temperament conversion as `440 * 2^((midi - 69) / 12)` in `double`, without adding mutable state to `Note`.
+- Focused tests cover A0, A3, A4, middle C, MIDI endpoints 0 and 127, strict monotonicity across the complete MIDI range, and the 2:1 frequency ratio for every twelve-semitone interval.
+- On 2026-08-01, `NoteContractTests` passed 18/18 cases and the complete `Loom.Tests.EditMode` assembly passed 24/24 tests after the final formatting pass.
 
 ## M2 — Deterministic Transport and Step Sequencer
 
@@ -277,3 +290,7 @@ Before ending a task that changed LOOM:
 - Created the full LOOM folder and assembly scaffold with explicit one-way dependencies.
 - Added assembly-boundary and availability smoke tests; all two EditMode tests and one PlayMode test passed in the open Unity Editor.
 - Completed M0 and advanced the current milestone to M1.
+- Added immutable Core contracts for resolved MIDI notes, logical tick-based note events, stable voice handles, and disposable instrument ownership.
+- Added focused Note and instrument contract tests; the complete EditMode assembly passed 16/16 tests in the open Unity Editor.
+- Added double-precision MIDI-note-to-frequency conversion using A4 = 440 Hz and verified reference notes, endpoints, monotonicity, and octave ratios across the full MIDI range.
+- Re-ran the complete EditMode assembly after the conversion change; all 24 tests passed.
