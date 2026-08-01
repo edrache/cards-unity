@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.6
+**Plan version:** 1.7
 **Last updated:** 2026-08-01  
 **Current milestone:** M1 — Playable polyphonic synth playground
 **Current status:** READY
-**Next action:** Add verified per-voice waveform, gain, octave, low-pass cutoff, and resonance controls to the single-voice FMOD graph, with focused DSP-parameter tests and no polyphony or Studio-bus routing yet.
+**Next action:** Add fixed-size eight-voice polyphony behind the Core `IInstrument` contract, with stable `VoiceHandle` ownership, deterministic oldest-voice stealing, exact note-off targeting, and resource-cleanup tests; keep default Core routing until the dedicated `MUS_Synth` item.
 
 ## Purpose
 
@@ -67,8 +67,9 @@ The first product is an engine playground. It must let a developer play notes an
 | Pitch-to-frequency conversion | `Note.FrequencyHz` returns `double` using twelve-tone equal temperament and A4 = MIDI 69 = 440 Hz; conversion to FMOD `float` occurs explicitly at the adapter boundary |
 | Logical note event | `NoteEvent` stores a playable velocity from 1 through 127 and a non-overflowing `[StartTick, EndTick)` interval in `long` ticks |
 | Voice ownership | `IInstrument.NoteOn` returns a non-zero stable `VoiceHandle`; `NoteOff` consumes that exact handle, `AllNotesOff` invalidates outstanding handles, and the instrument owns disposable resources |
-| Initial oscillator voice | `FmodOscillatorVoice` owns one sine `DSP_TYPE.OSCILLATOR`, starts its channel paused before applying gain, checks every `FMOD.RESULT`, and stops the channel before releasing the DSP; routing remains on the default Core output until the dedicated `MUS_Synth` work item |
+| Initial oscillator voice | `FmodOscillatorVoice` owns one configurable `DSP_TYPE.OSCILLATOR` plus one `DSP_TYPE.MULTIBAND_EQ` low-pass, starts its channel paused before applying gain and filter, checks every `FMOD.RESULT`, and stops the channel before releasing both DSPs; routing remains on the default Core output until the dedicated `MUS_Synth` work item |
 | Initial ADSR envelope | `FmodAdsrEnvelope` stores validated seconds and a normalized sustain level, resolves durations against FMOD's runtime sample rate, and schedules linear `addFadePoint` segments in the parent ChannelGroup clock domain; voice start and note-off use a one-buffer scheduling lead, release begins continuously from the calculated future envelope level, and `setDelay` stops the channel at release end |
+| Initial synth controls | FMOD oscillator waveform values map explicitly to sine, square, saw up, saw down, triangle, and noise. Octave is an integer from -4 through +4 and must keep the resolved oscillator rate within FMOD's 1–22000 Hz range; gain is 0–1. The resonant low-pass uses supported Multiband EQ band A at 24 dB/octave, with cutoff 20–22000 Hz and Q 0.1–10, instead of deprecated `DSP_TYPE.LOWPASS` |
 
 ## Target Assemblies and Ownership
 
@@ -140,7 +141,7 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Implement MIDI-note-to-frequency conversion with tests.
 - [x] `DONE` Implement one FMOD oscillator voice with explicit lifecycle and result checking.
 - [x] `DONE` Add ADSR amplitude control using DSP-clock-aligned fade points or an equivalent verified FMOD graph.
-- [ ] `NOT STARTED` Add waveform selection, gain, octave, cutoff, and resonance controls supported by the initial graph.
+- [x] `DONE` Add waveform selection, gain, octave, cutoff, and resonance controls supported by the initial graph.
 - [ ] `NOT STARTED` Add fixed-size polyphony and deterministic voice stealing.
 - [ ] `NOT STARTED` Route every voice through `bus:/MUS_Synth`.
 - [ ] `NOT STARTED` Add computer-keyboard note input.
@@ -165,7 +166,7 @@ The first product is an engine playground. It must let a developer play notes an
 - `Note.FrequencyHz` implements twelve-tone equal-temperament conversion as `440 * 2^((midi - 69) / 12)` in `double`, without adding mutable state to `Note`.
 - Focused tests cover A0, A3, A4, middle C, MIDI endpoints 0 and 127, strict monotonicity across the complete MIDI range, and the 2:1 frequency ratio for every twelve-semitone interval.
 - On 2026-08-01, `NoteContractTests` passed 18/18 cases and the complete `Loom.Tests.EditMode` assembly passed 24/24 tests after the final formatting pass.
-- `FmodOscillatorVoice` creates a built-in sine oscillator DSP, converts the Core frequency to FMOD `float`, starts the channel paused, applies normalized gain before unpausing, and exposes explicit `Start`, `Stop`, `Release`, and idempotent `Dispose` behavior.
+- `FmodOscillatorVoice` creates a built-in oscillator DSP with sine as its default waveform, converts the Core frequency to FMOD `float`, starts the channel paused, applies normalized gain before unpausing, and exposes explicit `Start`, `Stop`, `Release`, and idempotent `Dispose` behavior.
 - `FmodOperationException` preserves the failed operation, `FMOD.RESULT`, and native FMOD error text; construction/start cleanup failures surface both the primary and cleanup errors instead of ignoring a result.
 - Five focused EditMode cases verify invalid-system rejection, gain validation, and contextual error reporting; the complete `Loom.Tests.EditMode` assembly passed 29/29 tests on 2026-08-01.
 - The PlayMode oscillator test intentionally played an A4 sine at 440 Hz for 0.5 seconds, observed an active FMOD channel, stopped it, released the DSP, and repeated `Release` safely. The complete PlayMode assembly passed 2/2 tests with no FMOD errors or warnings after the final run.
@@ -174,6 +175,10 @@ The first product is an engine playground. It must let a developer play notes an
 - `FmodOscillatorVoice.Start` schedules the attack, decay, and sustain fade points one DSP buffer ahead in the parent ChannelGroup clock domain. `BeginRelease` removes only future points, inserts the mathematically continuous release-start level, fades to zero over the configured release frames, and schedules the channel to stop at the release endpoint.
 - Five focused ADSR EditMode tests passed, covering validation, runtime-rate frame conversion, positive sub-sample clamping, ADS level calculation, and the continuous zero-decay case. The complete `Loom.Tests.EditMode` assembly passed 35/35 tests on 2026-08-01.
 - The PlayMode ADSR test released a live A4 oscillator during attack, verified the scheduled release-start level and exact release-frame interval, observed automatic channel completion, and safely released the DSP. The complete PlayMode assembly passed 2/2 tests with no FMOD errors or warnings on 2026-08-01.
+- `FmodOscillatorSettings` validates all six documented FMOD oscillator waveforms, normalized gain, a practical -4 through +4 octave range, the resulting FMOD oscillator frequency, Multiband EQ cutoff, and resonance Q before native calls are made.
+- The single-voice graph now owns a supported `MULTIBAND_EQ` DSP configured as band-A `LOWPASS_24DB`; the deprecated `LOWPASS` and `LOWPASS_SIMPLE` DSP types are not used. Live setters update waveform, gain, octave-derived oscillator rate, cutoff, and resonance only after the corresponding checked FMOD operation succeeds.
+- Eleven new EditMode cases cover waveform-native-value mapping, defaults, null settings, invalid control values, octave resolution, and FMOD frequency limits. The complete `Loom.Tests.EditMode` assembly passed 46/46 tests on 2026-08-01.
+- The PlayMode synth-control test created Saw Up at +1 octave with a 12 kHz/Q 1.5 filter, then changed the active voice to Square at -1 octave, gain 0.03, cutoff 2.4 kHz, and Q 3.0 before completing ADSR release. The complete PlayMode assembly passed 2/2 tests with no FMOD errors or warnings, and both owned DSP handles released cleanly.
 
 ## M2 — Deterministic Transport and Step Sequencer
 
@@ -309,3 +314,5 @@ Before ending a task that changed LOOM:
 - Added focused EditMode and PlayMode verification; final suites passed 29/29 EditMode and 2/2 PlayMode, including a 0.5-second 440 Hz output and clean repeated release.
 - Added a runtime-sample-rate ADSR model and DSP-clock-aligned amplitude scheduling to the oscillator voice, including continuous release from attack/decay/sustain and sample-accurate scheduled stop.
 - Verified the ADSR work with five focused EditMode tests, the complete 35/35 EditMode suite, and the complete 2/2 PlayMode suite; the runtime release test produced no FMOD errors or warnings.
+- Added validated live waveform, gain, octave, cutoff, and resonance controls to the single oscillator voice, using FMOD's supported Multiband EQ low-pass replacement and explicit ownership of both DSP handles.
+- Verified the synth controls with eleven new EditMode cases, the complete 46/46 EditMode suite, and the complete 2/2 PlayMode suite; active parameter changes and final cleanup produced no FMOD errors or warnings.

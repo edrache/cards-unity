@@ -24,6 +24,17 @@ namespace Loom.Tests.EditMode
                     null));
         }
 
+        [Test]
+        public void ConstructorRejectsNullOscillatorSettingsBeforeCallingFmod()
+        {
+            Assert.Throws<ArgumentNullException>(
+                () => new Fmod.FmodOscillatorVoice(
+                    default,
+                    new Core.Note(Core.Note.ConcertAMidiNumber),
+                    Fmod.FmodAdsrEnvelope.Default,
+                    (Fmod.FmodOscillatorSettings)null));
+        }
+
         [TestCase(-0.01f)]
         [TestCase(1.01f)]
         public void ConstructorRejectsGainOutsideNormalizedRange(float gain)
@@ -130,6 +141,82 @@ namespace Loom.Tests.EditMode
 
             Assert.That(samples.GetAttackDecaySustainLevel(2400UL), Is.EqualTo(0.375f).Within(0.0001f));
             Assert.That(samples.GetAttackDecaySustainLevel(4800UL), Is.EqualTo(0.75f));
+        }
+
+        [TestCase(Fmod.FmodOscillatorWaveform.Sine, 0)]
+        [TestCase(Fmod.FmodOscillatorWaveform.Square, 1)]
+        [TestCase(Fmod.FmodOscillatorWaveform.SawUp, 2)]
+        [TestCase(Fmod.FmodOscillatorWaveform.SawDown, 3)]
+        [TestCase(Fmod.FmodOscillatorWaveform.Triangle, 4)]
+        [TestCase(Fmod.FmodOscillatorWaveform.Noise, 5)]
+        public void WaveformValuesMatchTheFmodOscillatorContract(
+            Fmod.FmodOscillatorWaveform waveform,
+            int nativeValue)
+        {
+            Assert.That((int)waveform, Is.EqualTo(nativeValue));
+        }
+
+        [Test]
+        public void OscillatorSettingsExposeSafeDefaults()
+        {
+            Fmod.FmodOscillatorSettings settings = Fmod.FmodOscillatorSettings.Default;
+
+            Assert.That(settings.Waveform, Is.EqualTo(Fmod.FmodOscillatorWaveform.Sine));
+            Assert.That(settings.Gain, Is.EqualTo(0.1f));
+            Assert.That(settings.Octave, Is.Zero);
+            Assert.That(settings.CutoffHz, Is.EqualTo(22000f));
+            Assert.That(settings.Resonance, Is.EqualTo(0.707f));
+        }
+
+        [Test]
+        public void OscillatorSettingsRejectUnsupportedControlValues()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new Fmod.FmodOscillatorSettings(
+                    waveform: (Fmod.FmodOscillatorWaveform)(-1)));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new Fmod.FmodOscillatorSettings(
+                    waveform: (Fmod.FmodOscillatorWaveform)6));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new Fmod.FmodOscillatorSettings(gain: float.NaN));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new Fmod.FmodOscillatorSettings(octave: -5));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new Fmod.FmodOscillatorSettings(octave: 5));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new Fmod.FmodOscillatorSettings(cutoffHz: 19.9f));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new Fmod.FmodOscillatorSettings(cutoffHz: float.PositiveInfinity));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new Fmod.FmodOscillatorSettings(resonance: 0.09f));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new Fmod.FmodOscillatorSettings(resonance: 10.01f));
+        }
+
+        [Test]
+        public void OscillatorSettingsResolveOctaveTranspositionWithinFmodRange()
+        {
+            var note = new Core.Note(Core.Note.ConcertAMidiNumber);
+
+            Assert.That(
+                Fmod.FmodOscillatorSettings.ResolveFrequencyHz(note, -2),
+                Is.EqualTo(110f).Within(0.0001f));
+            Assert.That(
+                Fmod.FmodOscillatorSettings.ResolveFrequencyHz(note, 4),
+                Is.EqualTo(7040f).Within(0.0001f));
+        }
+
+        [Test]
+        public void OscillatorSettingsRejectTranspositionOutsideFmodFrequencyRange()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => Fmod.FmodOscillatorSettings.ResolveFrequencyHz(
+                    new Core.Note(Core.Note.MinMidiNumber),
+                    -4));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => Fmod.FmodOscillatorSettings.ResolveFrequencyHz(
+                    new Core.Note(Core.Note.MaxMidiNumber),
+                    1));
         }
     }
 }

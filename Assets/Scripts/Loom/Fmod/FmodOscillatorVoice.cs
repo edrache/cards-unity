@@ -1,15 +1,15 @@
 using System;
+using System.Collections.Generic;
 using Loom.Core;
 
 namespace Loom.Fmod
 {
     public sealed class FmodOscillatorVoice : IDisposable
     {
-        private const int SineWaveform = 0;
-
         private readonly FMOD.System coreSystem;
         private readonly FmodAdsrEnvelopeSamples envelopeSamples;
         private FMOD.DSP oscillator;
+        private FMOD.DSP lowPassFilter;
         private FMOD.Channel channel;
         private FMOD.ChannelGroup parentChannelGroup;
         private uint dspBufferLength;
@@ -21,7 +21,11 @@ namespace Loom.Fmod
         private bool isReleased;
 
         public FmodOscillatorVoice(FMOD.System coreSystem, Note note, float gain = 0.1f)
-            : this(coreSystem, note, FmodAdsrEnvelope.Default, gain)
+            : this(
+                coreSystem,
+                note,
+                FmodAdsrEnvelope.Default,
+                new FmodOscillatorSettings(gain: gain))
         {
         }
 
@@ -30,13 +34,29 @@ namespace Loom.Fmod
             Note note,
             FmodAdsrEnvelope envelope,
             float gain = 0.1f)
+            : this(
+                coreSystem,
+                note,
+                envelope,
+                new FmodOscillatorSettings(gain: gain))
+        {
+        }
+
+        public FmodOscillatorVoice(
+            FMOD.System coreSystem,
+            Note note,
+            FmodAdsrEnvelope envelope,
+            FmodOscillatorSettings settings)
         {
             if (envelope == null)
             {
                 throw new ArgumentNullException(nameof(envelope));
             }
 
-            ValidateGain(gain);
+            if (settings == null)
+            {
+                throw new ArgumentNullException(nameof(settings));
+            }
 
             if (!coreSystem.hasHandle())
             {
@@ -47,8 +67,13 @@ namespace Loom.Fmod
 
             this.coreSystem = coreSystem;
             Note = note;
-            Gain = gain;
             Envelope = envelope;
+            Waveform = settings.Waveform;
+            Gain = settings.Gain;
+            Octave = settings.Octave;
+            FrequencyHz = settings.ResolveFrequencyHz(Note);
+            CutoffHz = settings.CutoffHz;
+            Resonance = settings.Resonance;
 
             FmodResult.Ensure(
                 coreSystem.getSoftwareFormat(
@@ -60,12 +85,22 @@ namespace Loom.Fmod
             SampleRate = sampleRate;
             envelopeSamples = Envelope.ResolveSampleFrames(SampleRate);
 
-            CreateOscillator();
+            CreateDspGraph();
         }
 
         public Note Note { get; }
 
-        public float Gain { get; }
+        public FmodOscillatorWaveform Waveform { get; private set; }
+
+        public float Gain { get; private set; }
+
+        public int Octave { get; private set; }
+
+        public float FrequencyHz { get; private set; }
+
+        public float CutoffHz { get; private set; }
+
+        public float Resonance { get; private set; }
 
         public FmodAdsrEnvelope Envelope { get; }
 
@@ -73,7 +108,11 @@ namespace Loom.Fmod
 
         public FmodAdsrEnvelopeSamples EnvelopeSamples => envelopeSamples;
 
-        public bool IsCreated => oscillator.hasHandle();
+        public bool IsCreated => oscillator.hasHandle() && lowPassFilter.hasHandle();
+
+        public bool IsOscillatorCreated => oscillator.hasHandle();
+
+        public bool IsFilterCreated => lowPassFilter.hasHandle();
 
         public bool IsStarted
         {
@@ -162,6 +201,65 @@ namespace Loom.Fmod
             }
         }
 
+        public void SetWaveform(FmodOscillatorWaveform waveform)
+        {
+            ThrowIfReleased();
+            FmodOscillatorSettings.ValidateWaveform(waveform);
+
+            SetOscillatorWaveform(waveform);
+            Waveform = waveform;
+        }
+
+        public void SetGain(float gain)
+        {
+            ThrowIfReleased();
+            FmodOscillatorSettings.ValidateGain(gain);
+            SynchronizeScheduledStop();
+
+            if (channel.hasHandle())
+            {
+                FmodResult.Ensure(
+                    channel.setVolume(gain),
+                    "FMOD.Channel.setVolume(gain control)");
+            }
+
+            Gain = gain;
+        }
+
+        public void SetOctave(int octave)
+        {
+            ThrowIfReleased();
+            float frequencyHz = FmodOscillatorSettings.ResolveFrequencyHz(Note, octave);
+
+            SetOscillatorFrequency(frequencyHz);
+            Octave = octave;
+            FrequencyHz = frequencyHz;
+        }
+
+        public void SetCutoffHz(float cutoffHz)
+        {
+            ThrowIfReleased();
+            FmodOscillatorSettings.ValidateCutoffHz(cutoffHz);
+
+            SetFilterParameter(
+                FMOD.DSP_MULTIBAND_EQ.A_FREQUENCY,
+                cutoffHz,
+                "FMOD.DSP.setParameterFloat(MULTIBAND_EQ.A_FREQUENCY)");
+            CutoffHz = cutoffHz;
+        }
+
+        public void SetResonance(float resonance)
+        {
+            ThrowIfReleased();
+            FmodOscillatorSettings.ValidateResonance(resonance);
+
+            SetFilterParameter(
+                FMOD.DSP_MULTIBAND_EQ.A_Q,
+                resonance,
+                "FMOD.DSP.setParameterFloat(MULTIBAND_EQ.A_Q)");
+            Resonance = resonance;
+        }
+
         public void Start()
         {
             ThrowIfReleased();
@@ -183,6 +281,10 @@ namespace Loom.Fmod
                 FmodResult.Ensure(
                     channel.setVolume(Gain),
                     "FMOD.Channel.setVolume");
+
+                FmodResult.Ensure(
+                    channel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.HEAD, lowPassFilter),
+                    "FMOD.Channel.addDSP(MULTIBAND_EQ low-pass)");
 
                 FmodResult.Ensure(
                     channel.getChannelGroup(out parentChannelGroup),
@@ -300,15 +402,32 @@ namespace Loom.Fmod
                 return;
             }
 
-            Stop();
+            var failures = new List<Exception>();
 
-            if (oscillator.hasHandle())
+            try
             {
-                FmodResult.Ensure(
-                    oscillator.release(),
-                    "FMOD.DSP.release(OSCILLATOR)");
+                Stop();
+            }
+            catch (Exception stopException)
+            {
+                failures.Add(stopException);
+            }
 
-                oscillator.clearHandle();
+            AddFailureIfPresent(
+                failures,
+                TryReleaseDsp(ref lowPassFilter, "FMOD.DSP.release(MULTIBAND_EQ)"));
+            AddFailureIfPresent(
+                failures,
+                TryReleaseDsp(ref oscillator, "FMOD.DSP.release(OSCILLATOR)"));
+
+            if (failures.Count == 1)
+            {
+                throw failures[0];
+            }
+
+            if (failures.Count > 1)
+            {
+                throw new AggregateException(failures);
             }
 
             isReleased = true;
@@ -319,44 +438,87 @@ namespace Loom.Fmod
             Release();
         }
 
-        private static void ValidateGain(float gain)
+        private void CreateDspGraph()
         {
-            if (float.IsNaN(gain) || float.IsInfinity(gain) || gain < 0f || gain > 1f)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(gain),
-                    gain,
-                    "Gain must be a finite value between 0 and 1.");
-            }
-        }
-
-        private void CreateOscillator()
-        {
-            FmodResult.Ensure(
-                coreSystem.createDSPByType(FMOD.DSP_TYPE.OSCILLATOR, out oscillator),
-                "FMOD.System.createDSPByType(OSCILLATOR)");
-
             try
             {
                 FmodResult.Ensure(
-                    oscillator.setParameterInt((int)FMOD.DSP_OSCILLATOR.TYPE, SineWaveform),
-                    "FMOD.DSP.setParameterInt(OSCILLATOR.TYPE)");
+                    coreSystem.createDSPByType(FMOD.DSP_TYPE.OSCILLATOR, out oscillator),
+                    "FMOD.System.createDSPByType(OSCILLATOR)");
 
-                float frequencyHz = (float)Note.FrequencyHz;
+                SetOscillatorWaveform(Waveform);
+                SetOscillatorFrequency(FrequencyHz);
+
                 FmodResult.Ensure(
-                    oscillator.setParameterFloat((int)FMOD.DSP_OSCILLATOR.RATE, frequencyHz),
-                    "FMOD.DSP.setParameterFloat(OSCILLATOR.RATE)");
+                    coreSystem.createDSPByType(
+                        FMOD.DSP_TYPE.MULTIBAND_EQ,
+                        out lowPassFilter),
+                    "FMOD.System.createDSPByType(MULTIBAND_EQ)");
+
+                FmodResult.Ensure(
+                    lowPassFilter.setParameterInt(
+                        (int)FMOD.DSP_MULTIBAND_EQ.A_FILTER,
+                        (int)FMOD.DSP_MULTIBAND_EQ_FILTER_TYPE.LOWPASS_24DB),
+                    "FMOD.DSP.setParameterInt(MULTIBAND_EQ.A_FILTER=LOWPASS_24DB)");
+
+                SetFilterParameter(
+                    FMOD.DSP_MULTIBAND_EQ.A_FREQUENCY,
+                    CutoffHz,
+                    "FMOD.DSP.setParameterFloat(MULTIBAND_EQ.A_FREQUENCY)");
+                SetFilterParameter(
+                    FMOD.DSP_MULTIBAND_EQ.A_Q,
+                    Resonance,
+                    "FMOD.DSP.setParameterFloat(MULTIBAND_EQ.A_Q)");
             }
             catch (Exception creationException)
             {
-                Exception cleanupException = TryReleaseOscillatorAfterFailure();
-                if (cleanupException != null)
+                var failures = new List<Exception> { creationException };
+                AddFailureIfPresent(
+                    failures,
+                    TryReleaseDsp(
+                        ref lowPassFilter,
+                        "FMOD.DSP.release(MULTIBAND_EQ) after graph creation failure"));
+                AddFailureIfPresent(
+                    failures,
+                    TryReleaseDsp(
+                        ref oscillator,
+                        "FMOD.DSP.release(OSCILLATOR) after graph creation failure"));
+
+                if (failures.Count > 1)
                 {
-                    throw new AggregateException(creationException, cleanupException);
+                    throw new AggregateException(failures);
                 }
 
                 throw;
             }
+        }
+
+        private void SetOscillatorWaveform(FmodOscillatorWaveform waveform)
+        {
+            FmodResult.Ensure(
+                oscillator.setParameterInt(
+                    (int)FMOD.DSP_OSCILLATOR.TYPE,
+                    (int)waveform),
+                "FMOD.DSP.setParameterInt(OSCILLATOR.TYPE)");
+        }
+
+        private void SetOscillatorFrequency(float frequencyHz)
+        {
+            FmodResult.Ensure(
+                oscillator.setParameterFloat(
+                    (int)FMOD.DSP_OSCILLATOR.RATE,
+                    frequencyHz),
+                "FMOD.DSP.setParameterFloat(OSCILLATOR.RATE)");
+        }
+
+        private void SetFilterParameter(
+            FMOD.DSP_MULTIBAND_EQ parameter,
+            float value,
+            string operation)
+        {
+            FmodResult.Ensure(
+                lowPassFilter.setParameterFloat((int)parameter, value),
+                operation);
         }
 
         private void ScheduleAttackDecaySustain()
@@ -447,23 +609,31 @@ namespace Loom.Fmod
             return null;
         }
 
-        private Exception TryReleaseOscillatorAfterFailure()
+        private static Exception TryReleaseDsp(ref FMOD.DSP dsp, string operation)
         {
-            if (!oscillator.hasHandle())
+            if (!dsp.hasHandle())
             {
                 return null;
             }
 
-            FMOD.RESULT result = oscillator.release();
+            FMOD.RESULT result = dsp.release();
             if (result != FMOD.RESULT.OK)
             {
-                return new FmodOperationException(
-                    "FMOD.DSP.release after failed oscillator creation",
-                    result);
+                return new FmodOperationException(operation, result);
             }
 
-            oscillator.clearHandle();
+            dsp.clearHandle();
             return null;
+        }
+
+        private static void AddFailureIfPresent(
+            ICollection<Exception> failures,
+            Exception failure)
+        {
+            if (failure != null)
+            {
+                failures.Add(failure);
+            }
         }
 
         private void ThrowIfReleased()

@@ -9,7 +9,7 @@ namespace Loom.Tests.PlayMode
     public sealed class FmodOscillatorVoicePlayModeTests
     {
         [UnityTest]
-        public IEnumerator VoiceRunsAdsrAndStopsAtTheScheduledReleaseEnd()
+        public IEnumerator VoiceRunsAdsrAndAppliesLiveSynthControls()
         {
             var listenerObject = new GameObject("LOOM FMOD Test Listener")
             {
@@ -25,10 +25,21 @@ namespace Loom.Tests.PlayMode
                     RuntimeManager.CoreSystem,
                     new Core.Note(Core.Note.ConcertAMidiNumber),
                     new Fmod.FmodAdsrEnvelope(0.08d, 0.06d, 0.4f, 0.1d),
-                    0.05f);
+                    new Fmod.FmodOscillatorSettings(
+                        Fmod.FmodOscillatorWaveform.SawUp,
+                        gain: 0.05f,
+                        octave: 1,
+                        cutoffHz: 12000f,
+                        resonance: 1.5f));
 
                 Assert.That(voice.IsCreated, Is.True);
+                Assert.That(voice.IsOscillatorCreated, Is.True);
+                Assert.That(voice.IsFilterCreated, Is.True);
                 Assert.That(voice.IsStarted, Is.False);
+                Assert.That(voice.Waveform, Is.EqualTo(Fmod.FmodOscillatorWaveform.SawUp));
+                Assert.That(voice.FrequencyHz, Is.EqualTo(880f).Within(0.0001f));
+                Assert.That(voice.CutoffHz, Is.EqualTo(12000f));
+                Assert.That(voice.Resonance, Is.EqualTo(1.5f));
 
                 voice.Start();
 
@@ -39,6 +50,20 @@ namespace Loom.Tests.PlayMode
                 yield return new WaitForSecondsRealtime(0.05f);
                 Assert.That(voice.IsPlaying, Is.True);
                 Assert.That(voice.CurrentEnvelopeLevel, Is.GreaterThan(0f));
+
+                voice.SetWaveform(Fmod.FmodOscillatorWaveform.Square);
+                voice.SetGain(0.03f);
+                voice.SetOctave(-1);
+                voice.SetCutoffHz(2400f);
+                voice.SetResonance(3f);
+
+                Assert.That(voice.Waveform, Is.EqualTo(Fmod.FmodOscillatorWaveform.Square));
+                Assert.That(voice.Gain, Is.EqualTo(0.03f));
+                Assert.That(voice.Octave, Is.EqualTo(-1));
+                Assert.That(voice.FrequencyHz, Is.EqualTo(220f).Within(0.0001f));
+                Assert.That(voice.CutoffHz, Is.EqualTo(2400f));
+                Assert.That(voice.Resonance, Is.EqualTo(3f));
+                Assert.That(voice.IsPlaying, Is.True);
 
                 voice.BeginRelease();
 
@@ -66,6 +91,8 @@ namespace Loom.Tests.PlayMode
                 voice.Release();
 
                 Assert.That(voice.IsCreated, Is.False);
+                Assert.That(voice.IsOscillatorCreated, Is.False);
+                Assert.That(voice.IsFilterCreated, Is.False);
                 Assert.That(voice.IsStarted, Is.False);
 
                 voice.Release();
