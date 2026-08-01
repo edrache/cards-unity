@@ -48,3 +48,21 @@ Desktop.ini
 
 # Crashlytics
 crashlytics-build.properties
+
+# FMOD for Unity
+# Never ignore native libraries shipped with the FMOD integration.
+!/[Aa]ssets/Plugins/FMOD/**/lib/*
+
+# Keep editor images and gizmos used by FMOD.
+!/[Aa]ssets/Gizmos/FMOD/*
+!/[Aa]ssets/Editor Default Resources/FMOD/*
+
+# Ignore locally generated FMOD cache files.
+/[Aa]ssets/Plugins/FMOD/Cache/*
+
+# Ignore generated FMOD banks in StreamingAssets.
+/[Aa]ssets/StreamingAssets/**/*.bank
+/[Aa]ssets/StreamingAssets/**/*.bank.meta
+
+# Ignore FMOD editor logs.
+fmod_editor.log
