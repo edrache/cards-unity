@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.5
+**Plan version:** 1.6
 **Last updated:** 2026-08-01  
 **Current milestone:** M1 — Playable polyphonic synth playground
 **Current status:** READY
-**Next action:** Add ADSR amplitude control to `FmodOscillatorVoice` using DSP-clock-aligned fade points or an equivalent verified FMOD graph; verify attack, decay, sustain, release, and click-free note-off without adding polyphony yet.
+**Next action:** Add verified per-voice waveform, gain, octave, low-pass cutoff, and resonance controls to the single-voice FMOD graph, with focused DSP-parameter tests and no polyphony or Studio-bus routing yet.
 
 ## Purpose
 
@@ -68,6 +68,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Logical note event | `NoteEvent` stores a playable velocity from 1 through 127 and a non-overflowing `[StartTick, EndTick)` interval in `long` ticks |
 | Voice ownership | `IInstrument.NoteOn` returns a non-zero stable `VoiceHandle`; `NoteOff` consumes that exact handle, `AllNotesOff` invalidates outstanding handles, and the instrument owns disposable resources |
 | Initial oscillator voice | `FmodOscillatorVoice` owns one sine `DSP_TYPE.OSCILLATOR`, starts its channel paused before applying gain, checks every `FMOD.RESULT`, and stops the channel before releasing the DSP; routing remains on the default Core output until the dedicated `MUS_Synth` work item |
+| Initial ADSR envelope | `FmodAdsrEnvelope` stores validated seconds and a normalized sustain level, resolves durations against FMOD's runtime sample rate, and schedules linear `addFadePoint` segments in the parent ChannelGroup clock domain; voice start and note-off use a one-buffer scheduling lead, release begins continuously from the calculated future envelope level, and `setDelay` stops the channel at release end |
 
 ## Target Assemblies and Ownership
 
@@ -138,7 +139,7 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Define `Note`, `NoteEvent`, `VoiceHandle`, and `IInstrument` contracts in Core.
 - [x] `DONE` Implement MIDI-note-to-frequency conversion with tests.
 - [x] `DONE` Implement one FMOD oscillator voice with explicit lifecycle and result checking.
-- [ ] `NOT STARTED` Add ADSR amplitude control using DSP-clock-aligned fade points or an equivalent verified FMOD graph.
+- [x] `DONE` Add ADSR amplitude control using DSP-clock-aligned fade points or an equivalent verified FMOD graph.
 - [ ] `NOT STARTED` Add waveform selection, gain, octave, cutoff, and resonance controls supported by the initial graph.
 - [ ] `NOT STARTED` Add fixed-size polyphony and deterministic voice stealing.
 - [ ] `NOT STARTED` Route every voice through `bus:/MUS_Synth`.
@@ -169,6 +170,10 @@ The first product is an engine playground. It must let a developer play notes an
 - Five focused EditMode cases verify invalid-system rejection, gain validation, and contextual error reporting; the complete `Loom.Tests.EditMode` assembly passed 29/29 tests on 2026-08-01.
 - The PlayMode oscillator test intentionally played an A4 sine at 440 Hz for 0.5 seconds, observed an active FMOD channel, stopped it, released the DSP, and repeated `Release` safely. The complete PlayMode assembly passed 2/2 tests with no FMOD errors or warnings after the final run.
 - The PlayMode test creates a temporary non-persistent `StudioListener`; the production demo scene remains unchanged in this work item.
+- `FmodAdsrEnvelope` validates attack, decay, sustain, and release; converts seconds to integer sample frames using the runtime FMOD sample rate; and exposes deterministic attack/decay/sustain level evaluation for scheduling and verification.
+- `FmodOscillatorVoice.Start` schedules the attack, decay, and sustain fade points one DSP buffer ahead in the parent ChannelGroup clock domain. `BeginRelease` removes only future points, inserts the mathematically continuous release-start level, fades to zero over the configured release frames, and schedules the channel to stop at the release endpoint.
+- Five focused ADSR EditMode tests passed, covering validation, runtime-rate frame conversion, positive sub-sample clamping, ADS level calculation, and the continuous zero-decay case. The complete `Loom.Tests.EditMode` assembly passed 35/35 tests on 2026-08-01.
+- The PlayMode ADSR test released a live A4 oscillator during attack, verified the scheduled release-start level and exact release-frame interval, observed automatic channel completion, and safely released the DSP. The complete PlayMode assembly passed 2/2 tests with no FMOD errors or warnings on 2026-08-01.
 
 ## M2 — Deterministic Transport and Step Sequencer
 
@@ -302,3 +307,5 @@ Before ending a task that changed LOOM:
 - Re-ran the complete EditMode assembly after the conversion change; all 24 tests passed.
 - Added the first immediately playable FMOD Core sine-oscillator voice with explicit channel/DSP ownership, contextual result checking, bounded gain, and failure cleanup.
 - Added focused EditMode and PlayMode verification; final suites passed 29/29 EditMode and 2/2 PlayMode, including a 0.5-second 440 Hz output and clean repeated release.
+- Added a runtime-sample-rate ADSR model and DSP-clock-aligned amplitude scheduling to the oscillator voice, including continuous release from attack/decay/sustain and sample-accurate scheduled stop.
+- Verified the ADSR work with five focused EditMode tests, the complete 35/35 EditMode suite, and the complete 2/2 PlayMode suite; the runtime release test produced no FMOD errors or warnings.

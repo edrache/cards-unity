@@ -8,12 +8,34 @@ namespace Loom.Fmod
         private const int SineWaveform = 0;
 
         private readonly FMOD.System coreSystem;
+        private readonly FmodAdsrEnvelopeSamples envelopeSamples;
         private FMOD.DSP oscillator;
         private FMOD.Channel channel;
+        private FMOD.ChannelGroup parentChannelGroup;
+        private uint dspBufferLength;
+        private ulong scheduledStartDspClock;
+        private ulong releaseStartDspClock;
+        private ulong releaseEndDspClock;
+        private float releaseStartLevel;
+        private bool isReleaseScheduled;
         private bool isReleased;
 
         public FmodOscillatorVoice(FMOD.System coreSystem, Note note, float gain = 0.1f)
+            : this(coreSystem, note, FmodAdsrEnvelope.Default, gain)
         {
+        }
+
+        public FmodOscillatorVoice(
+            FMOD.System coreSystem,
+            Note note,
+            FmodAdsrEnvelope envelope,
+            float gain = 0.1f)
+        {
+            if (envelope == null)
+            {
+                throw new ArgumentNullException(nameof(envelope));
+            }
+
             ValidateGain(gain);
 
             if (!coreSystem.hasHandle())
@@ -26,6 +48,17 @@ namespace Loom.Fmod
             this.coreSystem = coreSystem;
             Note = note;
             Gain = gain;
+            Envelope = envelope;
+
+            FmodResult.Ensure(
+                coreSystem.getSoftwareFormat(
+                    out int sampleRate,
+                    out _,
+                    out _),
+                "FMOD.System.getSoftwareFormat");
+
+            SampleRate = sampleRate;
+            envelopeSamples = Envelope.ResolveSampleFrames(SampleRate);
 
             CreateOscillator();
         }
@@ -34,15 +67,55 @@ namespace Loom.Fmod
 
         public float Gain { get; }
 
+        public FmodAdsrEnvelope Envelope { get; }
+
+        public int SampleRate { get; }
+
+        public FmodAdsrEnvelopeSamples EnvelopeSamples => envelopeSamples;
+
         public bool IsCreated => oscillator.hasHandle();
 
-        public bool IsStarted => channel.hasHandle();
+        public bool IsStarted
+        {
+            get
+            {
+                SynchronizeScheduledStop();
+                return channel.hasHandle();
+            }
+        }
+
+        public bool IsReleasing
+        {
+            get
+            {
+                SynchronizeScheduledStop();
+                return isReleaseScheduled && channel.hasHandle();
+            }
+        }
+
+        public bool IsReleaseComplete
+        {
+            get
+            {
+                SynchronizeScheduledStop();
+                return isReleaseScheduled && !channel.hasHandle();
+            }
+        }
+
+        public ulong ScheduledStartDspClock => scheduledStartDspClock;
+
+        public ulong ReleaseStartDspClock => releaseStartDspClock;
+
+        public ulong ReleaseEndDspClock => releaseEndDspClock;
+
+        public float ReleaseStartLevel => releaseStartLevel;
 
         public bool IsPlaying
         {
             get
             {
-                if (!IsStarted)
+                SynchronizeScheduledStop();
+                if (!channel.hasHandle())
                 {
                     return false;
                 }
@@ -55,14 +128,51 @@ namespace Loom.Fmod
             }
         }
 
+        public float CurrentEnvelopeLevel
+        {
+            get
+            {
+                SynchronizeScheduledStop();
+                if (!channel.hasHandle())
+                {
+                    return 0f;
+                }
+
+                ulong currentDspClock = GetParentDspClock();
+                if (currentDspClock <= scheduledStartDspClock)
+                {
+                    return 0f;
+                }
+
+                if (!isReleaseScheduled || currentDspClock <= releaseStartDspClock)
+                {
+                    return envelopeSamples.GetAttackDecaySustainLevel(
+                        currentDspClock - scheduledStartDspClock);
+                }
+
+                if (currentDspClock >= releaseEndDspClock)
+                {
+                    return 0f;
+                }
+
+                double releaseProgress =
+                    (double)(currentDspClock - releaseStartDspClock) /
+                    envelopeSamples.ReleaseFrames;
+                return releaseStartLevel * (float)(1d - releaseProgress);
+            }
+        }
+
         public void Start()
         {
             ThrowIfReleased();
 
-            if (IsStarted)
+            SynchronizeScheduledStop();
+            if (channel.hasHandle())
             {
                 throw new InvalidOperationException("The oscillator voice is already started.");
             }
+
+            ResetPlaybackState();
 
             FmodResult.Ensure(
                 coreSystem.playDSP(oscillator, default, true, out channel),
@@ -73,6 +183,23 @@ namespace Loom.Fmod
                 FmodResult.Ensure(
                     channel.setVolume(Gain),
                     "FMOD.Channel.setVolume");
+
+                FmodResult.Ensure(
+                    channel.getChannelGroup(out parentChannelGroup),
+                    "FMOD.Channel.getChannelGroup");
+
+                FmodResult.Ensure(
+                    coreSystem.getDSPBufferSize(out dspBufferLength, out _),
+                    "FMOD.System.getDSPBufferSize");
+
+                ulong currentDspClock = GetParentDspClock();
+                scheduledStartDspClock = checked(currentDspClock + dspBufferLength);
+
+                FmodResult.Ensure(
+                    channel.setDelay(scheduledStartDspClock, 0UL, true),
+                    "FMOD.Channel.setDelay(ADSR start)");
+
+                ScheduleAttackDecaySustain();
 
                 FmodResult.Ensure(
                     channel.setPaused(false),
@@ -90,9 +217,70 @@ namespace Loom.Fmod
             }
         }
 
+        public void BeginRelease()
+        {
+            ThrowIfReleased();
+            SynchronizeScheduledStop();
+
+            if (!channel.hasHandle())
+            {
+                throw new InvalidOperationException(
+                    "The oscillator voice must be started before its envelope can be released.");
+            }
+
+            if (isReleaseScheduled)
+            {
+                return;
+            }
+
+            try
+            {
+                ulong currentDspClock = GetParentDspClock();
+                ulong earliestReleaseDspClock = checked(currentDspClock + dspBufferLength);
+                releaseStartDspClock = Math.Max(
+                    earliestReleaseDspClock,
+                    scheduledStartDspClock);
+                releaseStartLevel = envelopeSamples.GetAttackDecaySustainLevel(
+                    releaseStartDspClock - scheduledStartDspClock);
+                releaseEndDspClock = checked(
+                    releaseStartDspClock + envelopeSamples.ReleaseFrames);
+
+                FmodResult.Ensure(
+                    channel.removeFadePoints(releaseStartDspClock, ulong.MaxValue),
+                    "FMOD.Channel.removeFadePoints(ADSR release)");
+
+                AddFadePoint(
+                    releaseStartDspClock,
+                    releaseStartLevel,
+                    "ADSR release start");
+                AddFadePoint(releaseEndDspClock, 0f, "ADSR release end");
+
+                ulong preservedStartDspClock =
+                    currentDspClock < scheduledStartDspClock
+                        ? scheduledStartDspClock
+                        : 0UL;
+                FmodResult.Ensure(
+                    channel.setDelay(preservedStartDspClock, releaseEndDspClock, true),
+                    "FMOD.Channel.setDelay(ADSR release stop)");
+
+                isReleaseScheduled = true;
+            }
+            catch (Exception releaseException)
+            {
+                Exception cleanupException = TryStopChannelAfterFailure();
+                if (cleanupException != null)
+                {
+                    throw new AggregateException(releaseException, cleanupException);
+                }
+
+                throw;
+            }
+        }
+
         public void Stop()
         {
-            if (!IsStarted)
+            SynchronizeScheduledStop();
+            if (!channel.hasHandle())
             {
                 return;
             }
@@ -102,6 +290,7 @@ namespace Loom.Fmod
                 "FMOD.Channel.stop");
 
             channel.clearHandle();
+            parentChannelGroup.clearHandle();
         }
 
         public void Release()
@@ -170,6 +359,74 @@ namespace Loom.Fmod
             }
         }
 
+        private void ScheduleAttackDecaySustain()
+        {
+            ulong attackEndDspClock = checked(
+                scheduledStartDspClock + envelopeSamples.AttackFrames);
+
+            AddFadePoint(scheduledStartDspClock, 0f, "ADSR attack start");
+
+            if (envelopeSamples.DecayFrames == 0UL)
+            {
+                AddFadePoint(
+                    attackEndDspClock,
+                    envelopeSamples.SustainLevel,
+                    "ADSR attack end and sustain");
+                return;
+            }
+
+            AddFadePoint(attackEndDspClock, 1f, "ADSR attack end");
+
+            ulong decayEndDspClock = checked(
+                attackEndDspClock + envelopeSamples.DecayFrames);
+            AddFadePoint(
+                decayEndDspClock,
+                envelopeSamples.SustainLevel,
+                "ADSR decay end and sustain");
+        }
+
+        private void AddFadePoint(ulong dspClock, float level, string context)
+        {
+            FmodResult.Ensure(
+                channel.addFadePoint(dspClock, level),
+                $"FMOD.Channel.addFadePoint({context})");
+        }
+
+        private ulong GetParentDspClock()
+        {
+            FmodResult.Ensure(
+                parentChannelGroup.getDSPClock(out ulong dspClock, out _),
+                "FMOD.ChannelGroup.getDSPClock");
+            return dspClock;
+        }
+
+        private void SynchronizeScheduledStop()
+        {
+            if (!isReleaseScheduled || !channel.hasHandle())
+            {
+                return;
+            }
+
+            if (GetParentDspClock() < releaseEndDspClock)
+            {
+                return;
+            }
+
+            channel.clearHandle();
+            parentChannelGroup.clearHandle();
+        }
+
+        private void ResetPlaybackState()
+        {
+            parentChannelGroup.clearHandle();
+            dspBufferLength = 0U;
+            scheduledStartDspClock = 0UL;
+            releaseStartDspClock = 0UL;
+            releaseEndDspClock = 0UL;
+            releaseStartLevel = 0f;
+            isReleaseScheduled = false;
+        }
+
         private Exception TryStopChannelAfterFailure()
         {
             if (!channel.hasHandle())
@@ -186,6 +443,7 @@ namespace Loom.Fmod
             }
 
             channel.clearHandle();
+            parentChannelGroup.clearHandle();
             return null;
         }
 

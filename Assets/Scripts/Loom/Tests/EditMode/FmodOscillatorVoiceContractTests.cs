@@ -14,6 +14,16 @@ namespace Loom.Tests.EditMode
                     new Core.Note(Core.Note.ConcertAMidiNumber)));
         }
 
+        [Test]
+        public void ConstructorRejectsANullEnvelopeBeforeCallingFmod()
+        {
+            Assert.Throws<ArgumentNullException>(
+                () => new Fmod.FmodOscillatorVoice(
+                    default,
+                    new Core.Note(Core.Note.ConcertAMidiNumber),
+                    null));
+        }
+
         [TestCase(-0.01f)]
         [TestCase(1.01f)]
         public void ConstructorRejectsGainOutsideNormalizedRange(float gain)
@@ -52,6 +62,74 @@ namespace Loom.Tests.EditMode
             Assert.That(exception.Result, Is.EqualTo(FMOD.RESULT.ERR_INVALID_HANDLE));
             Assert.That(exception.Message, Does.Contain("FMOD test operation"));
             Assert.That(exception.Message, Does.Contain("ERR_INVALID_HANDLE"));
+        }
+
+        [Test]
+        public void AdsrEnvelopeRejectsInvalidDurationsAndLevels()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new Fmod.FmodAdsrEnvelope(0d, 0.1d, 0.5f, 0.2d));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new Fmod.FmodAdsrEnvelope(0.1d, -0.1d, 0.5f, 0.2d));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new Fmod.FmodAdsrEnvelope(0.1d, 0.1d, -0.01f, 0.2d));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new Fmod.FmodAdsrEnvelope(0.1d, 0.1d, 1.01f, 0.2d));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new Fmod.FmodAdsrEnvelope(0.1d, 0.1d, 0.5f, 0d));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new Fmod.FmodAdsrEnvelope(double.NaN, 0.1d, 0.5f, 0.2d));
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new Fmod.FmodAdsrEnvelope(0.1d, 0.1d, float.PositiveInfinity, 0.2d));
+        }
+
+        [Test]
+        public void AdsrEnvelopeResolvesDurationsUsingTheRuntimeSampleRate()
+        {
+            var envelope = new Fmod.FmodAdsrEnvelope(0.01d, 0.1d, 0.75f, 0.2d);
+
+            Fmod.FmodAdsrEnvelopeSamples samples = envelope.ResolveSampleFrames(48000);
+
+            Assert.That(samples.AttackFrames, Is.EqualTo(480UL));
+            Assert.That(samples.DecayFrames, Is.EqualTo(4800UL));
+            Assert.That(samples.SustainLevel, Is.EqualTo(0.75f));
+            Assert.That(samples.ReleaseFrames, Is.EqualTo(9600UL));
+        }
+
+        [Test]
+        public void AdsrEnvelopeKeepsPositiveSubSampleDurationsAtOneFrame()
+        {
+            var envelope = new Fmod.FmodAdsrEnvelope(0.000001d, 0d, 0.5f, 0.000001d);
+
+            Fmod.FmodAdsrEnvelopeSamples samples = envelope.ResolveSampleFrames(48000);
+
+            Assert.That(samples.AttackFrames, Is.EqualTo(1UL));
+            Assert.That(samples.DecayFrames, Is.Zero);
+            Assert.That(samples.ReleaseFrames, Is.EqualTo(1UL));
+        }
+
+        [Test]
+        public void AdsrEnvelopeCalculatesAttackDecayAndSustainLevels()
+        {
+            var envelope = new Fmod.FmodAdsrEnvelope(0.1d, 0.1d, 0.25f, 0.2d);
+            Fmod.FmodAdsrEnvelopeSamples samples = envelope.ResolveSampleFrames(48000);
+
+            Assert.That(samples.GetAttackDecaySustainLevel(0UL), Is.EqualTo(0f));
+            Assert.That(samples.GetAttackDecaySustainLevel(2400UL), Is.EqualTo(0.5f).Within(0.0001f));
+            Assert.That(samples.GetAttackDecaySustainLevel(4800UL), Is.EqualTo(1f));
+            Assert.That(samples.GetAttackDecaySustainLevel(7200UL), Is.EqualTo(0.625f).Within(0.0001f));
+            Assert.That(samples.GetAttackDecaySustainLevel(9600UL), Is.EqualTo(0.25f));
+            Assert.That(samples.GetAttackDecaySustainLevel(48000UL), Is.EqualTo(0.25f));
+        }
+
+        [Test]
+        public void ZeroDecayRampsDirectlyToSustainWithoutADiscontinuity()
+        {
+            var envelope = new Fmod.FmodAdsrEnvelope(0.1d, 0d, 0.75f, 0.2d);
+            Fmod.FmodAdsrEnvelopeSamples samples = envelope.ResolveSampleFrames(48000);
+
+            Assert.That(samples.GetAttackDecaySustainLevel(2400UL), Is.EqualTo(0.375f).Within(0.0001f));
+            Assert.That(samples.GetAttackDecaySustainLevel(4800UL), Is.EqualTo(0.75f));
         }
     }
 }
