@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.18
+**Plan version:** 1.19
 **Last updated:** 2026-08-02
 **Current milestone:** M2 — Deterministic transport and step sequencer
 **Current status:** IN PROGRESS
-**Next action:** Implement a fixed-capacity Core scheduling ring buffer that never overwrites unread events, preserves insertion order through wraparound, exposes non-allocating enqueue/peek/dequeue/clear operations, and verifies full-buffer backpressure before sequencer generation depends on it.
+**Next action:** Define immutable owned `PatternStep` and `StepPattern` Core contracts for resolved MIDI notes and rests, a 960-PPQN-compatible step grid, velocity, duration, probability, ratchets, and bounded microtiming; verify validation, ownership, and overflow rules before window generation is added.
 
 ## Purpose
 
@@ -67,6 +67,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Scheduler lookahead | 200 ms initial tuning value |
 | Determinism contract | Identical logical event stream for identical seed, state, and mutation log |
 | Stateless randomness | `StatelessRng` hashes the ordered unsigned lanes seed, stable stream ID, non-negative absolute tick, and frozen nonzero `RandomSlot` through the documented unchecked SplitMix64 finalizer. Slot identifiers are serialized contracts that are never renumbered or reused; `Float01` maps the upper 24 bits exactly into `[0, 1)` without mutable PRNG state |
+| Scheduling buffer | `SchedulingBuffer<T>` is a single-owner, fixed-capacity FIFO for value types. It allocates its array only at construction, never overwrites or drops unread values when full, preserves insertion order through wraparound, clears dequeued slots, and exposes only non-enumerating enqueue, peek, dequeue, and clear operations on the hot path |
 | Core boundary | Pure C#, with no Unity or FMOD references |
 | Resolved pitch contract | `Note` stores a validated MIDI note number from 0 through 127; scale-degree resolution remains a later Conductor concern |
 | Pitch-to-frequency conversion | `Note.FrequencyHz` returns `double` using twelve-tone equal temperament and A4 = MIDI 69 = 440 Hz; conversion to FMOD `float` occurs explicitly at the adapter boundary |
@@ -226,8 +227,8 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Implement immutable tempo-map segments, initially one 120 BPM segment.
 - [x] `DONE` Implement tick-to-sample/DSP-clock conversion with explicit rounding rules.
 - [x] `DONE` Implement stateless hashed RNG and named random slots.
-- [ ] `IN PROGRESS` Implement a bounded, allocation-free scheduling buffer.
-- [ ] `NOT STARTED` Implement one step pattern with rests, velocity, duration, probability, ratchets, and microtiming tick offsets.
+- [x] `DONE` Implement a bounded, allocation-free scheduling buffer.
+- [ ] `IN PROGRESS` Implement one step pattern with rests, velocity, duration, probability, ratchets, and microtiming tick offsets.
 - [ ] `NOT STARTED` Add transport start, stop, pause, resume, and panic behavior.
 - [ ] `NOT STARTED` Add a ten-minute timing/drift measurement.
 
@@ -251,6 +252,8 @@ The first product is an engine playground. It must let a developer play notes an
 - On 2026-08-02, all 21 focused mapper cases, the complete 197/197 `Loom.Tests.EditMode` cases, the focused live `MUS_Synth` clock-domain smoke, and the complete 6/6 `Loom.Tests.PlayMode` cases passed in the open Unity Editor. The repository coding-standard checker and `git diff --check` also passed.
 - `StatelessRng` implements the design-document SplitMix64 lane fold without mutable state, validates non-negative ticks and frozen named slots without reflection, and converts the upper 24 hash bits into a deterministic single-precision `[0, 1)` value. Stable stream IDs and slot values are explicit serialized inputs rather than runtime object or string hashes.
 - On 2026-08-02, all 17 focused RNG cases and the complete 214/214 `Loom.Tests.EditMode` cases passed in the open Unity Editor. Coverage includes frozen golden vectors, every input lane, slot identifiers, invalid inputs, evaluation-order independence, full integer boundaries, and exact unit-float endpoints.
+- `SchedulingBuffer<T>` preallocates bounded value-type storage, provides FIFO enqueue/peek/dequeue/clear operations without enumeration or synchronization, returns explicit backpressure when full without mutation, and preserves order through repeated ring-index wraparound.
+- On 2026-08-02, all 13 focused scheduling-buffer cases and the complete 227/227 `Loom.Tests.EditMode` cases passed in the open Unity Editor. A warmed 10,000-operation enqueue/dequeue loop measured zero current-thread managed allocations.
 
 ## M3 — Tracks, Scale, Harmony, and Mixer
 
@@ -357,6 +360,9 @@ Before ending a task that changed LOOM:
 - Added Core `StatelessRng` and frozen `RandomSlot` identifiers using the design-document SplitMix64 finalizer, explicit unsigned input lanes, and an exact upper-24-bit unit-float conversion.
 - Added 17 focused RNG cases; the focused suite passed 17/17 and the complete EditMode assembly passed 214/214 in the open Unity Editor.
 - Completed the stateless RNG work item and advanced M2 to the fixed-capacity scheduling buffer.
+- Added generic value-type `SchedulingBuffer<T>` with fixed owned storage, explicit full-buffer backpressure, FIFO peek/dequeue semantics, wraparound-safe indices, and reusable clear behavior.
+- Added 13 focused buffer cases; the focused suite passed 13/13 and the complete EditMode assembly passed 227/227, including a zero-allocation hot-path measurement.
+- Completed the bounded scheduling-buffer work item and advanced M2 to immutable step-pattern contracts.
 
 ### 2026-08-01
 
