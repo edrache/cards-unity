@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.19
+**Plan version:** 1.20
 **Last updated:** 2026-08-02
 **Current milestone:** M2 — Deterministic transport and step sequencer
 **Current status:** IN PROGRESS
-**Next action:** Define immutable owned `PatternStep` and `StepPattern` Core contracts for resolved MIDI notes and rests, a 960-PPQN-compatible step grid, velocity, duration, probability, ratchets, and bounded microtiming; verify validation, ownership, and overflow rules before window generation is added.
+**Next action:** Implement an allocation-free `StepSequencer` that precompiles stable ratchet/microtiming trigger templates, emits resolved `NoteEvent` values in final-onset order for half-open windows, uses one named probability roll per source step, and resumes exactly after bounded-buffer backpressure.
 
 ## Purpose
 
@@ -68,6 +68,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Determinism contract | Identical logical event stream for identical seed, state, and mutation log |
 | Stateless randomness | `StatelessRng` hashes the ordered unsigned lanes seed, stable stream ID, non-negative absolute tick, and frozen nonzero `RandomSlot` through the documented unchecked SplitMix64 finalizer. Slot identifiers are serialized contracts that are never renumbered or reused; `Float01` maps the upper 24 bits exactly into `[0, 1)` without mutable PRNG state |
 | Scheduling buffer | `SchedulingBuffer<T>` is a single-owner, fixed-capacity FIFO for value types. It allocates its array only at construction, never overwrites or drops unread values when full, preserves insertion order through wraparound, clears dequeued slots, and exposes only non-enumerating enqueue, peek, dequeue, and clear operations on the hot path |
+| Step-pattern data | `PatternStep` is an immutable resolved `Note` or canonical default rest with playable velocity, positive tick duration, finite normalized probability, one through 255 total ratchet attacks, and an integer microtiming offset. `StepPattern` owns a non-empty defensive copy on a positive divisor of 960 PPQN, bounds note offsets inside one step, and requires no more ratchets than distinct ticks in that step |
 | Core boundary | Pure C#, with no Unity or FMOD references |
 | Resolved pitch contract | `Note` stores a validated MIDI note number from 0 through 127; scale-degree resolution remains a later Conductor concern |
 | Pitch-to-frequency conversion | `Note.FrequencyHz` returns `double` using twelve-tone equal temperament and A4 = MIDI 69 = 440 Hz; conversion to FMOD `float` occurs explicitly at the adapter boundary |
@@ -254,6 +255,8 @@ The first product is an engine playground. It must let a developer play notes an
 - On 2026-08-02, all 17 focused RNG cases and the complete 214/214 `Loom.Tests.EditMode` cases passed in the open Unity Editor. Coverage includes frozen golden vectors, every input lane, slot identifiers, invalid inputs, evaluation-order independence, full integer boundaries, and exact unit-float endpoints.
 - `SchedulingBuffer<T>` preallocates bounded value-type storage, provides FIFO enqueue/peek/dequeue/clear operations without enumeration or synchronization, returns explicit backpressure when full without mutation, and preserves order through repeated ring-index wraparound.
 - On 2026-08-02, all 13 focused scheduling-buffer cases and the complete 227/227 `Loom.Tests.EditMode` cases passed in the open Unity Editor. A warmed 10,000-operation enqueue/dequeue loop measured zero current-thread managed allocations.
+- `PatternStep` distinguishes a canonical rest from playable MIDI note zero, validates every note-level field, and normalizes zero probability. `StepPattern` owns its steps, derives integer grid and pattern lengths from 960 PPQN, bounds microtiming to one step, and guarantees distinct integer ratchet onsets.
+- On 2026-08-02, all 38 focused pattern-contract cases and the complete 265/265 `Loom.Tests.EditMode` cases passed in the open Unity Editor. Coverage includes ownership, equality, every field boundary, representative grid divisors, microtiming edges, uneven ratchets, rests, and index bounds.
 
 ## M3 — Tracks, Scale, Harmony, and Mixer
 
@@ -363,6 +366,9 @@ Before ending a task that changed LOOM:
 - Added generic value-type `SchedulingBuffer<T>` with fixed owned storage, explicit full-buffer backpressure, FIFO peek/dequeue semantics, wraparound-safe indices, and reusable clear behavior.
 - Added 13 focused buffer cases; the focused suite passed 13/13 and the complete EditMode assembly passed 227/227, including a zero-allocation hot-path measurement.
 - Completed the bounded scheduling-buffer work item and advanced M2 to immutable step-pattern contracts.
+- Added immutable `PatternStep` and defensively owned `StepPattern` data for resolved notes, canonical rests, 960-PPQN subdivisions, velocity, duration, probability, ratchets, and bounded microtiming.
+- Added 38 focused pattern-contract cases; the focused suite passed 38/38 and the complete EditMode assembly passed 265/265 in the open Unity Editor.
+- Advanced the active step-pattern item to deterministic half-open window generation and backpressure recovery.
 
 ### 2026-08-01
 
