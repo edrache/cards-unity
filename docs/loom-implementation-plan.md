@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.13
-**Last updated:** 2026-08-01  
+**Plan version:** 1.14
+**Last updated:** 2026-08-02
 **Current milestone:** M2 — Deterministic transport and step sequencer
 **Current status:** READY
-**Next action:** Begin M2 in `Loom.Core` by implementing immutable `MusicalTime` with 960 PPQN and 4/4 defaults, an explicit non-negative tick contract, and deterministic bar/beat/tick decomposition; add focused EditMode boundary tests before introducing tempo or FMOD scheduling.
+**Next action:** Implement immutable tempo-map segment data in `Loom.Core`, beginning with a required segment at tick zero and a validated 120 BPM default; add focused EditMode tests for ordering, invalid ticks/BPM, and long-session lookup without introducing sample or DSP-clock conversion yet.
 
 ## Purpose
 
@@ -58,6 +58,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Studio bus | `bus:/MUS_Synth` |
 | Musical clock | Integer `long` ticks, 960 PPQN |
 | Initial meter | 4/4 |
+| Musical-time decomposition | `MusicalTime` accepts ticks from zero through `long.MaxValue` and exposes zero-based `long` bar, `int` beat-within-bar, and `int` tick-within-beat values without reconstructive multiplication |
 | Initial tempo | 120 BPM |
 | Intended sample rate | 48 kHz, verified at runtime rather than assumed |
 | Scheduler lookahead | 200 ms initial tuning value |
@@ -217,8 +218,8 @@ The first product is an engine playground. It must let a developer play notes an
 
 ### Work items
 
-- [ ] `READY` Implement `MusicalTime`, 4/4 meter, and 960 PPQN constants.
-- [ ] `NOT STARTED` Implement immutable tempo-map segments, initially one 120 BPM segment.
+- [x] `DONE` Implement `MusicalTime`, 4/4 meter, and 960 PPQN constants.
+- [ ] `READY` Implement immutable tempo-map segments, initially one 120 BPM segment.
 - [ ] `NOT STARTED` Implement tick-to-sample/DSP-clock conversion with explicit rounding rules.
 - [ ] `NOT STARTED` Implement stateless hashed RNG and named random slots.
 - [ ] `NOT STARTED` Implement a bounded, allocation-free scheduling buffer.
@@ -233,6 +234,11 @@ The first product is an engine playground. It must let a developer play notes an
 - The same seed and pattern produce the same serialized event stream.
 - Scheduler steady-state allocations are zero in the measured hot path.
 - The ten-minute test shows no accumulating musical-clock drift; reported onset jitter is measured separately.
+
+### Verification evidence
+
+- `MusicalTime` is an immutable Core value with a non-negative `long` tick contract, fixed 960 PPQN and 4/4 constants, and zero-based bar/beat/tick decomposition that remains safe at `long.MaxValue`.
+- On 2026-08-02, all 18 focused `MusicalTimeTests` and the complete 111/111 `Loom.Tests.EditMode` cases passed in the open Unity Editor. The repository coding-standard checker and `git diff --check` also passed; the final Console contained no LOOM, compilation, or test-cleanup errors.
 
 ## M3 — Tracks, Scale, Harmony, and Mixer
 
@@ -321,6 +327,12 @@ Before ending a task that changed LOOM:
 - Windows output and timing require verification on Windows hardware; macOS-only testing is not sufficient for a desktop milestone.
 
 ## Changelog
+
+### 2026-08-02
+
+- Added immutable, fixed-meter `MusicalTime` to `Loom.Core`, including explicit 960 PPQN and 4/4 constants, non-negative absolute ticks, and zero-based decomposition safe through `long.MaxValue`.
+- Added 18 focused EditMode boundary and value-semantics cases; the focused suite passed 18/18 and the complete EditMode assembly passed 111/111 in the open Unity Editor.
+- Completed the first M2 work item and advanced the next action to immutable tempo-map segment data with a 120 BPM default.
 
 ### 2026-08-01
 
