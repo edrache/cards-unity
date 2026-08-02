@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.32
+**Plan version:** 1.33
 **Last updated:** 2026-08-02
 **Current milestone:** M3 — Tracks, scale, harmony, and mixer
 **Current status:** IN PROGRESS
-**Next action:** Complete and commit the explicit percussion-slot pattern-to-event pipeline, then verify the full EditMode suite before multi-track coordination.
+**Next action:** Add the deterministic four-track coordinator with canonical `(StartTick, TrackId, TrackSequenceNumber)` merge ordering across drums, bass, lead, and pad.
 
 ## Purpose
 
@@ -77,6 +77,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Core boundary | Pure C#, with no Unity or FMOD references |
 | Resolved pitch contract | `ScaleDegreePitch` stores a signed zero-based degree plus an additional octave offset. Immutable `Scale` owns one strictly increasing octave of unique 0-11 semitone intervals beginning at zero and resolves against an absolute tonic with floor wrapping in `long` arithmetic. Results outside MIDI 0-127 are rejected; the existing pattern, sequencer, and `NoteEvent` boundary remains resolved `Note` data |
 | Percussion note contract | `PercussionNote` is a separate immutable value identified by a nonzero instrument-local `ulong` sample-slot ID. It has no MIDI pitch, scale degree, octave, asset path, Unity, or FMOD dependency; the assigned percussion backend owns slot-to-resource mapping |
+| Percussion pattern pipeline | `PercussionPatternStep`, `PercussionStepPattern`, `PercussionNoteEvent`, and `PercussionStepSequencer` retain nonzero sample-slot identity through deterministic timing without MIDI, scale, harmony, Unity, or FMOD conversion |
 | Harmony resolution | Immutable positive-duration `HarmonyStep` values form one defensively owned cyclic `HarmonyPlan`. `HarmonyResolver` keeps leads free in the scale, maps bass to the active root, and maps signed pad degrees through root-third-fifth diatonic tones using floor wrapping. `TrackRole` contains only pitched roles; percussion never enters this resolver |
 | Pitched pattern pipeline | `PitchedPatternStep` and `PitchedStepPattern` retain unresolved scale-degree pitches. `PitchedStepSequencer` applies the selected `HarmonyResolver` policy at the final onset tick after microtiming and ratchets, then emits the existing resolved `ScheduledNoteEvent` boundary |
 | Track bus paths | `FmodTrackBusPaths` is the shared code contract for every authored Studio track bus. Generated Desktop banks remain ignored build artifacts; committed FMOD metadata is the source configuration |
@@ -292,7 +293,7 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Add harmony-plan and track-role resolution.
 - [x] `DONE` Add `MUS_Drums`, `MUS_Bass`, `MUS_Lead`, `MUS_Pad`, and `MUS_FX` buses when required.
 - [x] `DONE` Add a harmony-aware pitched pattern-to-event pipeline.
-- [ ] `IN PROGRESS` Add an explicit percussion-slot pattern-to-event pipeline.
+- [x] `DONE` Add an explicit percussion-slot pattern-to-event pipeline.
 - [ ] `NOT STARTED` Add deterministic multi-track coordination and per-track instrument routing.
 - [ ] `IN PROGRESS` Add track gain, mute, and basic effect parameters.
 - [ ] `NOT STARTED` Demonstrate independent pattern lengths and stable scheduling order.
@@ -328,6 +329,8 @@ The first product is an engine playground. It must let a developer play notes an
 - `PitchedPatternStep` and `PitchedStepPattern` preserve unresolved scale-degree intent with the same validated probability, ratchet, duration, and microtiming contract as the resolved-note pattern path.
 - `PitchedStepSequencer` resolves each final onset through the selected bass, lead, or pad policy and retains deterministic half-open windows, stateless probability, backpressure replay, reset, overflow handling, and zero warmed allocations.
 - On 2026-08-02, all 32 focused pitched-pipeline EditMode cases passed in the open Unity Editor. The combined pitched/percussion focused run also passed 102/102 while both explicitly parallelized slices were present.
+- The percussion pipeline carries explicit `PercussionNote` sample-slot identities through immutable events and deterministic scheduling while preserving the resolved-note pipeline's timing, RNG, ratchet, microtiming, reset, backpressure, and overflow semantics.
+- On 2026-08-02, all 70 focused percussion-pipeline EditMode cases passed in the open Unity Editor, including zero-allocation warmed scheduling and full-width slot identity coverage.
 
 ## M4 — Mutation Layer
 
@@ -452,6 +455,8 @@ Before ending a task that changed LOOM:
 - Completed the FMOD bus work item and advanced M3 to harmony-aware pitched and explicit percussion-slot pattern-to-event pipelines required by the four-track coordinator.
 - Added the unresolved pitched pattern pipeline and final-onset harmony resolution for bass, lead, and pad tracks; 32/32 focused EditMode cases passed.
 - Completed the pitched half of the typed pipeline work and kept the explicitly parallel percussion and mixer-control slices in progress.
+- Added the explicit percussion-slot pattern and event pipeline without any MIDI or harmony conversion; 70/70 focused EditMode cases passed.
+- Completed both typed pipeline slices and advanced the Core work to deterministic four-track coordination while mixer controls remain explicitly parallelized.
 
 ### 2026-08-01
 
