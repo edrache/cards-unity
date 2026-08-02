@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.26
+**Plan version:** 1.27
 **Last updated:** 2026-08-02
 **Current milestone:** M3 — Tracks, scale, harmony, and mixer
 **Current status:** READY
-**Next action:** Begin M3 with an immutable Core track definition that owns one sequencer/pattern identity and independent pattern length, while preserving the existing resolved-note event boundary and deferring scale-degree and percussion resolution to separate bounded changes.
+**Next action:** Begin the second M3 item with immutable Core scale and scale-degree pitch contracts plus deterministic MIDI-note resolution tests, while keeping percussion on the existing resolved-note boundary until its separate slot-model change.
 
 ## Purpose
 
@@ -69,6 +69,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Stateless randomness | `StatelessRng` hashes the ordered unsigned lanes seed, stable stream ID, non-negative absolute tick, and frozen nonzero `RandomSlot` through the documented unchecked SplitMix64 finalizer. Slot identifiers are serialized contracts that are never renumbered or reused; `Float01` maps the upper 24 bits exactly into `[0, 1)` without mutable PRNG state |
 | Scheduling buffer | `SchedulingBuffer<T>` is a single-owner, fixed-capacity FIFO for value types. It allocates its array only at construction, never overwrites or drops unread values when full, preserves insertion order through wraparound, clears dequeued slots, and exposes only non-enumerating enqueue, peek, dequeue, and clear operations on the hot path |
 | Step-pattern data | `PatternStep` is an immutable resolved `Note` or canonical default rest with playable velocity, positive tick duration, finite normalized probability, one through 255 total ratchet attacks, and an integer microtiming offset. `StepPattern` owns a non-empty defensive copy on a positive divisor of 960 PPQN, bounds note offsets inside one step, and requires no more ratchets than distinct ticks in that step |
+| Track definitions | `TrackId` and `PatternId` are separate nonzero stable unsigned identities. Immutable `TrackDefinition` owns one resolved-note `StepPattern`, derives its length directly from that pattern, and creates sequencers whose stateless-random stream is the track ID. Pattern identity does not alter track randomness |
 | Scheduled FMOD voices | The interactive `IInstrument` API remains unchanged. `FmodOscillatorInstrument.ScheduleNote` owns future voices separately, sends exact start and release clocks to the lifecycle-bound `MUS_Synth` group, and uses hard `Channel.stop` cancellation rather than the interactive release path |
 | Scheduled dispatch | `FmodScheduledNoteDispatcher` reads the current parent clock once per batch, enforces at least one DSP buffer of lead, preserves mapped gate duration when shifting late events, promotes rounding-plateau gates to one sample frame, and dequeues only after atomic instrument success. Late and plateau counts remain separate runtime timing evidence from the deterministic logical stream |
 | Core transport | `Transport` owns one preallocated event buffer and a `StepSequencer`, accepts monotonic audio-derived current and target ticks, completes an older partial target before a newer coalesced horizon, and reports underrun separately from buffer backpressure. Pause and panic discard stale lookahead and restart generation at an explicit held/current tick; stop returns the deterministic sequence domain to zero |
@@ -281,7 +282,7 @@ The first product is an engine playground. It must let a developer play notes an
 
 ### Work items
 
-- [ ] `READY` Add track definitions and independent pattern lengths.
+- [x] `DONE` Add track definitions and independent pattern lengths.
 - [ ] `NOT STARTED` Add scale-degree resolution for pitched tracks.
 - [ ] `NOT STARTED` Add a separate percussion/sample-slot note model rather than routing drums through scale degrees.
 - [ ] `NOT STARTED` Add harmony-plan and track-role resolution.
@@ -296,6 +297,14 @@ The first product is an engine playground. It must let a developer play notes an
 - Percussion uses explicit instrument slots.
 - Mixer controls affect only their intended tracks.
 - Same-tick event ordering is stable and tested.
+
+### Verification evidence
+
+- `TrackId` and `PatternId` provide separate immutable nonzero value contracts, while `TrackDefinition` owns one immutable resolved-note pattern and exposes only its derived tick length.
+- `TrackDefinition.CreateSequencer` permanently maps track identity to the existing stateless-random stream input; pattern identity remains available for later mutation/save targeting without perturbing that stream.
+- Focused EditMode coverage verified invalid identities and missing patterns, value semantics, defensive pattern ownership, deterministic replay, distinct track RNG domains, and independent 12-step/16-step cycle lengths that realign after 48 steps.
+- On 2026-08-02, the focused track-contract set passed 9/9 and the complete `Loom.Tests.EditMode` assembly passed 353/353 in the open Unity Editor. The repository checker passed 73 text files plus Unity metadata parity, and `git diff --check` passed.
+- Unity compilation completed with no C# or LOOM errors. The post-test Console contained only two Test Runner API result-save messages classified as exceptions despite both jobs reporting `Passed`.
 
 ## M4 — Mutation Layer
 
@@ -404,6 +413,9 @@ Before ending a task that changed LOOM:
 - Added an accelerated ten-minute transport measurement with independent quarter-note tick/frame oracles, regular-versus-irregular cadence equivalence, explicit missing/duplicate/order counters, and hot-path allocation accounting.
 - The focused timing case passed with 1,200/1,200 events, zero logical or planned-frame drift, zero cadence-dependent differences, zero underrun/backpressure, and zero allocations.
 - Completed every M2 work item and acceptance criterion, marked M2 done, and advanced the plan to the first immutable track-definition slice of M3.
+- Added separate immutable `TrackId` and `PatternId` value contracts plus `TrackDefinition`, which owns one resolved-note pattern, derives its independent length, and creates sequencers using track identity as the deterministic random stream.
+- Added nine focused identity, ownership, replay, RNG-domain, and 12-step/16-step polymetric cycle cases; the focused set passed 9/9 and the complete EditMode assembly passed 353/353 in the open Unity Editor.
+- Completed the first M3 work item and advanced the next action to immutable scale and scale-degree resolution contracts while keeping percussion resolution separate.
 
 ### 2026-08-01
 
