@@ -315,6 +315,96 @@ namespace Loom.Tests.EditMode
         }
 
         [Test]
+        public void ResetAtAnExactFinalOnsetIncludesThatEvent()
+        {
+            var sequencer = CreateQuarterStepSequencer(probability: 1f);
+            var buffer = new Core.SchedulingBuffer<Core.ScheduledNoteEvent>(2);
+
+            sequencer.Reset(240L);
+            Assert.That(sequencer.TryScheduleThrough(241L, buffer), Is.True);
+
+            Assert.That(buffer.TryDequeue(out Core.ScheduledNoteEvent scheduledEvent), Is.True);
+            AssertEvent(scheduledEvent, 60, 100, 240L, 120L, 0UL);
+        }
+
+        [Test]
+        public void ResetAfterAFinalOnsetSkipsThePastEvent()
+        {
+            var sequencer = CreateQuarterStepSequencer(probability: 1f);
+            var buffer = new Core.SchedulingBuffer<Core.ScheduledNoteEvent>(2);
+
+            sequencer.Reset(241L);
+            Assert.That(sequencer.TryScheduleThrough(481L, buffer), Is.True);
+
+            Assert.That(buffer.TryDequeue(out Core.ScheduledNoteEvent scheduledEvent), Is.True);
+            Assert.That(scheduledEvent.StartTick, Is.EqualTo(480L));
+            Assert.That(scheduledEvent.SequenceNumber, Is.Zero);
+        }
+
+        [Test]
+        public void ResetUsesMicrotimedFinalOnsetsAcrossSourceCycles()
+        {
+            var negativePattern = new Core.StepPattern(
+                4,
+                new Core.PatternStep(
+                    new Core.Note(60),
+                    100,
+                    120L,
+                    microtimingTickOffset: -10));
+            var negativeSequencer = new Core.StepSequencer(negativePattern, 0UL, 0UL);
+            var negativeBuffer =
+                new Core.SchedulingBuffer<Core.ScheduledNoteEvent>(2);
+            negativeSequencer.Reset(230L);
+
+            Assert.That(negativeSequencer.TryScheduleThrough(231L, negativeBuffer), Is.True);
+            Assert.That(
+                negativeBuffer.TryDequeue(out Core.ScheduledNoteEvent negativeEvent),
+                Is.True);
+            Assert.That(negativeEvent.StartTick, Is.EqualTo(230L));
+
+            var positivePattern = new Core.StepPattern(
+                4,
+                new Core.PatternStep(
+                    new Core.Note(60),
+                    100,
+                    120L,
+                    ratchetCount: 2,
+                    microtimingTickOffset: 239));
+            var positiveSequencer = new Core.StepSequencer(positivePattern, 0UL, 0UL);
+            var positiveBuffer =
+                new Core.SchedulingBuffer<Core.ScheduledNoteEvent>(2);
+            positiveSequencer.Reset(240L);
+
+            Assert.That(positiveSequencer.TryScheduleThrough(360L, positiveBuffer), Is.True);
+            Assert.That(
+                positiveBuffer.TryDequeue(out Core.ScheduledNoteEvent positiveEvent),
+                Is.True);
+            Assert.That(positiveEvent.StartTick, Is.EqualTo(359L));
+        }
+
+        [Test]
+        public void ResetClearsPartialWindowAndRejectsNegativeTicksWithoutMutation()
+        {
+            var sequencer = CreateQuarterStepSequencer(probability: 1f);
+            var buffer = new Core.SchedulingBuffer<Core.ScheduledNoteEvent>(1);
+            Assert.That(sequencer.TryScheduleThrough(720L, buffer), Is.False);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => sequencer.Reset(-1L));
+            Assert.That(sequencer.HasPendingWindow, Is.True);
+            Assert.That(sequencer.ScheduledThroughTick, Is.Zero);
+
+            buffer.Clear();
+            sequencer.Reset(480L);
+
+            Assert.That(sequencer.HasPendingWindow, Is.False);
+            Assert.That(sequencer.ScheduledThroughTick, Is.EqualTo(480L));
+            Assert.That(sequencer.TryScheduleThrough(481L, buffer), Is.True);
+            Assert.That(buffer.TryDequeue(out Core.ScheduledNoteEvent scheduledEvent), Is.True);
+            Assert.That(scheduledEvent.StartTick, Is.EqualTo(480L));
+            Assert.That(scheduledEvent.SequenceNumber, Is.Zero);
+        }
+
+        [Test]
         public void EventEndOverflowFailsWithoutCompletingTheWindow()
         {
             var pattern = new Core.StepPattern(

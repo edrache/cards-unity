@@ -18,6 +18,7 @@ namespace Loom.Core
         private ulong nextSequenceNumber;
         private bool hasPendingTarget;
         private bool isSequenceExhausted;
+        private bool isTimelineExhausted;
 
         /// <summary>
         /// Precompiles every playable ratchet trigger and its stable final-onset ordering.
@@ -135,13 +136,67 @@ namespace Loom.Core
         /// </summary>
         public void Reset()
         {
-            eventCycle = 0;
-            templateIndex = 0;
-            pendingTargetTick = 0;
+            Reset(0);
+        }
+
+        /// <summary>
+        /// Returns generation to the first final onset at or after a non-negative tick.
+        /// The caller must separately clear any destination buffer.
+        /// </summary>
+        public void Reset(long startTick)
+        {
+            if (startTick < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(startTick),
+                    startTick,
+                    "Sequencer reset tick cannot be negative.");
+            }
+
+            eventCycle = startTick / pattern.LengthTicks;
+            long onsetWithinCycle = startTick % pattern.LengthTicks;
+            templateIndex = FindFirstTemplateAtOrAfter(onsetWithinCycle);
+            isTimelineExhausted = false;
+            if (templates.Length > 0 && templateIndex == templates.Length)
+            {
+                if (eventCycle == long.MaxValue)
+                {
+                    isTimelineExhausted = true;
+                }
+                else
+                {
+                    eventCycle++;
+                }
+
+                templateIndex = 0;
+            }
+
+            pendingTargetTick = startTick;
             nextSequenceNumber = 0UL;
             hasPendingTarget = false;
             isSequenceExhausted = false;
-            ScheduledThroughTick = 0;
+            ScheduledThroughTick = startTick;
+        }
+
+        private int FindFirstTemplateAtOrAfter(long onsetWithinCycle)
+        {
+            int low = 0;
+            int high = templates.Length;
+
+            while (low < high)
+            {
+                int middle = low + ((high - low) / 2);
+                if (templates[middle].NormalizedOnsetTick < onsetWithinCycle)
+                {
+                    low = middle + 1;
+                }
+                else
+                {
+                    high = middle;
+                }
+            }
+
+            return low;
         }
 
         private static TriggerTemplate[] BuildAndSortTemplates(StepPattern sourcePattern)
@@ -289,6 +344,12 @@ namespace Loom.Core
 
         private bool TryGetCurrentEventStartTick(out long eventStartTick)
         {
+            if (isTimelineExhausted)
+            {
+                eventStartTick = 0;
+                return false;
+            }
+
             TriggerTemplate template = templates[templateIndex];
             if (eventCycle > (long.MaxValue - template.NormalizedOnsetTick)
                 / pattern.LengthTicks)
@@ -364,7 +425,14 @@ namespace Loom.Core
             }
 
             templateIndex = 0;
-            eventCycle = checked(eventCycle + 1);
+            if (eventCycle == long.MaxValue)
+            {
+                isTimelineExhausted = true;
+            }
+            else
+            {
+                eventCycle++;
+            }
         }
 
         private void CompletePendingWindow()
