@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.17
+**Plan version:** 1.18
 **Last updated:** 2026-08-02
 **Current milestone:** M2 — Deterministic transport and step sequencer
-**Current status:** READY
-**Next action:** Implement a Core-only stateless hashed RNG with stable named random slots and explicit input serialization; verify identical inputs, slot independence, boundary values, and iteration-order independence before pattern probability uses it.
+**Current status:** IN PROGRESS
+**Next action:** Implement a fixed-capacity Core scheduling ring buffer that never overwrites unread events, preserves insertion order through wraparound, exposes non-allocating enqueue/peek/dequeue/clear operations, and verifies full-buffer backpressure before sequencer generation depends on it.
 
 ## Purpose
 
@@ -66,6 +66,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Intended sample rate | 48 kHz, verified at runtime rather than assumed |
 | Scheduler lookahead | 200 ms initial tuning value |
 | Determinism contract | Identical logical event stream for identical seed, state, and mutation log |
+| Stateless randomness | `StatelessRng` hashes the ordered unsigned lanes seed, stable stream ID, non-negative absolute tick, and frozen nonzero `RandomSlot` through the documented unchecked SplitMix64 finalizer. Slot identifiers are serialized contracts that are never renumbered or reused; `Float01` maps the upper 24 bits exactly into `[0, 1)` without mutable PRNG state |
 | Core boundary | Pure C#, with no Unity or FMOD references |
 | Resolved pitch contract | `Note` stores a validated MIDI note number from 0 through 127; scale-degree resolution remains a later Conductor concern |
 | Pitch-to-frequency conversion | `Note.FrequencyHz` returns `double` using twelve-tone equal temperament and A4 = MIDI 69 = 440 Hz; conversion to FMOD `float` occurs explicitly at the adapter boundary |
@@ -224,8 +225,8 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Implement `MusicalTime`, 4/4 meter, and 960 PPQN constants.
 - [x] `DONE` Implement immutable tempo-map segments, initially one 120 BPM segment.
 - [x] `DONE` Implement tick-to-sample/DSP-clock conversion with explicit rounding rules.
-- [ ] `READY` Implement stateless hashed RNG and named random slots.
-- [ ] `NOT STARTED` Implement a bounded, allocation-free scheduling buffer.
+- [x] `DONE` Implement stateless hashed RNG and named random slots.
+- [ ] `IN PROGRESS` Implement a bounded, allocation-free scheduling buffer.
 - [ ] `NOT STARTED` Implement one step pattern with rests, velocity, duration, probability, ratchets, and microtiming tick offsets.
 - [ ] `NOT STARTED` Add transport start, stop, pause, resume, and panic behavior.
 - [ ] `NOT STARTED` Add a ten-minute timing/drift measurement.
@@ -248,6 +249,8 @@ The first product is an engine playground. It must let a developer play notes an
 - On 2026-08-02, all 27 focused conversion cases and the complete 176/176 `Loom.Tests.EditMode` cases passed in the open Unity Editor. Coverage includes 44.1 and 48 kHz, tempo boundaries, midpoint rounding, a ten-minute no-drift result, and representable and overflowing `long.MaxValue` conversions.
 - `FmodTickDspClockMapper` captures FMOD's runtime sample rate and the own clock of the ChannelGroup that parents scheduled channels, retains one stable affine anchor, exposes a checked current-clock read in the same domain, and reports native failures with operation context. It borrows rather than releases FMOD handles and documents recreation after lifecycle changes.
 - On 2026-08-02, all 21 focused mapper cases, the complete 197/197 `Loom.Tests.EditMode` cases, the focused live `MUS_Synth` clock-domain smoke, and the complete 6/6 `Loom.Tests.PlayMode` cases passed in the open Unity Editor. The repository coding-standard checker and `git diff --check` also passed.
+- `StatelessRng` implements the design-document SplitMix64 lane fold without mutable state, validates non-negative ticks and frozen named slots without reflection, and converts the upper 24 hash bits into a deterministic single-precision `[0, 1)` value. Stable stream IDs and slot values are explicit serialized inputs rather than runtime object or string hashes.
+- On 2026-08-02, all 17 focused RNG cases and the complete 214/214 `Loom.Tests.EditMode` cases passed in the open Unity Editor. Coverage includes frozen golden vectors, every input lane, slot identifiers, invalid inputs, evaluation-order independence, full integer boundaries, and exact unit-float endpoints.
 
 ## M3 — Tracks, Scale, Harmony, and Mixer
 
@@ -351,6 +354,9 @@ Before ending a task that changed LOOM:
 - Added `FmodTickDspClockMapper` with runtime sample-rate discovery, one immutable tick/sample/DSP anchor, optional scheduling lead, checked forward and backward mapping, contextual FMOD result handling, and explicit borrowed-handle lifecycle rules.
 - Added 21 focused mapper cases and a live `MUS_Synth` PlayMode clock-domain smoke; the complete suites passed 197/197 EditMode and 6/6 PlayMode in the open Unity Editor.
 - Completed the tick-to-sample/DSP-clock work item and advanced M2 to the stateless hashed RNG and named-slot contract.
+- Added Core `StatelessRng` and frozen `RandomSlot` identifiers using the design-document SplitMix64 finalizer, explicit unsigned input lanes, and an exact upper-24-bit unit-float conversion.
+- Added 17 focused RNG cases; the focused suite passed 17/17 and the complete EditMode assembly passed 214/214 in the open Unity Editor.
+- Completed the stateless RNG work item and advanced M2 to the fixed-capacity scheduling buffer.
 
 ### 2026-08-01
 
