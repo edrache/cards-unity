@@ -27,7 +27,8 @@ namespace Loom.Fmod
                 studioSystem,
                 FmodAdsrEnvelope.Default,
                 FmodOscillatorSettings.Default,
-                DefaultVoiceCapacity)
+                DefaultVoiceCapacity,
+                SynthBusPath)
         {
         }
 
@@ -36,7 +37,8 @@ namespace Loom.Fmod
             FMOD.Studio.System studioSystem,
             FmodAdsrEnvelope envelope,
             FmodOscillatorSettings settings,
-            int voiceCapacity = DefaultVoiceCapacity)
+            int voiceCapacity = DefaultVoiceCapacity,
+            string busPath = SynthBusPath)
         {
             if (envelope == null)
             {
@@ -65,7 +67,7 @@ namespace Loom.Fmod
             this.coreSystem = coreSystem;
             busRouting = new FmodStudioBusRouting(
                 studioSystem,
-                SynthBusPath);
+                busPath);
             try
             {
                 busRouting.GetChannelGroup();
@@ -135,6 +137,8 @@ namespace Loom.Fmod
         public float Resonance { get; private set; }
 
         public int VoiceCapacity => voiceSlots.Length;
+
+        public string BusPath => busRouting?.BusPath ?? SynthBusPath;
 
         public int CreatedVoiceCount
         {

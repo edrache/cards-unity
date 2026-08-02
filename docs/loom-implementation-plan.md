@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.34
+**Plan version:** 1.35
 **Last updated:** 2026-08-02
 **Current milestone:** M3 — Tracks, scale, harmony, and mixer
 **Current status:** IN PROGRESS
-**Next action:** Generalize FMOD oscillator instruments to bind explicitly to a declared track bus while preserving lifecycle-bound clock ownership and the existing synth default.
+**Next action:** Commit the parallelized per-track gain, mute, and low-pass mixer controls after full live isolation verification.
 
 ## Purpose
 
@@ -89,7 +89,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Initial ADSR envelope | `FmodAdsrEnvelope` stores validated seconds and a normalized sustain level, resolves durations against FMOD's runtime sample rate, and schedules linear `addFadePoint` segments in the parent ChannelGroup clock domain; voice start and note-off use a one-buffer scheduling lead, release begins continuously from the calculated future envelope level, and `setDelay` stops the channel at release end |
 | Initial synth controls | FMOD oscillator waveform values map explicitly to sine, square, saw up, saw down, triangle, and noise. Octave is an integer from -4 through +4 and must keep the resolved oscillator rate within FMOD's 1–22000 Hz range; gain is 0–1. The resonant low-pass uses supported Multiband EQ band A at 24 dB/octave, with cutoff 20–22000 Hz and Q 0.1–10, instead of deprecated `DSP_TYPE.LOWPASS` |
 | Initial polyphony | `FmodOscillatorInstrument` implements `IInstrument` with a preallocated fixed pool of eight reusable voice DSP graphs by default. Process-wide opaque handle IDs prevent cross-instrument ownership collisions, while a separate local monotonic start order makes oldest-voice stealing deterministic. `NoteOff` consumes only the exact owned handle, completed releases are reclaimed before stealing, velocity scales the configured per-voice gain, and instrument disposal releases every pooled graph |
-| Studio bus routing | `FmodOscillatorInstrument` requires valid Core and Studio systems and routes every pooled voice through one locked `bus:/MUS_Synth` ChannelGroup. Locking is paired with checked `flushCommands` and `unlockChannelGroup`; `PrepareForBankReload` requires zero active voices and releases the lifecycle-bound handles, while `RestoreAfterBankReload` reacquires them only after the Master Bank is loaded |
+| Studio bus routing | `FmodOscillatorInstrument` requires valid Core and Studio systems and routes every pooled voice through one explicitly declared, locked Studio `ChannelGroup`; the default remains `bus:/MUS_Synth`. Locking is paired with checked `flushCommands` and `unlockChannelGroup`; `PrepareForBankReload` requires zero active voices and releases lifecycle-bound handles, while `RestoreAfterBankReload` reacquires them only after the Master Bank is loaded |
 | Computer keyboard input | `ComputerKeyboardNoteInput` polls Unity's legacy `Input` API, which is available because the project enables both input backends. Its fixed chromatic layout maps `Z S X D C V G B H N J M` to MIDI 60-71 and `Q 2 W 3 E R 5 T 6 Y 7 U` to MIDI 72-83; repeated key-downs are suppressed and each key-up consumes the exact retained `VoiceHandle`. `Panic` clears retained key state before calling `AllNotesOff`, so a failed native cleanup cannot leave a key logically stuck |
 | Synth demo | `Assets/Scenes/scn_loom.unity` is the build-index-zero playground. A UI Toolkit document and `LoomSynthDemoController` own the eight-voice routed instrument, poll the keyboard adapter, display the two-octave layout, and apply waveform, ADSR, gain, octave, cutoff, and resonance changes at runtime |
 | Demo lifecycle | Focus loss and application pause call the shared panic path without destroying the synth. Disable, destroy, application quit, and Editor assembly reload call one idempotent shutdown path that panics, disposes the instrument, and releases every pooled DSP and Studio bus handle |
@@ -296,7 +296,7 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Add a harmony-aware pitched pattern-to-event pipeline.
 - [x] `DONE` Add an explicit percussion-slot pattern-to-event pipeline.
 - [x] `DONE` Add deterministic four-track coordination and canonical same-tick ordering.
-- [ ] `NOT STARTED` Add explicit per-track FMOD instrument routing.
+- [x] `DONE` Add explicit per-track FMOD instrument routing.
 - [ ] `IN PROGRESS` Add track gain, mute, and basic effect parameters.
 - [ ] `NOT STARTED` Demonstrate independent pattern lengths and stable scheduling order.
 
@@ -336,6 +336,8 @@ The first product is an engine playground. It must let a developer play notes an
 - `MultiTrackScheduledEvent` keeps pitched and percussion payloads structurally typed while exposing shared ordering keys. `FourTrackSequencer` coordinates exactly drums, bass, lead, and pad through bounded owned buffers.
 - Canonical merge ordering is `(StartTick, TrackId.Value, TrackSequenceNumber)` and does not depend on registration order or unordered collections. Focused coverage proves independent three-, four-, five-, and seven-beat pattern cycles, partition invariance, exact backpressure replay, reset replay, and zero warmed allocations.
 - On 2026-08-02, all 9 focused four-track coordinator EditMode cases passed in the open Unity Editor.
+- `FmodOscillatorInstrument` now accepts an explicit authored bus path while retaining `MUS_Synth` as the source-compatible default. Every pooled voice borrows the routing object's actual parent group, so scheduled clocks remain in the correct bus domain.
+- On 2026-08-02, all 23 focused instrument-contract EditMode cases passed, and a focused live PlayMode case created, played, released, and disposed an oscillator instrument bound to `bus:/MUS_Lead`.
 
 ## M4 — Mutation Layer
 
@@ -464,6 +466,8 @@ Before ending a task that changed LOOM:
 - Completed both typed pipeline slices and advanced the Core work to deterministic four-track coordination while mixer controls remain explicitly parallelized.
 - Added the bounded `FourTrackSequencer` and typed cross-track event union with canonical same-tick ordering; 9/9 focused EditMode cases passed.
 - Completed deterministic Core coordination and advanced the audio boundary to explicit per-track FMOD instrument binding.
+- Generalized pooled oscillator instruments to an explicit authored track bus and verified a live lead-bus voice; 23/23 focused EditMode and 1/1 focused PlayMode cases passed.
+- Completed per-track audio routing and advanced to the already parallelized mixer-control slice.
 
 ### 2026-08-01
 

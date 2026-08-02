@@ -37,6 +37,10 @@ namespace Loom.Tests.EditMode
             Assert.That(
                 Fmod.FmodOscillatorInstrument.SynthBusPath,
                 Is.EqualTo("bus:/MUS_Synth"));
+            using (var instrument = new Fmod.FmodOscillatorInstrument(1, CreateVoice))
+            {
+                Assert.That(instrument.BusPath, Is.EqualTo(Fmod.FmodTrackBusPaths.Synth));
+            }
         }
 
         [Test]

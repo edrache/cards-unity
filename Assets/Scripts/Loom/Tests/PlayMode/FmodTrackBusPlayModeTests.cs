@@ -1,6 +1,7 @@
 using System.Collections;
 using FMODUnity;
 using NUnit.Framework;
+using UnityEngine;
 using UnityEngine.TestTools;
 
 namespace Loom.Tests.PlayMode
@@ -67,6 +68,43 @@ namespace Loom.Tests.PlayMode
             }
 
             yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator OscillatorInstrumentBindsToDeclaredTrackBus()
+        {
+            var listenerObject = new GameObject("LOOM Track Bus Test Listener")
+            {
+                hideFlags = HideFlags.DontSave
+            };
+            listenerObject.AddComponent<StudioListener>();
+            Fmod.FmodOscillatorInstrument instrument = null;
+
+            try
+            {
+                instrument = new Fmod.FmodOscillatorInstrument(
+                    RuntimeManager.CoreSystem,
+                    RuntimeManager.StudioSystem,
+                    Fmod.FmodAdsrEnvelope.Default,
+                    new Fmod.FmodOscillatorSettings(gain: 0.01f),
+                    voiceCapacity: 1,
+                    busPath: Fmod.FmodTrackBusPaths.Lead);
+
+                Assert.That(instrument.BusPath, Is.EqualTo(Fmod.FmodTrackBusPaths.Lead));
+                Core.VoiceHandle handle = instrument.NoteOn(new Core.Note(60), 80);
+                Assert.That(handle.IsValid, Is.True);
+                Assert.That(instrument.ActiveVoiceCount, Is.EqualTo(1));
+
+                yield return new WaitForSecondsRealtime(0.03f);
+
+                instrument.NoteOff(handle);
+                Assert.That(instrument.OwnedVoiceCount, Is.Zero);
+            }
+            finally
+            {
+                instrument?.Dispose();
+                Object.Destroy(listenerObject);
+            }
         }
     }
 }
