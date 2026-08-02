@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.27
+**Plan version:** 1.28
 **Last updated:** 2026-08-02
 **Current milestone:** M3 — Tracks, scale, harmony, and mixer
 **Current status:** READY
-**Next action:** Begin the second M3 item with immutable Core scale and scale-degree pitch contracts plus deterministic MIDI-note resolution tests, while keeping percussion on the existing resolved-note boundary until its separate slot-model change.
+**Next action:** Define and verify the separate immutable Core percussion/sample-slot note model, preserving scale-degree resolution exclusively for pitched tracks and deferring harmony and track-role behavior.
 
 ## Purpose
 
@@ -75,7 +75,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Core transport | `Transport` owns one preallocated event buffer and a `StepSequencer`, accepts monotonic audio-derived current and target ticks, completes an older partial target before a newer coalesced horizon, and reports underrun separately from buffer backpressure. Pause and panic discard stale lookahead and restart generation at an explicit held/current tick; stop returns the deterministic sequence domain to zero |
 | Runtime scheduler | `FmodTransportScheduler` borrows the routed instrument, drives Core time from one `MUS_Synth` DSP-clock snapshot per pump, uses an exact 200 ms integer-frame horizon and full preroll anchor, bounds dispatch work, and creates a new mapper for start/resume/playing panic. Pause and stop hard-cancel scheduled voices; panic uses the global instrument panic path; dispatch failures stop fail-closed |
 | Core boundary | Pure C#, with no Unity or FMOD references |
-| Resolved pitch contract | `Note` stores a validated MIDI note number from 0 through 127; scale-degree resolution remains a later Conductor concern |
+| Resolved pitch contract | `ScaleDegreePitch` stores a signed zero-based degree plus an additional octave offset. Immutable `Scale` owns one strictly increasing octave of unique 0-11 semitone intervals beginning at zero and resolves against an absolute tonic with floor wrapping in `long` arithmetic. Results outside MIDI 0-127 are rejected; the existing pattern, sequencer, and `NoteEvent` boundary remains resolved `Note` data |
 | Pitch-to-frequency conversion | `Note.FrequencyHz` returns `double` using twelve-tone equal temperament and A4 = MIDI 69 = 440 Hz; conversion to FMOD `float` occurs explicitly at the adapter boundary |
 | Logical note event | `NoteEvent` stores a playable velocity from 1 through 127 and a non-overflowing `[StartTick, EndTick)` interval in `long` ticks |
 | Voice ownership | `IInstrument.NoteOn` returns a non-zero stable `VoiceHandle`; `NoteOff` consumes that exact handle, `AllNotesOff` invalidates outstanding handles, and the instrument owns disposable resources |
@@ -283,7 +283,7 @@ The first product is an engine playground. It must let a developer play notes an
 ### Work items
 
 - [x] `DONE` Add track definitions and independent pattern lengths.
-- [ ] `NOT STARTED` Add scale-degree resolution for pitched tracks.
+- [x] `DONE` Add scale-degree resolution for pitched tracks.
 - [ ] `NOT STARTED` Add a separate percussion/sample-slot note model rather than routing drums through scale degrees.
 - [ ] `NOT STARTED` Add harmony-plan and track-role resolution.
 - [ ] `NOT STARTED` Add `MUS_Drums`, `MUS_Bass`, `MUS_Lead`, `MUS_Pad`, and `MUS_FX` buses when required.
@@ -305,6 +305,10 @@ The first product is an engine playground. It must let a developer play notes an
 - Focused EditMode coverage verified invalid identities and missing patterns, value semantics, defensive pattern ownership, deterministic replay, distinct track RNG domains, and independent 12-step/16-step cycle lengths that realign after 48 steps.
 - On 2026-08-02, the focused track-contract set passed 9/9 and the complete `Loom.Tests.EditMode` assembly passed 353/353 in the open Unity Editor. The repository checker passed 73 text files plus Unity metadata parity, and `git diff --check` passed.
 - Unity compilation completed with no C# or LOOM errors. The post-test Console contained only two Test Runner API result-save messages classified as exceptions despite both jobs reporting `Passed`.
+- `ScaleDegreePitch` provides signed zero-based degree and octave-offset value semantics. `Scale` defensively owns a validated one-octave interval set and resolves positive, wrapped, and negative degrees against an absolute tonic without mutable state.
+- Resolution uses floor division and modulo semantics with `long` intermediate arithmetic, accepts exact MIDI boundary results, and reports controlled out-of-range failures even for extreme `int` degree and octave inputs.
+- Existing `PatternStep`, `StepSequencer`, and `NoteEvent` contracts remain resolved-note boundaries. Focused integration coverage verifies that a scale-resolved note passes through that pipeline unchanged, and a warmed 10,000-call resolution loop allocates zero managed bytes.
+- On 2026-08-02, the focused scale-contract set passed 30/30 and the complete `Loom.Tests.EditMode` assembly passed 383/383 in the open Unity Editor. The repository checker passed 77 text files plus Unity metadata parity, and `git diff --check` passed. The post-test Console contained no C# or LOOM errors, only four Test Runner API result-save messages from the current and preceding test jobs.
 
 ## M4 — Mutation Layer
 
@@ -416,6 +420,9 @@ Before ending a task that changed LOOM:
 - Added separate immutable `TrackId` and `PatternId` value contracts plus `TrackDefinition`, which owns one resolved-note pattern, derives its independent length, and creates sequencers using track identity as the deterministic random stream.
 - Added nine focused identity, ownership, replay, RNG-domain, and 12-step/16-step polymetric cycle cases; the focused set passed 9/9 and the complete EditMode assembly passed 353/353 in the open Unity Editor.
 - Completed the first M3 work item and advanced the next action to immutable scale and scale-degree resolution contracts while keeping percussion resolution separate.
+- Added immutable `ScaleDegreePitch` and defensively owned `Scale` contracts with frozen signed-degree wrapping, octave offsets, checked MIDI boundaries, and stateless deterministic resolution.
+- Added 30 focused scale validation, ownership, value, boundary, integration, determinism, and allocation cases; the focused set passed 30/30 and the complete EditMode assembly passed 383/383 in the open Unity Editor.
+- Completed the second M3 work item and advanced the next action to a separate percussion/sample-slot note model.
 
 ### 2026-08-01
 
