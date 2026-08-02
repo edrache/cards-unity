@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.20
+**Plan version:** 1.21
 **Last updated:** 2026-08-02
 **Current milestone:** M2 — Deterministic transport and step sequencer
 **Current status:** IN PROGRESS
-**Next action:** Implement an allocation-free `StepSequencer` that precompiles stable ratchet/microtiming trigger templates, emits resolved `NoteEvent` values in final-onset order for half-open windows, uses one named probability roll per source step, and resumes exactly after bounded-buffer backpressure.
+**Next action:** Add allocation-free inverse sample-frame and FMOD DSP-clock projection to the greatest logical tick at or before a clock value, including preroll handling and rounding plateaus, so the transport can derive deterministic scheduling windows from the audio clock.
 
 ## Purpose
 
@@ -229,8 +229,8 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Implement tick-to-sample/DSP-clock conversion with explicit rounding rules.
 - [x] `DONE` Implement stateless hashed RNG and named random slots.
 - [x] `DONE` Implement a bounded, allocation-free scheduling buffer.
-- [ ] `IN PROGRESS` Implement one step pattern with rests, velocity, duration, probability, ratchets, and microtiming tick offsets.
-- [ ] `NOT STARTED` Add transport start, stop, pause, resume, and panic behavior.
+- [x] `DONE` Implement one step pattern with rests, velocity, duration, probability, ratchets, and microtiming tick offsets.
+- [ ] `IN PROGRESS` Add transport start, stop, pause, resume, and panic behavior.
 - [ ] `NOT STARTED` Add a ten-minute timing/drift measurement.
 
 ### Acceptance criteria
@@ -257,6 +257,8 @@ The first product is an engine playground. It must let a developer play notes an
 - On 2026-08-02, all 13 focused scheduling-buffer cases and the complete 227/227 `Loom.Tests.EditMode` cases passed in the open Unity Editor. A warmed 10,000-operation enqueue/dequeue loop measured zero current-thread managed allocations.
 - `PatternStep` distinguishes a canonical rest from playable MIDI note zero, validates every note-level field, and normalizes zero probability. `StepPattern` owns its steps, derives integer grid and pattern lengths from 960 PPQN, bounds microtiming to one step, and guarantees distinct integer ratchet onsets.
 - On 2026-08-02, all 38 focused pattern-contract cases and the complete 265/265 `Loom.Tests.EditMode` cases passed in the open Unity Editor. Coverage includes ownership, equality, every field boundary, representative grid divisors, microtiming edges, uneven ratchets, rests, and index bounds.
+- `StepSequencer` precompiles stable final-onset templates, evaluates one named stateless probability roll per source step, emits immutable sequenced note events through half-open windows, preserves deterministic same-onset ordering, skips negative preroll onsets, and resumes without loss or duplication after fixed-buffer backpressure.
+- On 2026-08-02, all 22 new sequencer/event cases and the complete 287/287 `Loom.Tests.EditMode` cases passed in the open Unity Editor. Coverage includes rests, probability boundaries and a frozen stream, uneven ratchets, cross-cycle microtiming, same-onset ordering, partition invariance, backpressure, reset replay, overflow, and zero steady-state allocations.
 
 ## M3 — Tracks, Scale, Harmony, and Mixer
 
@@ -369,6 +371,9 @@ Before ending a task that changed LOOM:
 - Added immutable `PatternStep` and defensively owned `StepPattern` data for resolved notes, canonical rests, 960-PPQN subdivisions, velocity, duration, probability, ratchets, and bounded microtiming.
 - Added 38 focused pattern-contract cases; the focused suite passed 38/38 and the complete EditMode assembly passed 265/265 in the open Unity Editor.
 - Advanced the active step-pattern item to deterministic half-open window generation and backpressure recovery.
+- Added immutable `ScheduledNoteEvent` values and an allocation-free `StepSequencer` with precompiled onset ordering, stateless per-step probability, ratchet and microtiming cycle normalization, exact half-open windowing, and resumable bounded-buffer backpressure.
+- Added 22 focused sequencer/event cases; the complete EditMode assembly passed 287/287, including deterministic partition/backpressure replay and zero warmed hot-path allocations.
+- Completed the step-pattern work item and advanced the transport item to inverse audio-clock projection required for deterministic lookahead windows.
 
 ### 2026-08-01
 
