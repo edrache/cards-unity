@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.35
+**Plan version:** 1.36
 **Last updated:** 2026-08-02
 **Current milestone:** M3 — Tracks, scale, harmony, and mixer
 **Current status:** IN PROGRESS
-**Next action:** Commit the parallelized per-track gain, mute, and low-pass mixer controls after full live isolation verification.
+**Next action:** Add the playable four-track M3 demonstration, exercise independent pattern lengths and fixed pump order, then run the complete milestone verification suites.
 
 ## Purpose
 
@@ -81,6 +81,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Harmony resolution | Immutable positive-duration `HarmonyStep` values form one defensively owned cyclic `HarmonyPlan`. `HarmonyResolver` keeps leads free in the scale, maps bass to the active root, and maps signed pad degrees through root-third-fifth diatonic tones using floor wrapping. `TrackRole` contains only pitched roles; percussion never enters this resolver |
 | Pitched pattern pipeline | `PitchedPatternStep` and `PitchedStepPattern` retain unresolved scale-degree pitches. `PitchedStepSequencer` applies the selected `HarmonyResolver` policy at the final onset tick after microtiming and ratchets, then emits the existing resolved `ScheduledNoteEvent` boundary |
 | Track bus paths | `FmodTrackBusPaths` is the shared code contract for every authored Studio track bus. Generated Desktop banks remain ignored build artifacts; committed FMOD metadata is the source configuration |
+| Track mixer controls | `FmodTrackMixerControls` owns one selected Studio bus fader, mute state, and runtime Multiband EQ 24 dB/octave low-pass. It restores preexisting bus state on dispose or reload preparation, recreates its owned DSP after routing restoration, and never mutates another bus |
 | Multi-track ordering | `FourTrackSequencer` owns bounded per-track buffers and merges drums, bass, lead, and pad by `(StartTick, TrackId.Value, TrackSequenceNumber)`. The merge is partition-invariant, backpressure-safe, resettable, and allocation-free after initialization |
 | Pitch-to-frequency conversion | `Note.FrequencyHz` returns `double` using twelve-tone equal temperament and A4 = MIDI 69 = 440 Hz; conversion to FMOD `float` occurs explicitly at the adapter boundary |
 | Logical note event | `NoteEvent` stores a playable velocity from 1 through 127 and a non-overflowing `[StartTick, EndTick)` interval in `long` ticks |
@@ -297,7 +298,7 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Add an explicit percussion-slot pattern-to-event pipeline.
 - [x] `DONE` Add deterministic four-track coordination and canonical same-tick ordering.
 - [x] `DONE` Add explicit per-track FMOD instrument routing.
-- [ ] `IN PROGRESS` Add track gain, mute, and basic effect parameters.
+- [x] `DONE` Add track gain, mute, and basic effect parameters.
 - [ ] `NOT STARTED` Demonstrate independent pattern lengths and stable scheduling order.
 
 ### Acceptance criteria
@@ -338,6 +339,8 @@ The first product is an engine playground. It must let a developer play notes an
 - On 2026-08-02, all 9 focused four-track coordinator EditMode cases passed in the open Unity Editor.
 - `FmodOscillatorInstrument` now accepts an explicit authored bus path while retaining `MUS_Synth` as the source-compatible default. Every pooled voice borrows the routing object's actual parent group, so scheduled clocks remain in the correct bus domain.
 - On 2026-08-02, all 23 focused instrument-contract EditMode cases passed, and a focused live PlayMode case created, played, released, and disposed an oscillator instrument bound to `bus:/MUS_Lead`.
+- `FmodTrackMixerControls` provides validated linear gain, mute, and 20–22000 Hz low-pass cutoff for one declared Studio bus. It owns only its runtime EQ DSP, preserves the original bus state, and follows explicit prepare/restore/dispose lifecycle rules.
+- On 2026-08-02, all 12 focused mixer-control EditMode cases and 2/2 focused live PlayMode cases passed. Live coverage verified state round trips, lifecycle restoration, and that lead controls leave the bass bus unchanged.
 
 ## M4 — Mutation Layer
 
@@ -468,6 +471,8 @@ Before ending a task that changed LOOM:
 - Completed deterministic Core coordination and advanced the audio boundary to explicit per-track FMOD instrument binding.
 - Generalized pooled oscillator instruments to an explicit authored track bus and verified a live lead-bus voice; 23/23 focused EditMode and 1/1 focused PlayMode cases passed.
 - Completed per-track audio routing and advanced to the already parallelized mixer-control slice.
+- Added lifecycle-safe per-track gain, mute, and low-pass controls with live cross-bus isolation; 12/12 focused EditMode and 2/2 focused PlayMode cases passed.
+- Completed the mixer-control work item and advanced M3 to its playable four-track demonstration and final milestone verification.
 
 ### 2026-08-01
 

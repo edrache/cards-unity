@@ -35,6 +35,12 @@ namespace Loom.Fmod
 
         public string BusPath => busPath;
 
+        public FMOD.Studio.Bus GetBus()
+        {
+            GetChannelGroup();
+            return cachedBus;
+        }
+
         public FMOD.ChannelGroup GetChannelGroup()
         {
             ThrowIfDisposed();
