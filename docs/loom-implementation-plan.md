@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.31
+**Plan version:** 1.32
 **Last updated:** 2026-08-02
 **Current milestone:** M3 — Tracks, scale, harmony, and mixer
-**Current status:** READY
-**Next action:** Add harmony-aware pitched and explicit percussion-slot pattern-to-event pipelines while preserving the existing resolved-note sequencer contract and deterministic hot-path behavior.
+**Current status:** IN PROGRESS
+**Next action:** Complete and commit the explicit percussion-slot pattern-to-event pipeline, then verify the full EditMode suite before multi-track coordination.
 
 ## Purpose
 
@@ -78,6 +78,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Resolved pitch contract | `ScaleDegreePitch` stores a signed zero-based degree plus an additional octave offset. Immutable `Scale` owns one strictly increasing octave of unique 0-11 semitone intervals beginning at zero and resolves against an absolute tonic with floor wrapping in `long` arithmetic. Results outside MIDI 0-127 are rejected; the existing pattern, sequencer, and `NoteEvent` boundary remains resolved `Note` data |
 | Percussion note contract | `PercussionNote` is a separate immutable value identified by a nonzero instrument-local `ulong` sample-slot ID. It has no MIDI pitch, scale degree, octave, asset path, Unity, or FMOD dependency; the assigned percussion backend owns slot-to-resource mapping |
 | Harmony resolution | Immutable positive-duration `HarmonyStep` values form one defensively owned cyclic `HarmonyPlan`. `HarmonyResolver` keeps leads free in the scale, maps bass to the active root, and maps signed pad degrees through root-third-fifth diatonic tones using floor wrapping. `TrackRole` contains only pitched roles; percussion never enters this resolver |
+| Pitched pattern pipeline | `PitchedPatternStep` and `PitchedStepPattern` retain unresolved scale-degree pitches. `PitchedStepSequencer` applies the selected `HarmonyResolver` policy at the final onset tick after microtiming and ratchets, then emits the existing resolved `ScheduledNoteEvent` boundary |
 | Track bus paths | `FmodTrackBusPaths` is the shared code contract for every authored Studio track bus. Generated Desktop banks remain ignored build artifacts; committed FMOD metadata is the source configuration |
 | Pitch-to-frequency conversion | `Note.FrequencyHz` returns `double` using twelve-tone equal temperament and A4 = MIDI 69 = 440 Hz; conversion to FMOD `float` occurs explicitly at the adapter boundary |
 | Logical note event | `NoteEvent` stores a playable velocity from 1 through 127 and a non-overflowing `[StartTick, EndTick)` interval in `long` ticks |
@@ -290,9 +291,10 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Add a separate percussion/sample-slot note model rather than routing drums through scale degrees.
 - [x] `DONE` Add harmony-plan and track-role resolution.
 - [x] `DONE` Add `MUS_Drums`, `MUS_Bass`, `MUS_Lead`, `MUS_Pad`, and `MUS_FX` buses when required.
-- [ ] `READY` Add harmony-aware pitched and explicit percussion-slot pattern-to-event pipelines.
+- [x] `DONE` Add a harmony-aware pitched pattern-to-event pipeline.
+- [ ] `IN PROGRESS` Add an explicit percussion-slot pattern-to-event pipeline.
 - [ ] `NOT STARTED` Add deterministic multi-track coordination and per-track instrument routing.
-- [ ] `NOT STARTED` Add track gain, mute, and basic effect parameters.
+- [ ] `IN PROGRESS` Add track gain, mute, and basic effect parameters.
 - [ ] `NOT STARTED` Demonstrate independent pattern lengths and stable scheduling order.
 
 ### Acceptance criteria
@@ -323,6 +325,9 @@ The first product is an engine playground. It must let a developer play notes an
 - FMOD Studio now owns five direct Master Bus children for drums, bass, lead, pad, and effects alongside the existing synth bus. The Desktop Master Bank was rebuilt from the saved Studio project on 2026-08-02.
 - `FmodTrackBusPaths` freezes the six authored Studio paths as one shared adapter contract, and the existing synth instrument aliases that contract rather than duplicating its literal path.
 - The focused live bus test resolved and materialized valid ChannelGroups for all five new paths. The complete suites passed 426/426 EditMode and 9/9 PlayMode in the open Unity Editor; the repository coding-standard checker passed 88 text files plus Unity metadata parity.
+- `PitchedPatternStep` and `PitchedStepPattern` preserve unresolved scale-degree intent with the same validated probability, ratchet, duration, and microtiming contract as the resolved-note pattern path.
+- `PitchedStepSequencer` resolves each final onset through the selected bass, lead, or pad policy and retains deterministic half-open windows, stateless probability, backpressure replay, reset, overflow handling, and zero warmed allocations.
+- On 2026-08-02, all 32 focused pitched-pipeline EditMode cases passed in the open Unity Editor. The combined pitched/percussion focused run also passed 102/102 while both explicitly parallelized slices were present.
 
 ## M4 — Mutation Layer
 
@@ -445,6 +450,8 @@ Before ending a task that changed LOOM:
 - Completed the fourth M3 work item and advanced the next action to the five required FMOD Studio track buses.
 - Added five direct-child FMOD Studio track buses, rebuilt the Desktop Master Bank, froze all authored bus paths in `FmodTrackBusPaths`, and verified every new bus as a valid live ChannelGroup.
 - Completed the FMOD bus work item and advanced M3 to harmony-aware pitched and explicit percussion-slot pattern-to-event pipelines required by the four-track coordinator.
+- Added the unresolved pitched pattern pipeline and final-onset harmony resolution for bass, lead, and pad tracks; 32/32 focused EditMode cases passed.
+- Completed the pitched half of the typed pipeline work and kept the explicitly parallel percussion and mixer-control slices in progress.
 
 ### 2026-08-01
 
