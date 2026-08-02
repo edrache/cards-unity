@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.25
+**Plan version:** 1.26
 **Last updated:** 2026-08-02
-**Current milestone:** M2 — Deterministic transport and step sequencer
-**Current status:** IN PROGRESS
-**Next action:** Add the accelerated ten-minute M2 measurement at 120 BPM and 48 kHz, proving 1,200 ordered quarter-note events over 1,152,000 ticks and 28,800,000 frames with zero logical drift, no missing/duplicate events, cadence independence, and zero hot-path allocations; report dispatcher adjustments separately from unmeasured hardware onset jitter.
+**Current milestone:** M3 — Tracks, scale, harmony, and mixer
+**Current status:** READY
+**Next action:** Begin M3 with an immutable Core track definition that owns one sequencer/pattern identity and independent pattern length, while preserving the existing resolved-note event boundary and deferring scale-degree and percussion resolution to separate bounded changes.
 
 ## Purpose
 
@@ -105,8 +105,8 @@ The first product is an engine playground. It must let a developer play notes an
 |---|---|---|
 | M0 | Repository rules and verified FMOD foundation | DONE |
 | M1 | Playable polyphonic synth playground | DONE |
-| M2 | Deterministic transport and step sequencer | IN PROGRESS |
-| M3 | Multiple tracks, scale, harmony, and routing | NOT STARTED |
+| M2 | Deterministic transport and step sequencer | DONE |
+| M3 | Multiple tracks, scale, harmony, and routing | READY |
 | M4 | Quantized mutation layer and game-facing API | NOT STARTED |
 | M5 | Save/replay determinism and engine hardening | NOT STARTED |
 | M6 | Authoring, MIDI, samples, and advanced synthesis | DEFERRED |
@@ -236,7 +236,7 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Implement one step pattern with rests, velocity, duration, probability, ratchets, and microtiming tick offsets.
 - [x] `DONE` Add transport start, stop, pause, resume, and panic behavior.
 - [x] `DONE` Integrate the Core transport with a Unity/FMOD 200 ms runtime scheduling loop.
-- [ ] `IN PROGRESS` Add a ten-minute timing/drift measurement.
+- [x] `DONE` Add a ten-minute timing/drift measurement.
 
 ### Acceptance criteria
 
@@ -272,6 +272,8 @@ The first product is an engine playground. It must let a developer play notes an
 - On 2026-08-02, all 23 focused sequencer cases, all 10 focused transport cases, and the complete 342/342 `Loom.Tests.EditMode` cases passed in the open Unity Editor. A warmed 10,000-cycle transport start/update/dequeue/stop loop measured zero current-thread managed allocations.
 - `FmodTransportScheduler` now anchors each playing session with the full 200 ms preroll, derives current and horizon ticks from one synth-bus clock snapshot, pumps a bounded dispatcher batch, tracks underrun/backpressure/late/plateau telemetry, and cancels or panics scheduled ownership across every lifecycle transition.
 - On 2026-08-02, all 8 focused dispatcher cases, the live 200 ms scheduler lifecycle smoke, the complete 343/343 `Loom.Tests.EditMode` cases, and the complete 8/8 `Loom.Tests.PlayMode` cases passed in the open Unity Editor. The live smoke verified exact runtime-rate lookahead, routed future ownership, pause/resume reanchoring, panic, stop, and zero retained scheduled voices.
+- `TenMinuteTransportHasNoDriftCadenceDependencyOrAllocations` accelerates the complete 600-second default-tempo timeline through integer sample-frame updates, including deterministic 150 ms cadence spikes inside the 200 ms horizon, and compares every event against independent closed-form tick and frame oracles.
+- On 2026-08-02, the ten-minute measurement emitted exactly 1,200 ordered quarter-note events through tick 1,151,040, with a start-tick sum of 690,624,000, no missing or duplicate events, zero tick drift, zero planned-frame drift, zero final-frame error at frame 28,800,000, zero underrun/backpressure reports, cadence-identical checksums, and zero current-thread hot-path allocations. Dispatcher late adjustments remained separately reported by runtime telemetry; actual hardware/output onset jitter was not measured and is not claimed.
 
 ## M3 — Tracks, Scale, Harmony, and Mixer
 
@@ -279,7 +281,7 @@ The first product is an engine playground. It must let a developer play notes an
 
 ### Work items
 
-- [ ] `NOT STARTED` Add track definitions and independent pattern lengths.
+- [ ] `READY` Add track definitions and independent pattern lengths.
 - [ ] `NOT STARTED` Add scale-degree resolution for pitched tracks.
 - [ ] `NOT STARTED` Add a separate percussion/sample-slot note model rather than routing drums through scale degrees.
 - [ ] `NOT STARTED` Add harmony-plan and track-role resolution.
@@ -399,6 +401,9 @@ Before ending a task that changed LOOM:
 - Added `FmodTransportScheduler` with one-clock-snapshot pumping, exact 200 ms lookahead, full preroll anchors, bounded dispatch, fail-closed errors, lifecycle reanchoring, and separate timing/backpressure counters.
 - Added transport-owned dispatcher coverage and a live scheduler lifecycle smoke; the complete suites passed 343/343 EditMode and 8/8 PlayMode with no retained scheduled voices.
 - Completed runtime scheduler integration and advanced M2 to the accelerated ten-minute drift and allocation measurement.
+- Added an accelerated ten-minute transport measurement with independent quarter-note tick/frame oracles, regular-versus-irregular cadence equivalence, explicit missing/duplicate/order counters, and hot-path allocation accounting.
+- The focused timing case passed with 1,200/1,200 events, zero logical or planned-frame drift, zero cadence-dependent differences, zero underrun/backpressure, and zero allocations.
+- Completed every M2 work item and acceptance criterion, marked M2 done, and advanced the plan to the first immutable track-definition slice of M3.
 
 ### 2026-08-01
 
