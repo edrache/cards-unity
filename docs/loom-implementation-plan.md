@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.14
+**Plan version:** 1.15
 **Last updated:** 2026-08-02
 **Current milestone:** M2 — Deterministic transport and step sequencer
 **Current status:** READY
-**Next action:** Implement immutable tempo-map segment data in `Loom.Core`, beginning with a required segment at tick zero and a validated 120 BPM default; add focused EditMode tests for ordering, invalid ticks/BPM, and long-session lookup without introducing sample or DSP-clock conversion yet.
+**Next action:** Implement tempo-aware tick-to-sample-frame conversion with an explicit rounding and overflow contract, using `TempoMap` plus a validated runtime sample rate; add focused EditMode tests across tempo boundaries, fractional-frame results, and long-session limits before adapting the result to FMOD DSP clocks.
 
 ## Purpose
 
@@ -60,6 +60,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Initial meter | 4/4 |
 | Musical-time decomposition | `MusicalTime` accepts ticks from zero through `long.MaxValue` and exposes zero-based `long` bar, `int` beat-within-bar, and `int` tick-within-beat values without reconstructive multiplication |
 | Initial tempo | 120 BPM |
+| Tempo map | `TempoSegment` stores a non-negative start tick and finite positive `double` beats per minute whose seconds-per-beat duration is representable. `TempoMap` owns a defensive copy of at least one strictly ordered segment beginning at tick zero, defaults to one 120 BPM segment, and uses allocation-free binary lookup |
 | Intended sample rate | 48 kHz, verified at runtime rather than assumed |
 | Scheduler lookahead | 200 ms initial tuning value |
 | Determinism contract | Identical logical event stream for identical seed, state, and mutation log |
@@ -219,8 +220,8 @@ The first product is an engine playground. It must let a developer play notes an
 ### Work items
 
 - [x] `DONE` Implement `MusicalTime`, 4/4 meter, and 960 PPQN constants.
-- [ ] `READY` Implement immutable tempo-map segments, initially one 120 BPM segment.
-- [ ] `NOT STARTED` Implement tick-to-sample/DSP-clock conversion with explicit rounding rules.
+- [x] `DONE` Implement immutable tempo-map segments, initially one 120 BPM segment.
+- [ ] `READY` Implement tick-to-sample/DSP-clock conversion with explicit rounding rules.
 - [ ] `NOT STARTED` Implement stateless hashed RNG and named random slots.
 - [ ] `NOT STARTED` Implement a bounded, allocation-free scheduling buffer.
 - [ ] `NOT STARTED` Implement one step pattern with rests, velocity, duration, probability, ratchets, and microtiming tick offsets.
@@ -239,6 +240,8 @@ The first product is an engine playground. It must let a developer play notes an
 
 - `MusicalTime` is an immutable Core value with a non-negative `long` tick contract, fixed 960 PPQN and 4/4 constants, and zero-based bar/beat/tick decomposition that remains safe at `long.MaxValue`.
 - On 2026-08-02, all 18 focused `MusicalTimeTests` and the complete 111/111 `Loom.Tests.EditMode` cases passed in the open Unity Editor. The repository coding-standard checker and `git diff --check` also passed; the final Console contained no LOOM, compilation, or test-cleanup errors.
+- `TempoSegment` validates non-negative ticks and finite positive tempo. `TempoMap` rejects missing, invalid, duplicate, and unordered segments; owns a defensive array copy; and resolves half-open tempo regions with allocation-free binary search through `long.MaxValue`.
+- On 2026-08-02, all 38 focused tempo-map cases and the complete 149/149 `Loom.Tests.EditMode` cases passed in the open Unity Editor.
 
 ## M3 — Tracks, Scale, Harmony, and Mixer
 
@@ -333,6 +336,9 @@ Before ending a task that changed LOOM:
 - Added immutable, fixed-meter `MusicalTime` to `Loom.Core`, including explicit 960 PPQN and 4/4 constants, non-negative absolute ticks, and zero-based decomposition safe through `long.MaxValue`.
 - Added 18 focused EditMode boundary and value-semantics cases; the focused suite passed 18/18 and the complete EditMode assembly passed 111/111 in the open Unity Editor.
 - Completed the first M2 work item and advanced the next action to immutable tempo-map segment data with a 120 BPM default.
+- Added immutable validated `TempoSegment` values and an owned, strictly ordered `TempoMap` with a single-segment 120 BPM default and allocation-free binary lookup.
+- Added 38 focused tempo-map validation, ownership, ordering, and lookup cases; the focused suite passed 38/38 and the complete EditMode assembly passed 149/149 in the open Unity Editor.
+- Completed the second M2 work item and advanced the next action to explicit tempo-aware tick-to-sample-frame conversion.
 
 ### 2026-08-01
 
