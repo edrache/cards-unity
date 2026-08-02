@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.15
+**Plan version:** 1.16
 **Last updated:** 2026-08-02
 **Current milestone:** M2 — Deterministic transport and step sequencer
-**Current status:** READY
-**Next action:** Implement tempo-aware tick-to-sample-frame conversion with an explicit rounding and overflow contract, using `TempoMap` plus a validated runtime sample rate; add focused EditMode tests across tempo boundaries, fractional-frame results, and long-session limits before adapting the result to FMOD DSP clocks.
+**Current status:** IN PROGRESS
+**Next action:** Add an FMOD adapter that reads the runtime sample rate and parent DSP clock, anchors a logical tick/sample-frame origin to that clock, and converts `TickSampleConverter` output into checked absolute DSP-clock values; verify the anchor and overflow contract before connecting a scheduler.
 
 ## Purpose
 
@@ -61,6 +61,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Musical-time decomposition | `MusicalTime` accepts ticks from zero through `long.MaxValue` and exposes zero-based `long` bar, `int` beat-within-bar, and `int` tick-within-beat values without reconstructive multiplication |
 | Initial tempo | 120 BPM |
 | Tempo map | `TempoSegment` stores a non-negative start tick and finite positive `double` beats per minute whose seconds-per-beat duration is representable. `TempoMap` owns a defensive copy of at least one strictly ordered segment beginning at tick zero, defaults to one 120 BPM segment, and uses allocation-free binary lookup |
+| Tick-to-sample conversion | `TickSampleConverter` uses a positive runtime sample rate, sums absolute tempo regions from tick zero without an incremental playhead, rounds the final non-negative frame once with `MidpointRounding.AwayFromZero`, returns `ulong`, and throws on values at or beyond 2^64 |
 | Intended sample rate | 48 kHz, verified at runtime rather than assumed |
 | Scheduler lookahead | 200 ms initial tuning value |
 | Determinism contract | Identical logical event stream for identical seed, state, and mutation log |
@@ -221,7 +222,7 @@ The first product is an engine playground. It must let a developer play notes an
 
 - [x] `DONE` Implement `MusicalTime`, 4/4 meter, and 960 PPQN constants.
 - [x] `DONE` Implement immutable tempo-map segments, initially one 120 BPM segment.
-- [ ] `READY` Implement tick-to-sample/DSP-clock conversion with explicit rounding rules.
+- [ ] `IN PROGRESS` Implement tick-to-sample/DSP-clock conversion with explicit rounding rules.
 - [ ] `NOT STARTED` Implement stateless hashed RNG and named random slots.
 - [ ] `NOT STARTED` Implement a bounded, allocation-free scheduling buffer.
 - [ ] `NOT STARTED` Implement one step pattern with rests, velocity, duration, probability, ratchets, and microtiming tick offsets.
@@ -242,6 +243,8 @@ The first product is an engine playground. It must let a developer play notes an
 - On 2026-08-02, all 18 focused `MusicalTimeTests` and the complete 111/111 `Loom.Tests.EditMode` cases passed in the open Unity Editor. The repository coding-standard checker and `git diff --check` also passed; the final Console contained no LOOM, compilation, or test-cleanup errors.
 - `TempoSegment` validates non-negative ticks and finite positive tempo. `TempoMap` rejects missing, invalid, duplicate, and unordered segments; owns a defensive array copy; and resolves half-open tempo regions with allocation-free binary search through `long.MaxValue`.
 - On 2026-08-02, all 38 focused tempo-map cases and the complete 149/149 `Loom.Tests.EditMode` cases passed in the open Unity Editor.
+- `TickSampleConverter` converts from absolute musical ticks through every applicable tempo region, rounds only the final sample-frame position, validates runtime sample rate, and reports `UInt64` overflow explicitly without referencing Unity or FMOD.
+- On 2026-08-02, all 27 focused conversion cases and the complete 176/176 `Loom.Tests.EditMode` cases passed in the open Unity Editor. Coverage includes 44.1 and 48 kHz, tempo boundaries, midpoint rounding, a ten-minute no-drift result, and representable and overflowing `long.MaxValue` conversions.
 
 ## M3 — Tracks, Scale, Harmony, and Mixer
 
@@ -339,6 +342,9 @@ Before ending a task that changed LOOM:
 - Added immutable validated `TempoSegment` values and an owned, strictly ordered `TempoMap` with a single-segment 120 BPM default and allocation-free binary lookup.
 - Added 38 focused tempo-map validation, ownership, ordering, and lookup cases; the focused suite passed 38/38 and the complete EditMode assembly passed 149/149 in the open Unity Editor.
 - Completed the second M2 work item and advanced the next action to explicit tempo-aware tick-to-sample-frame conversion.
+- Added Core `TickSampleConverter` with validated runtime sample rate, absolute multi-segment accumulation, one explicit midpoint-away rounding step, and checked `UInt64` range handling.
+- Added 27 focused conversion cases; the focused suite passed 27/27 and the complete EditMode assembly passed 176/176 in the open Unity Editor.
+- Advanced the active timing item to the FMOD DSP-clock anchoring adapter while leaving scheduler behavior out of this bounded change.
 
 ### 2026-08-01
 
