@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.29
+**Plan version:** 1.30
 **Last updated:** 2026-08-02
 **Current milestone:** M3 — Tracks, scale, harmony, and mixer
 **Current status:** READY
-**Next action:** Define and verify immutable Core harmony-plan and track-role resolution contracts that consume the existing scale-degree pitch model for pitched tracks while leaving `PercussionNote` untouched.
+**Next action:** Create `Master/MUS_Drums`, `Master/MUS_Bass`, `Master/MUS_Lead`, `Master/MUS_Pad`, and `Master/MUS_FX` in FMOD Studio, rebuild the Desktop Master Bank, and verify every Studio bus resolves in the open Unity Editor.
 
 ## Purpose
 
@@ -77,6 +77,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Core boundary | Pure C#, with no Unity or FMOD references |
 | Resolved pitch contract | `ScaleDegreePitch` stores a signed zero-based degree plus an additional octave offset. Immutable `Scale` owns one strictly increasing octave of unique 0-11 semitone intervals beginning at zero and resolves against an absolute tonic with floor wrapping in `long` arithmetic. Results outside MIDI 0-127 are rejected; the existing pattern, sequencer, and `NoteEvent` boundary remains resolved `Note` data |
 | Percussion note contract | `PercussionNote` is a separate immutable value identified by a nonzero instrument-local `ulong` sample-slot ID. It has no MIDI pitch, scale degree, octave, asset path, Unity, or FMOD dependency; the assigned percussion backend owns slot-to-resource mapping |
+| Harmony resolution | Immutable positive-duration `HarmonyStep` values form one defensively owned cyclic `HarmonyPlan`. `HarmonyResolver` keeps leads free in the scale, maps bass to the active root, and maps signed pad degrees through root-third-fifth diatonic tones using floor wrapping. `TrackRole` contains only pitched roles; percussion never enters this resolver |
 | Pitch-to-frequency conversion | `Note.FrequencyHz` returns `double` using twelve-tone equal temperament and A4 = MIDI 69 = 440 Hz; conversion to FMOD `float` occurs explicitly at the adapter boundary |
 | Logical note event | `NoteEvent` stores a playable velocity from 1 through 127 and a non-overflowing `[StartTick, EndTick)` interval in `long` ticks |
 | Voice ownership | `IInstrument.NoteOn` returns a non-zero stable `VoiceHandle`; `NoteOff` consumes that exact handle, `AllNotesOff` invalidates outstanding handles, and the instrument owns disposable resources |
@@ -286,7 +287,7 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Add track definitions and independent pattern lengths.
 - [x] `DONE` Add scale-degree resolution for pitched tracks.
 - [x] `DONE` Add a separate percussion/sample-slot note model rather than routing drums through scale degrees.
-- [ ] `NOT STARTED` Add harmony-plan and track-role resolution.
+- [x] `DONE` Add harmony-plan and track-role resolution.
 - [ ] `NOT STARTED` Add `MUS_Drums`, `MUS_Bass`, `MUS_Lead`, `MUS_Pad`, and `MUS_FX` buses when required.
 - [ ] `NOT STARTED` Add track gain, mute, and basic effect parameters.
 - [ ] `NOT STARTED` Demonstrate independent pattern lengths and stable scheduling order.
@@ -313,6 +314,9 @@ The first product is an engine playground. It must let a developer play notes an
 - `PercussionNote` provides an explicit nonzero instrument-local sample-slot identity whose full `ulong` range and value semantics are independent from the MIDI note range. Default remains an invalid sentinel rather than a playable slot.
 - The bounded percussion model adds no scale conversion, sample path, FMOD mapping, pattern event, sequencer, or dispatcher behavior. Those integrations remain deferred until their ordering, backend, and ownership contracts are selected explicitly.
 - On 2026-08-02, the focused percussion-note set passed 4/4 and the complete `Loom.Tests.EditMode` assembly passed 387/387 in the open Unity Editor. The repository checker passed 79 text files plus Unity metadata parity, and `git diff --check` passed. The post-test Console contained no C# or LOOM errors, only six Test Runner API result-save messages from successful jobs.
+- `HarmonyStep` and `HarmonyPlan` provide an immutable cyclic chord-root timeline with positive durations, checked total length, defensive ownership, half-open boundaries, binary lookup, and deterministic `long.MaxValue` behavior.
+- `HarmonyResolver` preserves free scale degrees for lead, maps bass to the active root, and maps signed pad degrees through a diatonic root-third-fifth triad. It rejects undefined roles, leaves `PercussionNote` structurally separate, and emits the existing resolved `Note` boundary without mutable state.
+- On 2026-08-02, the focused harmony set passed 39/39 and the complete `Loom.Tests.EditMode` assembly passed 426/426 in the open Unity Editor. A warmed 10,000-call resolver loop allocated zero managed bytes. The repository checker passed 86 text files plus Unity metadata parity, and `git diff --check` passed; the Console contained no C# or LOOM errors, only Test Runner result-save messages.
 
 ## M4 — Mutation Layer
 
@@ -430,6 +434,9 @@ Before ending a task that changed LOOM:
 - Added immutable `PercussionNote` with a nonzero instrument-local sample-slot identity that is structurally separate from MIDI notes and scale degrees.
 - Added four focused percussion identity, boundary, and value-semantics cases; the focused set passed 4/4 and the complete EditMode assembly passed 387/387 in the open Unity Editor.
 - Completed the third M3 work item and advanced the next action to harmony-plan and track-role resolution contracts.
+- Added immutable cyclic `HarmonyPlan` data, pitched `TrackRole` policies, and allocation-free `HarmonyResolver` behavior for free lead, root bass, and diatonic triad pad resolution.
+- Added 39 focused harmony validation, boundary, cyclic lookup, role, determinism, overflow, integration, and allocation cases; the focused set passed 39/39 and the complete EditMode assembly passed 426/426.
+- Completed the fourth M3 work item and advanced the next action to the five required FMOD Studio track buses.
 
 ### 2026-08-01
 
