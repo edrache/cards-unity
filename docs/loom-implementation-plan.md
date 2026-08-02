@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.28
+**Plan version:** 1.29
 **Last updated:** 2026-08-02
 **Current milestone:** M3 — Tracks, scale, harmony, and mixer
 **Current status:** READY
-**Next action:** Define and verify the separate immutable Core percussion/sample-slot note model, preserving scale-degree resolution exclusively for pitched tracks and deferring harmony and track-role behavior.
+**Next action:** Define and verify immutable Core harmony-plan and track-role resolution contracts that consume the existing scale-degree pitch model for pitched tracks while leaving `PercussionNote` untouched.
 
 ## Purpose
 
@@ -76,6 +76,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Runtime scheduler | `FmodTransportScheduler` borrows the routed instrument, drives Core time from one `MUS_Synth` DSP-clock snapshot per pump, uses an exact 200 ms integer-frame horizon and full preroll anchor, bounds dispatch work, and creates a new mapper for start/resume/playing panic. Pause and stop hard-cancel scheduled voices; panic uses the global instrument panic path; dispatch failures stop fail-closed |
 | Core boundary | Pure C#, with no Unity or FMOD references |
 | Resolved pitch contract | `ScaleDegreePitch` stores a signed zero-based degree plus an additional octave offset. Immutable `Scale` owns one strictly increasing octave of unique 0-11 semitone intervals beginning at zero and resolves against an absolute tonic with floor wrapping in `long` arithmetic. Results outside MIDI 0-127 are rejected; the existing pattern, sequencer, and `NoteEvent` boundary remains resolved `Note` data |
+| Percussion note contract | `PercussionNote` is a separate immutable value identified by a nonzero instrument-local `ulong` sample-slot ID. It has no MIDI pitch, scale degree, octave, asset path, Unity, or FMOD dependency; the assigned percussion backend owns slot-to-resource mapping |
 | Pitch-to-frequency conversion | `Note.FrequencyHz` returns `double` using twelve-tone equal temperament and A4 = MIDI 69 = 440 Hz; conversion to FMOD `float` occurs explicitly at the adapter boundary |
 | Logical note event | `NoteEvent` stores a playable velocity from 1 through 127 and a non-overflowing `[StartTick, EndTick)` interval in `long` ticks |
 | Voice ownership | `IInstrument.NoteOn` returns a non-zero stable `VoiceHandle`; `NoteOff` consumes that exact handle, `AllNotesOff` invalidates outstanding handles, and the instrument owns disposable resources |
@@ -284,7 +285,7 @@ The first product is an engine playground. It must let a developer play notes an
 
 - [x] `DONE` Add track definitions and independent pattern lengths.
 - [x] `DONE` Add scale-degree resolution for pitched tracks.
-- [ ] `NOT STARTED` Add a separate percussion/sample-slot note model rather than routing drums through scale degrees.
+- [x] `DONE` Add a separate percussion/sample-slot note model rather than routing drums through scale degrees.
 - [ ] `NOT STARTED` Add harmony-plan and track-role resolution.
 - [ ] `NOT STARTED` Add `MUS_Drums`, `MUS_Bass`, `MUS_Lead`, `MUS_Pad`, and `MUS_FX` buses when required.
 - [ ] `NOT STARTED` Add track gain, mute, and basic effect parameters.
@@ -309,6 +310,9 @@ The first product is an engine playground. It must let a developer play notes an
 - Resolution uses floor division and modulo semantics with `long` intermediate arithmetic, accepts exact MIDI boundary results, and reports controlled out-of-range failures even for extreme `int` degree and octave inputs.
 - Existing `PatternStep`, `StepSequencer`, and `NoteEvent` contracts remain resolved-note boundaries. Focused integration coverage verifies that a scale-resolved note passes through that pipeline unchanged, and a warmed 10,000-call resolution loop allocates zero managed bytes.
 - On 2026-08-02, the focused scale-contract set passed 30/30 and the complete `Loom.Tests.EditMode` assembly passed 383/383 in the open Unity Editor. The repository checker passed 77 text files plus Unity metadata parity, and `git diff --check` passed. The post-test Console contained no C# or LOOM errors, only four Test Runner API result-save messages from the current and preceding test jobs.
+- `PercussionNote` provides an explicit nonzero instrument-local sample-slot identity whose full `ulong` range and value semantics are independent from the MIDI note range. Default remains an invalid sentinel rather than a playable slot.
+- The bounded percussion model adds no scale conversion, sample path, FMOD mapping, pattern event, sequencer, or dispatcher behavior. Those integrations remain deferred until their ordering, backend, and ownership contracts are selected explicitly.
+- On 2026-08-02, the focused percussion-note set passed 4/4 and the complete `Loom.Tests.EditMode` assembly passed 387/387 in the open Unity Editor. The repository checker passed 79 text files plus Unity metadata parity, and `git diff --check` passed. The post-test Console contained no C# or LOOM errors, only six Test Runner API result-save messages from successful jobs.
 
 ## M4 — Mutation Layer
 
@@ -423,6 +427,9 @@ Before ending a task that changed LOOM:
 - Added immutable `ScaleDegreePitch` and defensively owned `Scale` contracts with frozen signed-degree wrapping, octave offsets, checked MIDI boundaries, and stateless deterministic resolution.
 - Added 30 focused scale validation, ownership, value, boundary, integration, determinism, and allocation cases; the focused set passed 30/30 and the complete EditMode assembly passed 383/383 in the open Unity Editor.
 - Completed the second M3 work item and advanced the next action to a separate percussion/sample-slot note model.
+- Added immutable `PercussionNote` with a nonzero instrument-local sample-slot identity that is structurally separate from MIDI notes and scale degrees.
+- Added four focused percussion identity, boundary, and value-semantics cases; the focused set passed 4/4 and the complete EditMode assembly passed 387/387 in the open Unity Editor.
+- Completed the third M3 work item and advanced the next action to harmony-plan and track-role resolution contracts.
 
 ### 2026-08-01
 
