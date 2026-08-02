@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.16
+**Plan version:** 1.17
 **Last updated:** 2026-08-02
 **Current milestone:** M2 — Deterministic transport and step sequencer
-**Current status:** IN PROGRESS
-**Next action:** Add an FMOD adapter that reads the runtime sample rate and parent DSP clock, anchors a logical tick/sample-frame origin to that clock, and converts `TickSampleConverter` output into checked absolute DSP-clock values; verify the anchor and overflow contract before connecting a scheduler.
+**Current status:** READY
+**Next action:** Implement a Core-only stateless hashed RNG with stable named random slots and explicit input serialization; verify identical inputs, slot independence, boundary values, and iteration-order independence before pattern probability uses it.
 
 ## Purpose
 
@@ -62,6 +62,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Initial tempo | 120 BPM |
 | Tempo map | `TempoSegment` stores a non-negative start tick and finite positive `double` beats per minute whose seconds-per-beat duration is representable. `TempoMap` owns a defensive copy of at least one strictly ordered segment beginning at tick zero, defaults to one 120 BPM segment, and uses allocation-free binary lookup |
 | Tick-to-sample conversion | `TickSampleConverter` uses a positive runtime sample rate, sums absolute tempo regions from tick zero without an incremental playhead, rounds the final non-negative frame once with `MidpointRounding.AwayFromZero`, returns `ulong`, and throws on values at or beyond 2^64 |
+| Tick-to-DSP-clock mapping | `FmodTickDspClockMapper` reads FMOD's runtime sample rate, captures one immutable tick/sample-frame/DSP-clock anchor with an optional future lead, and maps absolute ticks by checked unsigned addition or subtraction. Its clock source is the own DSP clock of the ChannelGroup that will parent scheduled channels; the mapper borrows that lifecycle-bound handle and must be recreated after device, bank, or routing changes |
 | Intended sample rate | 48 kHz, verified at runtime rather than assumed |
 | Scheduler lookahead | 200 ms initial tuning value |
 | Determinism contract | Identical logical event stream for identical seed, state, and mutation log |
@@ -222,8 +223,8 @@ The first product is an engine playground. It must let a developer play notes an
 
 - [x] `DONE` Implement `MusicalTime`, 4/4 meter, and 960 PPQN constants.
 - [x] `DONE` Implement immutable tempo-map segments, initially one 120 BPM segment.
-- [ ] `IN PROGRESS` Implement tick-to-sample/DSP-clock conversion with explicit rounding rules.
-- [ ] `NOT STARTED` Implement stateless hashed RNG and named random slots.
+- [x] `DONE` Implement tick-to-sample/DSP-clock conversion with explicit rounding rules.
+- [ ] `READY` Implement stateless hashed RNG and named random slots.
 - [ ] `NOT STARTED` Implement a bounded, allocation-free scheduling buffer.
 - [ ] `NOT STARTED` Implement one step pattern with rests, velocity, duration, probability, ratchets, and microtiming tick offsets.
 - [ ] `NOT STARTED` Add transport start, stop, pause, resume, and panic behavior.
@@ -245,6 +246,8 @@ The first product is an engine playground. It must let a developer play notes an
 - On 2026-08-02, all 38 focused tempo-map cases and the complete 149/149 `Loom.Tests.EditMode` cases passed in the open Unity Editor.
 - `TickSampleConverter` converts from absolute musical ticks through every applicable tempo region, rounds only the final sample-frame position, validates runtime sample rate, and reports `UInt64` overflow explicitly without referencing Unity or FMOD.
 - On 2026-08-02, all 27 focused conversion cases and the complete 176/176 `Loom.Tests.EditMode` cases passed in the open Unity Editor. Coverage includes 44.1 and 48 kHz, tempo boundaries, midpoint rounding, a ten-minute no-drift result, and representable and overflowing `long.MaxValue` conversions.
+- `FmodTickDspClockMapper` captures FMOD's runtime sample rate and the own clock of the ChannelGroup that parents scheduled channels, retains one stable affine anchor, exposes a checked current-clock read in the same domain, and reports native failures with operation context. It borrows rather than releases FMOD handles and documents recreation after lifecycle changes.
+- On 2026-08-02, all 21 focused mapper cases, the complete 197/197 `Loom.Tests.EditMode` cases, the focused live `MUS_Synth` clock-domain smoke, and the complete 6/6 `Loom.Tests.PlayMode` cases passed in the open Unity Editor. The repository coding-standard checker and `git diff --check` also passed.
 
 ## M3 — Tracks, Scale, Harmony, and Mixer
 
@@ -345,6 +348,9 @@ Before ending a task that changed LOOM:
 - Added Core `TickSampleConverter` with validated runtime sample rate, absolute multi-segment accumulation, one explicit midpoint-away rounding step, and checked `UInt64` range handling.
 - Added 27 focused conversion cases; the focused suite passed 27/27 and the complete EditMode assembly passed 176/176 in the open Unity Editor.
 - Advanced the active timing item to the FMOD DSP-clock anchoring adapter while leaving scheduler behavior out of this bounded change.
+- Added `FmodTickDspClockMapper` with runtime sample-rate discovery, one immutable tick/sample/DSP anchor, optional scheduling lead, checked forward and backward mapping, contextual FMOD result handling, and explicit borrowed-handle lifecycle rules.
+- Added 21 focused mapper cases and a live `MUS_Synth` PlayMode clock-domain smoke; the complete suites passed 197/197 EditMode and 6/6 PlayMode in the open Unity Editor.
+- Completed the tick-to-sample/DSP-clock work item and advanced M2 to the stateless hashed RNG and named-slot contract.
 
 ### 2026-08-01
 

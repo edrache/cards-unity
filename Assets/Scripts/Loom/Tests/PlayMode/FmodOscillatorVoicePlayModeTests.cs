@@ -10,6 +10,71 @@ namespace Loom.Tests.PlayMode
     public sealed class FmodOscillatorVoicePlayModeTests
     {
         [UnityTest]
+        public IEnumerator TickMapperAnchorsTheLiveSynthBusClockDomain()
+        {
+            FMOD.Studio.Bus synthBus = default;
+            bool isBusLocked = false;
+
+            try
+            {
+                Assert.That(
+                    RuntimeManager.StudioSystem.getBus(
+                        Fmod.FmodOscillatorInstrument.SynthBusPath,
+                        out synthBus),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(synthBus.isValid(), Is.True);
+                Assert.That(
+                    synthBus.lockChannelGroup(),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                isBusLocked = true;
+                Assert.That(
+                    RuntimeManager.StudioSystem.flushCommands(),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(
+                    synthBus.getChannelGroup(out FMOD.ChannelGroup synthGroup),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(synthGroup.hasHandle(), Is.True);
+
+                var mapper = new Fmod.FmodTickDspClockMapper(
+                    RuntimeManager.CoreSystem,
+                    synthGroup,
+                    Core.TempoMap.Default,
+                    0,
+                    4_096UL);
+                var converter = new Core.TickSampleConverter(
+                    Core.TempoMap.Default,
+                    mapper.SampleRate);
+
+                Assert.That(mapper.SampleRate, Is.GreaterThan(0));
+                Assert.That(mapper.ToDspClock(0), Is.EqualTo(mapper.AnchorDspClock));
+                Assert.That(
+                    mapper.ToDspClock(Core.MusicalTime.TicksPerQuarterNote)
+                        - mapper.AnchorDspClock,
+                    Is.EqualTo(
+                        converter.ToSampleFrame(
+                            Core.MusicalTime.TicksPerQuarterNote)));
+
+                yield return null;
+
+                Assert.That(
+                    mapper.GetCurrentDspClock(),
+                    Is.GreaterThanOrEqualTo(mapper.AnchorDspClock - 4_096UL));
+            }
+            finally
+            {
+                if (isBusLocked && synthBus.isValid())
+                {
+                    Assert.That(
+                        synthBus.unlockChannelGroup(),
+                        Is.EqualTo(FMOD.RESULT.OK));
+                    Assert.That(
+                        RuntimeManager.StudioSystem.flushCommands(),
+                        Is.EqualTo(FMOD.RESULT.OK));
+                }
+            }
+        }
+
+        [UnityTest]
         public IEnumerator VoiceRunsAdsrAndAppliesLiveSynthControls()
         {
             var listenerObject = new GameObject("LOOM FMOD Test Listener")
