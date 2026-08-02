@@ -130,6 +130,36 @@ namespace Loom.Tests.EditMode
         }
 
         [Test]
+        public void DispatcherConsumesFromTransportOnlyAfterInstrumentSuccess()
+        {
+            var pattern = new Core.StepPattern(
+                4,
+                new Core.PatternStep(new Core.Note(60), 100, 120L));
+            var transport = new Core.Transport(
+                new Core.StepSequencer(pattern, 0UL, 0UL),
+                2);
+            transport.Start();
+            transport.Update(0L, 480L);
+            var instrument = new FakeScheduledInstrument();
+            var dispatcher = new Fmod.FmodScheduledNoteDispatcher(
+                new FakeClockMapper(),
+                instrument,
+                1UL);
+
+            int count = dispatcher.DispatchAvailable(
+                transport,
+                2,
+                out int lateCount,
+                out int plateauCount);
+
+            Assert.That(count, Is.EqualTo(2));
+            Assert.That(transport.PendingEventCount, Is.Zero);
+            Assert.That(instrument.CallCount, Is.EqualTo(2));
+            Assert.That(lateCount, Is.Zero);
+            Assert.That(plateauCount, Is.Zero);
+        }
+
+        [Test]
         public void InstrumentFailureRetainsTheExactHeadForRetry()
         {
             var instrument = new FakeScheduledInstrument

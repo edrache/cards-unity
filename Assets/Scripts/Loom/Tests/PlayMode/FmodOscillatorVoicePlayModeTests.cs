@@ -272,6 +272,94 @@ namespace Loom.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator TransportSchedulerPumpsTwoHundredMillisecondLookaheadAndLifecycle()
+        {
+            var listenerObject = new GameObject("LOOM Transport Scheduler Test Listener")
+            {
+                hideFlags = HideFlags.DontSave
+            };
+            listenerObject.AddComponent<StudioListener>();
+
+            Fmod.FmodOscillatorInstrument instrument = null;
+            Fmod.FmodTransportScheduler scheduler = null;
+
+            try
+            {
+                instrument = new Fmod.FmodOscillatorInstrument(
+                    RuntimeManager.CoreSystem,
+                    RuntimeManager.StudioSystem,
+                    new Fmod.FmodAdsrEnvelope(0.005d, 0.01d, 0.5f, 0.02d),
+                    new Fmod.FmodOscillatorSettings(gain: 0.01f));
+                var pattern = new Core.StepPattern(
+                    4,
+                    new Core.PatternStep(new Core.Note(60), 90, 120L));
+                scheduler = new Fmod.FmodTransportScheduler(
+                    RuntimeManager.CoreSystem,
+                    instrument,
+                    Core.TempoMap.Default,
+                    pattern,
+                    seed: 123UL,
+                    streamId: 7UL);
+
+                Assert.That(
+                    Fmod.FmodTransportScheduler.DefaultLookaheadMilliseconds,
+                    Is.EqualTo(200));
+
+                scheduler.Start();
+                Core.TransportUpdateStatus firstStatus = scheduler.Pump();
+
+                Assert.That(scheduler.State, Is.EqualTo(Core.TransportState.Playing));
+                Assert.That(scheduler.RuntimeSampleRate, Is.GreaterThan(0));
+                Assert.That(
+                    scheduler.LookaheadSampleFrames,
+                    Is.EqualTo(
+                        checked(
+                            (((ulong)scheduler.RuntimeSampleRate * 200UL) + 999UL)
+                            / 1_000UL)));
+                Assert.That(scheduler.ScheduledThroughTick, Is.GreaterThan(0L));
+                Assert.That(scheduler.DispatchedEventCount, Is.GreaterThanOrEqualTo(1L));
+                Assert.That(scheduler.LateEventCount, Is.Zero);
+                Assert.That(
+                    firstStatus & Core.TransportUpdateStatus.Underrun,
+                    Is.EqualTo(Core.TransportUpdateStatus.Completed));
+                Assert.That(instrument.OwnedVoiceCount, Is.GreaterThanOrEqualTo(1));
+
+                yield return new WaitForSecondsRealtime(0.14f);
+
+                scheduler.Pump();
+                long heldTickBeforePause = scheduler.CurrentTick;
+                scheduler.Pause();
+
+                Assert.That(scheduler.State, Is.EqualTo(Core.TransportState.Paused));
+                Assert.That(scheduler.CurrentTick, Is.GreaterThanOrEqualTo(heldTickBeforePause));
+                Assert.That(scheduler.PendingEventCount, Is.Zero);
+                Assert.That(instrument.OwnedVoiceCount, Is.Zero);
+
+                scheduler.Resume();
+                scheduler.Pump();
+                Assert.That(scheduler.State, Is.EqualTo(Core.TransportState.Playing));
+                Assert.That(instrument.OwnedVoiceCount, Is.GreaterThanOrEqualTo(1));
+
+                scheduler.Panic();
+                Assert.That(scheduler.State, Is.EqualTo(Core.TransportState.Playing));
+                Assert.That(instrument.OwnedVoiceCount, Is.Zero);
+
+                scheduler.Pump();
+                scheduler.Stop();
+
+                Assert.That(scheduler.State, Is.EqualTo(Core.TransportState.Stopped));
+                Assert.That(scheduler.CurrentTick, Is.Zero);
+                Assert.That(instrument.OwnedVoiceCount, Is.Zero);
+            }
+            finally
+            {
+                scheduler?.Dispose();
+                instrument?.Dispose();
+                Object.Destroy(listenerObject);
+            }
+        }
+
+        [UnityTest]
         public IEnumerator InstrumentPlaysEightVoicesAndCleansStolenAndReleasedResources()
         {
             var listenerObject = new GameObject("LOOM Polyphony Test Listener")

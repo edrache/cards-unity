@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.24
+**Plan version:** 1.25
 **Last updated:** 2026-08-02
 **Current milestone:** M2 — Deterministic transport and step sequencer
 **Current status:** IN PROGRESS
-**Next action:** Integrate Core `Transport`, `FmodTickDspClockMapper`, and exact-clock dispatch in a Unity-owned runtime scheduler with a 200 ms lookahead, explicit start/pause/resume/stop/panic reanchoring, bounded per-frame pumping, and cancellation of stale scheduled voices.
+**Next action:** Add the accelerated ten-minute M2 measurement at 120 BPM and 48 kHz, proving 1,200 ordered quarter-note events over 1,152,000 ticks and 28,800,000 frames with zero logical drift, no missing/duplicate events, cadence independence, and zero hot-path allocations; report dispatcher adjustments separately from unmeasured hardware onset jitter.
 
 ## Purpose
 
@@ -72,6 +72,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Scheduled FMOD voices | The interactive `IInstrument` API remains unchanged. `FmodOscillatorInstrument.ScheduleNote` owns future voices separately, sends exact start and release clocks to the lifecycle-bound `MUS_Synth` group, and uses hard `Channel.stop` cancellation rather than the interactive release path |
 | Scheduled dispatch | `FmodScheduledNoteDispatcher` reads the current parent clock once per batch, enforces at least one DSP buffer of lead, preserves mapped gate duration when shifting late events, promotes rounding-plateau gates to one sample frame, and dequeues only after atomic instrument success. Late and plateau counts remain separate runtime timing evidence from the deterministic logical stream |
 | Core transport | `Transport` owns one preallocated event buffer and a `StepSequencer`, accepts monotonic audio-derived current and target ticks, completes an older partial target before a newer coalesced horizon, and reports underrun separately from buffer backpressure. Pause and panic discard stale lookahead and restart generation at an explicit held/current tick; stop returns the deterministic sequence domain to zero |
+| Runtime scheduler | `FmodTransportScheduler` borrows the routed instrument, drives Core time from one `MUS_Synth` DSP-clock snapshot per pump, uses an exact 200 ms integer-frame horizon and full preroll anchor, bounds dispatch work, and creates a new mapper for start/resume/playing panic. Pause and stop hard-cancel scheduled voices; panic uses the global instrument panic path; dispatch failures stop fail-closed |
 | Core boundary | Pure C#, with no Unity or FMOD references |
 | Resolved pitch contract | `Note` stores a validated MIDI note number from 0 through 127; scale-degree resolution remains a later Conductor concern |
 | Pitch-to-frequency conversion | `Note.FrequencyHz` returns `double` using twelve-tone equal temperament and A4 = MIDI 69 = 440 Hz; conversion to FMOD `float` occurs explicitly at the adapter boundary |
@@ -234,8 +235,8 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Implement a bounded, allocation-free scheduling buffer.
 - [x] `DONE` Implement one step pattern with rests, velocity, duration, probability, ratchets, and microtiming tick offsets.
 - [x] `DONE` Add transport start, stop, pause, resume, and panic behavior.
-- [ ] `IN PROGRESS` Integrate the Core transport with a Unity/FMOD 200 ms runtime scheduling loop.
-- [ ] `NOT STARTED` Add a ten-minute timing/drift measurement.
+- [x] `DONE` Integrate the Core transport with a Unity/FMOD 200 ms runtime scheduling loop.
+- [ ] `IN PROGRESS` Add a ten-minute timing/drift measurement.
 
 ### Acceptance criteria
 
@@ -269,6 +270,8 @@ The first product is an engine playground. It must let a developer play notes an
 - On 2026-08-02, all 30 focused instrument/dispatcher cases, the complete 328/328 `Loom.Tests.EditMode` cases, the exact-clock live voice test, and the complete 7/7 `Loom.Tests.PlayMode` cases passed in the open Unity Editor. A warmed 10,000-event dispatcher loop measured zero current-thread managed allocations.
 - `StepSequencer.Reset(long)` seeks by final microtimed onset and starts a new deterministic sequence domain without allocation. Core `Transport` implements strict lifecycle states, explicit playhead restart on pause/panic, monotonic lookahead coalescing across buffer backpressure, separate underrun flags, and owned peek/dequeue access.
 - On 2026-08-02, all 23 focused sequencer cases, all 10 focused transport cases, and the complete 342/342 `Loom.Tests.EditMode` cases passed in the open Unity Editor. A warmed 10,000-cycle transport start/update/dequeue/stop loop measured zero current-thread managed allocations.
+- `FmodTransportScheduler` now anchors each playing session with the full 200 ms preroll, derives current and horizon ticks from one synth-bus clock snapshot, pumps a bounded dispatcher batch, tracks underrun/backpressure/late/plateau telemetry, and cancels or panics scheduled ownership across every lifecycle transition.
+- On 2026-08-02, all 8 focused dispatcher cases, the live 200 ms scheduler lifecycle smoke, the complete 343/343 `Loom.Tests.EditMode` cases, and the complete 8/8 `Loom.Tests.PlayMode` cases passed in the open Unity Editor. The live smoke verified exact runtime-rate lookahead, routed future ownership, pause/resume reanchoring, panic, stop, and zero retained scheduled voices.
 
 ## M3 — Tracks, Scale, Harmony, and Mixer
 
@@ -393,6 +396,9 @@ Before ending a task that changed LOOM:
 - Added arbitrary final-onset sequencer reset and the pure Core `Transport` state machine with owned bounded output, monotonic target coalescing, exact pending-window retries, pause/resume, panic, stop, and underrun reporting.
 - Added 14 sequencer/transport cases; the focused sets passed 23/23 and 10/10, the complete EditMode suite passed 342/342, and the transport lifecycle hot path measured zero allocations after warmup.
 - Completed the Core transport lifecycle work item and advanced M2 to the Unity/FMOD 200 ms runtime scheduler integration.
+- Added `FmodTransportScheduler` with one-clock-snapshot pumping, exact 200 ms lookahead, full preroll anchors, bounded dispatch, fail-closed errors, lifecycle reanchoring, and separate timing/backpressure counters.
+- Added transport-owned dispatcher coverage and a live scheduler lifecycle smoke; the complete suites passed 343/343 EditMode and 8/8 PlayMode with no retained scheduled voices.
+- Completed runtime scheduler integration and advanced M2 to the accelerated ten-minute drift and allocation measurement.
 
 ### 2026-08-01
 

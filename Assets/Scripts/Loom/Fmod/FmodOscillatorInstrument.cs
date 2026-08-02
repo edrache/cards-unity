@@ -13,6 +13,7 @@ namespace Loom.Fmod
 
         private static long lastIssuedVoiceId;
 
+        private readonly FMOD.System coreSystem;
         private readonly FmodStudioBusRouting busRouting;
         private readonly VoiceSlot[] voiceSlots;
         private ulong nextStartOrder = 1UL;
@@ -61,6 +62,7 @@ namespace Loom.Fmod
             Octave = settings.Octave;
             CutoffHz = settings.CutoffHz;
             Resonance = settings.Resonance;
+            this.coreSystem = coreSystem;
             busRouting = new FmodStudioBusRouting(
                 studioSystem,
                 SynthBusPath);
@@ -186,6 +188,29 @@ namespace Loom.Fmod
 
                 return count;
             }
+        }
+
+        /// <summary>
+        /// Creates a clock mapper in the exact synth-bus domain used by scheduled voices.
+        /// </summary>
+        public FmodTickDspClockMapper CreateTickDspClockMapper(
+            TempoMap tempoMap,
+            long anchorTick,
+            ulong anchorLeadSampleFrames = 0UL)
+        {
+            ThrowIfDisposed();
+            if (busRouting == null)
+            {
+                throw new InvalidOperationException(
+                    "A native synth bus route is required to create a DSP clock mapper.");
+            }
+
+            return new FmodTickDspClockMapper(
+                coreSystem,
+                busRouting.GetChannelGroup(),
+                tempoMap,
+                anchorTick,
+                anchorLeadSampleFrames);
         }
 
         public void SetEnvelope(FmodAdsrEnvelope envelope)

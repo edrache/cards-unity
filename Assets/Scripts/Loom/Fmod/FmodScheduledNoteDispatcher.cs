@@ -102,38 +102,11 @@ namespace Loom.Fmod
             while (dispatchedCount < maxEvents
                 && source.TryPeek(out ScheduledNoteEvent scheduledEvent))
             {
-                NoteEvent noteEvent = scheduledEvent.NoteEvent;
-                ulong mappedStartDspClock = clockMapper.ToDspClock(
-                    noteEvent.StartTick);
-                ulong mappedEndDspClock = clockMapper.ToDspClock(
-                    noteEvent.EndTick);
-                if (mappedEndDspClock < mappedStartDspClock)
-                {
-                    throw new InvalidOperationException(
-                        "Mapped note end clock precedes its start clock.");
-                }
-
-                ulong durationSampleFrames =
-                    mappedEndDspClock - mappedStartDspClock;
-                if (durationSampleFrames == 0UL)
-                {
-                    durationSampleFrames = 1UL;
-                    plateauDurationCount++;
-                }
-
-                ulong effectiveStartDspClock = mappedStartDspClock;
-                if (effectiveStartDspClock < earliestStartDspClock)
-                {
-                    effectiveStartDspClock = earliestStartDspClock;
-                    lateEventCount++;
-                }
-
-                ulong effectiveEndDspClock = checked(
-                    effectiveStartDspClock + durationSampleFrames);
-                instrument.ScheduleNote(
-                    noteEvent,
-                    effectiveStartDspClock,
-                    effectiveEndDspClock);
+                DispatchEvent(
+                    scheduledEvent,
+                    earliestStartDspClock,
+                    ref lateEventCount,
+                    ref plateauDurationCount);
 
                 if (!source.TryDequeue(out ScheduledNoteEvent dequeuedEvent)
                     || dequeuedEvent != scheduledEvent)
@@ -146,6 +119,140 @@ namespace Loom.Fmod
             }
 
             return dispatchedCount;
+        }
+
+        /// <summary>
+        /// Dispatches directly from a Core transport without exposing its owned buffer.
+        /// </summary>
+        public int DispatchAvailable(
+            Transport source,
+            int maxEvents,
+            out int lateEventCount,
+            out int plateauDurationCount)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (maxEvents <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(maxEvents),
+                    maxEvents,
+                    "Maximum dispatch count must be positive.");
+            }
+
+            if (source.PendingEventCount == 0)
+            {
+                lateEventCount = 0;
+                plateauDurationCount = 0;
+                return 0;
+            }
+
+            return DispatchAvailable(
+                source,
+                maxEvents,
+                clockMapper.GetCurrentDspClock(),
+                out lateEventCount,
+                out plateauDurationCount);
+        }
+
+        /// <summary>
+        /// Dispatches from a Core transport using the caller's frame-consistent clock snapshot.
+        /// </summary>
+        public int DispatchAvailable(
+            Transport source,
+            int maxEvents,
+            ulong currentDspClock,
+            out int lateEventCount,
+            out int plateauDurationCount)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (maxEvents <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(maxEvents),
+                    maxEvents,
+                    "Maximum dispatch count must be positive.");
+            }
+
+            lateEventCount = 0;
+            plateauDurationCount = 0;
+            if (source.PendingEventCount == 0)
+            {
+                return 0;
+            }
+
+            ulong earliestStartDspClock = checked(
+                currentDspClock + minimumLeadSampleFrames);
+            int dispatchedCount = 0;
+
+            while (dispatchedCount < maxEvents
+                && source.TryPeekScheduledEvent(
+                    out ScheduledNoteEvent scheduledEvent))
+            {
+                DispatchEvent(
+                    scheduledEvent,
+                    earliestStartDspClock,
+                    ref lateEventCount,
+                    ref plateauDurationCount);
+
+                if (!source.TryDequeueScheduledEvent(
+                    out ScheduledNoteEvent dequeuedEvent)
+                    || dequeuedEvent != scheduledEvent)
+                {
+                    throw new InvalidOperationException(
+                        "Transport ownership changed during FMOD dispatch.");
+                }
+
+                dispatchedCount++;
+            }
+
+            return dispatchedCount;
+        }
+
+        private void DispatchEvent(
+            ScheduledNoteEvent scheduledEvent,
+            ulong earliestStartDspClock,
+            ref int lateEventCount,
+            ref int plateauDurationCount)
+        {
+            NoteEvent noteEvent = scheduledEvent.NoteEvent;
+            ulong mappedStartDspClock = clockMapper.ToDspClock(
+                noteEvent.StartTick);
+            ulong mappedEndDspClock = clockMapper.ToDspClock(
+                noteEvent.EndTick);
+            if (mappedEndDspClock < mappedStartDspClock)
+            {
+                throw new InvalidOperationException(
+                    "Mapped note end clock precedes its start clock.");
+            }
+
+            ulong durationSampleFrames = mappedEndDspClock - mappedStartDspClock;
+            if (durationSampleFrames == 0UL)
+            {
+                durationSampleFrames = 1UL;
+                plateauDurationCount++;
+            }
+
+            ulong effectiveStartDspClock = mappedStartDspClock;
+            if (effectiveStartDspClock < earliestStartDspClock)
+            {
+                effectiveStartDspClock = earliestStartDspClock;
+                lateEventCount++;
+            }
+
+            ulong effectiveEndDspClock = checked(
+                effectiveStartDspClock + durationSampleFrames);
+            instrument.ScheduleNote(
+                noteEvent,
+                effectiveStartDspClock,
+                effectiveEndDspClock);
         }
     }
 }
