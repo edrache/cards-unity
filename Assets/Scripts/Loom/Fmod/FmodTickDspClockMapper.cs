@@ -125,6 +125,69 @@ namespace Loom.Fmod
             return AnchorDspClock - backwardSampleFrames;
         }
 
+        /// <summary>
+        /// Converts a DSP clock in the captured parent-group domain to the greatest
+        /// logical tick whose rounded sample position is not after that clock.
+        /// </summary>
+        /// <exception cref="OverflowException">
+        /// Thrown when the clock maps outside the unsigned logical sample-frame domain.
+        /// </exception>
+        public long ToTickAtOrBeforeDspClock(ulong dspClock)
+        {
+            if (!TryToTickAtOrBeforeDspClock(dspClock, out long tick))
+            {
+                throw new OverflowException(
+                    "DSP clock maps outside the logical sample-frame domain.");
+            }
+
+            return tick;
+        }
+
+        /// <summary>
+        /// Attempts to convert a DSP clock without rereading or changing the captured anchor.
+        /// </summary>
+        /// <remarks>
+        /// This returns false during preroll before logical sample frame zero and when
+        /// affine clock translation exceeds the UInt64 sample-frame range.
+        /// </remarks>
+        public bool TryToTickAtOrBeforeDspClock(ulong dspClock, out long tick)
+        {
+            if (!TryResolveSampleFrame(dspClock, out ulong sampleFrame))
+            {
+                tick = default;
+                return false;
+            }
+
+            tick = tickSampleConverter.ToTickAtOrBeforeSampleFrame(sampleFrame);
+            return true;
+        }
+
+        private bool TryResolveSampleFrame(ulong dspClock, out ulong sampleFrame)
+        {
+            if (dspClock >= AnchorDspClock)
+            {
+                ulong forwardSampleFrames = dspClock - AnchorDspClock;
+                if (forwardSampleFrames > ulong.MaxValue - AnchorSampleFrame)
+                {
+                    sampleFrame = default;
+                    return false;
+                }
+
+                sampleFrame = AnchorSampleFrame + forwardSampleFrames;
+                return true;
+            }
+
+            ulong backwardSampleFrames = AnchorDspClock - dspClock;
+            if (backwardSampleFrames > AnchorSampleFrame)
+            {
+                sampleFrame = default;
+                return false;
+            }
+
+            sampleFrame = AnchorSampleFrame - backwardSampleFrames;
+            return true;
+        }
+
         private static IFmodDspClockSource CreateClockSource(
             FMOD.System coreSystem,
             FMOD.ChannelGroup parentChannelGroup)

@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.21
+**Plan version:** 1.22
 **Last updated:** 2026-08-02
 **Current milestone:** M2 — Deterministic transport and step sequencer
 **Current status:** IN PROGRESS
-**Next action:** Add allocation-free inverse sample-frame and FMOD DSP-clock projection to the greatest logical tick at or before a clock value, including preroll handling and rounding plateaus, so the transport can derive deterministic scheduling windows from the audio clock.
+**Next action:** Add explicit-clock FMOD note dispatch and hard cancellation for future scheduled voices, preserving the interactive instrument API while allowing scheduler events to use exact start and release DSP clocks on the `MUS_Synth` parent domain.
 
 ## Purpose
 
@@ -61,8 +61,8 @@ The first product is an engine playground. It must let a developer play notes an
 | Musical-time decomposition | `MusicalTime` accepts ticks from zero through `long.MaxValue` and exposes zero-based `long` bar, `int` beat-within-bar, and `int` tick-within-beat values without reconstructive multiplication |
 | Initial tempo | 120 BPM |
 | Tempo map | `TempoSegment` stores a non-negative start tick and finite positive `double` beats per minute whose seconds-per-beat duration is representable. `TempoMap` owns a defensive copy of at least one strictly ordered segment beginning at tick zero, defaults to one 120 BPM segment, and uses allocation-free binary lookup |
-| Tick-to-sample conversion | `TickSampleConverter` uses a positive runtime sample rate, sums absolute tempo regions from tick zero without an incremental playhead, rounds the final non-negative frame once with `MidpointRounding.AwayFromZero`, returns `ulong`, and throws on values at or beyond 2^64 |
-| Tick-to-DSP-clock mapping | `FmodTickDspClockMapper` reads FMOD's runtime sample rate, captures one immutable tick/sample-frame/DSP-clock anchor with an optional future lead, and maps absolute ticks by checked unsigned addition or subtraction. Its clock source is the own DSP clock of the ChannelGroup that will parent scheduled channels; the mapper borrows that lifecycle-bound handle and must be recreated after device, bank, or routing changes |
+| Tick-to-sample conversion | `TickSampleConverter` uses a positive runtime sample rate, sums absolute tempo regions from tick zero without an incremental playhead, rounds the final non-negative frame once with `MidpointRounding.AwayFromZero`, returns `ulong`, and throws on values at or beyond 2^64. Its allocation-free inverse returns the greatest tick on or before a frame, selecting the final tick of a rounding plateau and treating forward overflow as beyond the target |
+| Tick-to-DSP-clock mapping | `FmodTickDspClockMapper` reads FMOD's runtime sample rate, captures one immutable tick/sample-frame/DSP-clock anchor with an optional future lead, and maps absolute ticks by checked unsigned addition or subtraction. Its inverse translates a supplied clock through that anchor without rereading native state and explicitly reports preroll before logical frame zero. Its clock source is the own DSP clock of the ChannelGroup that will parent scheduled channels; the mapper borrows that lifecycle-bound handle and must be recreated after device, bank, or routing changes |
 | Intended sample rate | 48 kHz, verified at runtime rather than assumed |
 | Scheduler lookahead | 200 ms initial tuning value |
 | Determinism contract | Identical logical event stream for identical seed, state, and mutation log |
@@ -101,7 +101,7 @@ The first product is an engine playground. It must let a developer play notes an
 |---|---|---|
 | M0 | Repository rules and verified FMOD foundation | DONE |
 | M1 | Playable polyphonic synth playground | DONE |
-| M2 | Deterministic transport and step sequencer | READY |
+| M2 | Deterministic transport and step sequencer | IN PROGRESS |
 | M3 | Multiple tracks, scale, harmony, and routing | NOT STARTED |
 | M4 | Quantized mutation layer and game-facing API | NOT STARTED |
 | M5 | Save/replay determinism and engine hardening | NOT STARTED |
@@ -259,6 +259,8 @@ The first product is an engine playground. It must let a developer play notes an
 - On 2026-08-02, all 38 focused pattern-contract cases and the complete 265/265 `Loom.Tests.EditMode` cases passed in the open Unity Editor. Coverage includes ownership, equality, every field boundary, representative grid divisors, microtiming edges, uneven ratchets, rests, and index bounds.
 - `StepSequencer` precompiles stable final-onset templates, evaluates one named stateless probability roll per source step, emits immutable sequenced note events through half-open windows, preserves deterministic same-onset ordering, skips negative preroll onsets, and resumes without loss or duplication after fixed-buffer backpressure.
 - On 2026-08-02, all 22 new sequencer/event cases and the complete 287/287 `Loom.Tests.EditMode` cases passed in the open Unity Editor. Coverage includes rests, probability boundaries and a frozen stream, uneven ratchets, cross-cycle microtiming, same-onset ordering, partition invariance, backpressure, reset replay, overflow, and zero steady-state allocations.
+- `TickSampleConverter` now projects a sample frame to the final qualifying tick with an exception-free upper-bound search, including rounding plateaus and the last representable tick below forward overflow. `FmodTickDspClockMapper` performs the same inverse through its immutable affine anchor without another native clock read and exposes non-throwing preroll detection.
+- On 2026-08-02, all 74 focused converter/mapper cases, the complete 313/313 `Loom.Tests.EditMode` cases, the focused live mapper smoke, and the complete 6/6 `Loom.Tests.PlayMode` cases passed in the open Unity Editor. A warmed 10,000-call inverse-conversion loop measured zero current-thread managed allocations.
 
 ## M3 — Tracks, Scale, Harmony, and Mixer
 
@@ -374,6 +376,9 @@ Before ending a task that changed LOOM:
 - Added immutable `ScheduledNoteEvent` values and an allocation-free `StepSequencer` with precompiled onset ordering, stateless per-step probability, ratchet and microtiming cycle normalization, exact half-open windowing, and resumable bounded-buffer backpressure.
 - Added 22 focused sequencer/event cases; the complete EditMode assembly passed 287/287, including deterministic partition/backpressure replay and zero warmed hot-path allocations.
 - Completed the step-pattern work item and advanced the transport item to inverse audio-clock projection required for deterministic lookahead windows.
+- Added allocation-free inverse sample-frame and DSP-clock projection with rightmost plateau semantics, checked affine translation, explicit preroll detection, and no native clock rereads.
+- Added 26 inverse-projection cases; the focused converter/mapper set passed 74/74, the complete suites passed 313/313 EditMode and 6/6 PlayMode, and the inverse hot path measured zero allocations after warmup.
+- Advanced the transport item to exact-clock scheduled voice dispatch and hard cancellation before lifecycle orchestration.
 
 ### 2026-08-01
 

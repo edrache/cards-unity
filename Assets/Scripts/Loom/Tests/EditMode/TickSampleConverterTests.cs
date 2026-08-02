@@ -88,6 +88,120 @@ namespace Loom.Tests.EditMode
             Assert.That(converter.ToSampleFrame(1_920), Is.EqualTo(1UL));
         }
 
+        [TestCase(0UL, 0)]
+        [TestCase(24UL, 0)]
+        [TestCase(25UL, 1)]
+        [TestCase(23_999UL, 959)]
+        [TestCase(24_000UL, 960)]
+        public void InverseConverterFindsTheLastTickAtOrBeforeAFrame(
+            ulong sampleFrame,
+            long expectedTick)
+        {
+            var converter = new Core.TickSampleConverter(Core.TempoMap.Default, 48_000);
+
+            Assert.That(
+                converter.ToTickAtOrBeforeSampleFrame(sampleFrame),
+                Is.EqualTo(expectedTick));
+        }
+
+        [TestCase(0UL, 959)]
+        [TestCase(1UL, 2_879)]
+        public void InverseConverterSelectsTheLastTickOnARoundingPlateau(
+            ulong sampleFrame,
+            long expectedTick)
+        {
+            var converter = new Core.TickSampleConverter(Core.TempoMap.Default, 1);
+
+            Assert.That(
+                converter.ToTickAtOrBeforeSampleFrame(sampleFrame),
+                Is.EqualTo(expectedTick));
+        }
+
+        [TestCase(23_999UL, 959)]
+        [TestCase(24_000UL, 960)]
+        [TestCase(24_049UL, 960)]
+        [TestCase(24_050UL, 961)]
+        [TestCase(71_999UL, 1_919)]
+        [TestCase(72_000UL, 1_920)]
+        public void InverseConverterResolvesTempoBoundaries(
+            ulong sampleFrame,
+            long expectedTick)
+        {
+            var tempoMap = new Core.TempoMap(
+                new Core.TempoSegment(0, 120d),
+                new Core.TempoSegment(960, 60d),
+                new Core.TempoSegment(1_920, 240d));
+            var converter = new Core.TickSampleConverter(tempoMap, 48_000);
+
+            Assert.That(
+                converter.ToTickAtOrBeforeSampleFrame(sampleFrame),
+                Is.EqualTo(expectedTick));
+        }
+
+        [Test]
+        public void InverseConverterSaturatesAtInt64MaximumWhenItQualifies()
+        {
+            var converter = new Core.TickSampleConverter(Core.TempoMap.Default, 1);
+
+            Assert.That(
+                converter.ToTickAtOrBeforeSampleFrame(ulong.MaxValue),
+                Is.EqualTo(long.MaxValue));
+        }
+
+        [Test]
+        public void InverseConverterStopsAtTheLastRepresentableTick()
+        {
+            var converter = new Core.TickSampleConverter(Core.TempoMap.Default, 48_000);
+
+            long tick = converter.ToTickAtOrBeforeSampleFrame(ulong.MaxValue);
+
+            Assert.That(converter.ToSampleFrame(tick), Is.LessThanOrEqualTo(ulong.MaxValue));
+            Assert.Throws<OverflowException>(() => converter.ToSampleFrame(tick + 1));
+        }
+
+        [Test]
+        public void InverseConverterMatchesAForwardProjectionOracle()
+        {
+            var tempoMap = new Core.TempoMap(
+                new Core.TempoSegment(0, 137d),
+                new Core.TempoSegment(960, 83d));
+            var converter = new Core.TickSampleConverter(tempoMap, 97);
+
+            for (ulong sampleFrame = 0; sampleFrame < 200UL; sampleFrame++)
+            {
+                long expectedTick = 0;
+                while (converter.ToSampleFrame(expectedTick + 1) <= sampleFrame)
+                {
+                    expectedTick++;
+                }
+
+                Assert.That(
+                    converter.ToTickAtOrBeforeSampleFrame(sampleFrame),
+                    Is.EqualTo(expectedTick),
+                    $"Unexpected inverse tick for sample frame {sampleFrame}.");
+            }
+        }
+
+        [Test]
+        public void RepeatedInverseConversionsDoNotAllocate()
+        {
+            var converter = new Core.TickSampleConverter(Core.TempoMap.Default, 48_000);
+            long checksum = converter.ToTickAtOrBeforeSampleFrame(1_000_000UL);
+
+            long beforeBytes = GC.GetAllocatedBytesForCurrentThread();
+
+            for (ulong index = 0; index < 10_000UL; index++)
+            {
+                checksum ^= converter.ToTickAtOrBeforeSampleFrame(
+                    1_000_000UL + index);
+            }
+
+            long afterBytes = GC.GetAllocatedBytesForCurrentThread();
+
+            Assert.That(checksum, Is.Not.EqualTo(long.MinValue));
+            Assert.That(afterBytes - beforeBytes, Is.Zero);
+        }
+
         [Test]
         public void ConverterDoesNotAccumulateDriftOverTenMinutes()
         {

@@ -226,6 +226,110 @@ namespace Loom.Tests.EditMode
             Assert.That(source.GetDspClockCallCount, Is.EqualTo(1));
         }
 
+        [TestCase(976_000UL, 0)]
+        [TestCase(999_999UL, 959)]
+        [TestCase(1_000_000UL, 960)]
+        [TestCase(1_000_024UL, 960)]
+        [TestCase(1_000_025UL, 961)]
+        public void MapperInvertsClocksRelativeToANonzeroAnchor(
+            ulong dspClock,
+            long expectedTick)
+        {
+            var source = new FakeDspClockSource
+            {
+                SampleRate = 48_000,
+                DspClock = 1_000_000UL
+            };
+            var mapper = new Fmod.FmodTickDspClockMapper(
+                source,
+                Core.TempoMap.Default,
+                Core.MusicalTime.TicksPerQuarterNote);
+
+            Assert.That(
+                mapper.ToTickAtOrBeforeDspClock(dspClock),
+                Is.EqualTo(expectedTick));
+            Assert.That(source.GetDspClockCallCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void MapperInverseConvertsAcrossTempoBoundaries()
+        {
+            var tempoMap = new Core.TempoMap(
+                new Core.TempoSegment(0, 120d),
+                new Core.TempoSegment(960, 60d),
+                new Core.TempoSegment(1_920, 240d));
+            var source = new FakeDspClockSource
+            {
+                SampleRate = 48_000,
+                DspClock = 100_000UL
+            };
+            var mapper = new Fmod.FmodTickDspClockMapper(source, tempoMap, 960);
+
+            Assert.That(mapper.ToTickAtOrBeforeDspClock(99_999UL), Is.EqualTo(959));
+            Assert.That(mapper.ToTickAtOrBeforeDspClock(100_000UL), Is.EqualTo(960));
+            Assert.That(mapper.ToTickAtOrBeforeDspClock(147_999UL), Is.EqualTo(1_919));
+            Assert.That(mapper.ToTickAtOrBeforeDspClock(148_000UL), Is.EqualTo(1_920));
+        }
+
+        [Test]
+        public void MapperInverseReportsPrerollBeforeLogicalSampleFrameZero()
+        {
+            var source = new FakeDspClockSource
+            {
+                SampleRate = 48_000,
+                DspClock = 1_000_000UL
+            };
+            var mapper = new Fmod.FmodTickDspClockMapper(
+                source,
+                Core.TempoMap.Default,
+                Core.MusicalTime.TicksPerQuarterNote);
+
+            Assert.That(
+                mapper.TryToTickAtOrBeforeDspClock(975_999UL, out long tick),
+                Is.False);
+            Assert.That(tick, Is.Zero);
+            Assert.Throws<OverflowException>(
+                () => mapper.ToTickAtOrBeforeDspClock(975_999UL));
+        }
+
+        [Test]
+        public void MapperInverseReportsForwardAffineOverflow()
+        {
+            var source = new FakeDspClockSource
+            {
+                SampleRate = 48_000,
+                DspClock = 0UL
+            };
+            var mapper = new Fmod.FmodTickDspClockMapper(
+                source,
+                Core.TempoMap.Default,
+                Core.MusicalTime.TicksPerQuarterNote);
+
+            Assert.That(
+                mapper.TryToTickAtOrBeforeDspClock(ulong.MaxValue, out long tick),
+                Is.False);
+            Assert.That(tick, Is.Zero);
+            Assert.Throws<OverflowException>(
+                () => mapper.ToTickAtOrBeforeDspClock(ulong.MaxValue));
+        }
+
+        [Test]
+        public void MapperInverseSelectsTheLastTickOnTheAnchorPlateau()
+        {
+            var source = new FakeDspClockSource
+            {
+                SampleRate = 1,
+                DspClock = 100UL
+            };
+            var mapper = new Fmod.FmodTickDspClockMapper(
+                source,
+                Core.TempoMap.Default,
+                Core.MusicalTime.TicksPerQuarterNote);
+
+            Assert.That(mapper.AnchorSampleFrame, Is.EqualTo(1UL));
+            Assert.That(mapper.ToTickAtOrBeforeDspClock(100UL), Is.EqualTo(2_879));
+        }
+
         [Test]
         public void GetCurrentDspClockReadsTheSameSourceAndChecksItsResult()
         {

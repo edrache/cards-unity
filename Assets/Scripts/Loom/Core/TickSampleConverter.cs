@@ -59,6 +59,49 @@ namespace Loom.Core
                     "Sample-frame conversion tick cannot be negative.");
             }
 
+            if (TryResolveSampleFrame(tick, out ulong sampleFrame))
+            {
+                return sampleFrame;
+            }
+
+            throw new OverflowException(
+                "Absolute sample-frame position exceeds the UInt64 range.");
+        }
+
+        /// <summary>
+        /// Finds the greatest non-negative tick whose rounded sample frame is not after
+        /// <paramref name="sampleFrame"/>.
+        /// </summary>
+        /// <remarks>
+        /// When multiple ticks share a rounded sample frame, this returns the final tick
+        /// on that plateau. The bounded binary search does not allocate after construction.
+        /// </remarks>
+        public long ToTickAtOrBeforeSampleFrame(ulong sampleFrame)
+        {
+            long low = 0;
+            long high = long.MaxValue;
+
+            while (low < high)
+            {
+                long distance = high - low;
+                long candidate = low + (distance / 2) + (distance % 2);
+
+                if (TryResolveSampleFrame(candidate, out ulong candidateFrame)
+                    && candidateFrame <= sampleFrame)
+                {
+                    low = candidate;
+                }
+                else
+                {
+                    high = candidate - 1;
+                }
+            }
+
+            return low;
+        }
+
+        private bool TryResolveSampleFrame(long tick, out ulong sampleFrame)
+        {
             double exactFrames = 0d;
 
             for (int index = 0; index < tempoMap.Count; index++)
@@ -81,31 +124,37 @@ namespace Loom.Core
                     / MusicalTime.TicksPerQuarterNote;
                 exactFrames += segmentTickCount * secondsPerTick * SampleRate;
 
-                EnsureSampleFrameRange(exactFrames);
+                if (!IsSampleFrameInRange(exactFrames))
+                {
+                    sampleFrame = default;
+                    return false;
+                }
 
                 if (segmentEndTick == tick)
                 {
                     double roundedFrames = Math.Round(
                         exactFrames,
                         MidpointRounding.AwayFromZero);
-                    EnsureSampleFrameRange(roundedFrames);
-                    return (ulong)roundedFrames;
+                    if (!IsSampleFrameInRange(roundedFrames))
+                    {
+                        sampleFrame = default;
+                        return false;
+                    }
+
+                    sampleFrame = (ulong)roundedFrames;
+                    return true;
                 }
             }
 
             throw new InvalidOperationException("Tempo map did not resolve the requested tick.");
         }
 
-        private static void EnsureSampleFrameRange(double sampleFrames)
+        private static bool IsSampleFrameInRange(double sampleFrames)
         {
-            if (double.IsNaN(sampleFrames)
-                || double.IsInfinity(sampleFrames)
-                || sampleFrames < 0d
-                || sampleFrames >= SampleFrameOverflowThreshold)
-            {
-                throw new OverflowException(
-                    "Absolute sample-frame position exceeds the UInt64 range.");
-            }
+            return !double.IsNaN(sampleFrames)
+                && !double.IsInfinity(sampleFrames)
+                && sampleFrames >= 0d
+                && sampleFrames < SampleFrameOverflowThreshold;
         }
     }
 }
