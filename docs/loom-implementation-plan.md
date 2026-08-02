@@ -1,6 +1,6 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.37
+**Plan version:** 1.39
 **Last updated:** 2026-08-02
 **Current milestone:** M4 — Mutation layer
 **Current status:** READY
@@ -70,10 +70,10 @@ The first product is an engine playground. It must let a developer play notes an
 | Scheduling buffer | `SchedulingBuffer<T>` is a single-owner, fixed-capacity FIFO for value types. It allocates its array only at construction, never overwrites or drops unread values when full, preserves insertion order through wraparound, clears dequeued slots, and exposes only non-enumerating enqueue, peek, dequeue, and clear operations on the hot path |
 | Step-pattern data | `PatternStep` is an immutable resolved `Note` or canonical default rest with playable velocity, positive tick duration, finite normalized probability, one through 255 total ratchet attacks, and an integer microtiming offset. `StepPattern` owns a non-empty defensive copy on a positive divisor of 960 PPQN, bounds note offsets inside one step, and requires no more ratchets than distinct ticks in that step |
 | Track definitions | `TrackId` and `PatternId` are separate nonzero stable unsigned identities. Immutable `TrackDefinition` owns one resolved-note `StepPattern`, derives its length directly from that pattern, and creates sequencers whose stateless-random stream is the track ID. Pattern identity does not alter track randomness |
-| Scheduled FMOD voices | The interactive `IInstrument` API remains unchanged. `FmodOscillatorInstrument.ScheduleNote` owns future voices separately, sends exact start and release clocks to the lifecycle-bound `MUS_Synth` group, and uses hard `Channel.stop` cancellation rather than the interactive release path |
-| Scheduled dispatch | `FmodScheduledNoteDispatcher` reads the current parent clock once per batch, enforces at least one DSP buffer of lead, preserves mapped gate duration when shifting late events, promotes rounding-plateau gates to one sample frame, and dequeues only after atomic instrument success. Late and plateau counts remain separate runtime timing evidence from the deterministic logical stream |
+| Scheduled FMOD voices | The interactive `IInstrument` API remains unchanged. `FmodOscillatorInstrument.ScheduleNote` owns future voices separately and uses hard `Channel.stop` cancellation rather than the interactive release path. A scheduled voice validates the routed parent clock immediately before native start; if submission consumed the remaining lead, it shifts start and release forward together, preserving gate duration and reporting the adjustment to the dispatcher |
+| Scheduled dispatch | `FmodScheduledNoteDispatcher` reads the current parent clock once per batch, reserves two DSP buffers of initial lead so one remains available during ordinary submission work, preserves mapped gate duration when shifting late events, promotes rounding-plateau gates to one sample frame, and dequeues only after atomic instrument success. Dispatcher and final native-lead adjustments count once as late timing evidence, separately from plateau corrections and the deterministic logical stream |
 | Core transport | `Transport` owns one preallocated event buffer and a `StepSequencer`, accepts monotonic audio-derived current and target ticks, completes an older partial target before a newer coalesced horizon, and reports underrun separately from buffer backpressure. Pause and panic discard stale lookahead and restart generation at an explicit held/current tick; stop returns the deterministic sequence domain to zero |
-| Runtime scheduler | `FmodTransportScheduler` borrows the routed instrument, drives Core time from one `MUS_Synth` DSP-clock snapshot per pump, uses an exact 200 ms integer-frame horizon and full preroll anchor, bounds dispatch work, and creates a new mapper for start/resume/playing panic. Pause and stop hard-cancel scheduled voices; panic uses the global instrument panic path; dispatch failures stop fail-closed |
+| Runtime scheduler | `FmodTransportScheduler` borrows the routed instrument, drives Core time from one routed-bus DSP-clock snapshot per pump, uses an exact 200 ms integer-frame horizon and full preroll anchor, bounds dispatch work, and creates a new mapper for start/resume/playing panic. A regressed bus clock hard-cancels voices from the stale domain, resets pending generation at the last accepted logical tick, and reanchors without moving Core time backward; unrelated dispatch failures still stop fail-closed |
 | Core boundary | Pure C#, with no Unity or FMOD references |
 | Resolved pitch contract | `ScaleDegreePitch` stores a signed zero-based degree plus an additional octave offset. Immutable `Scale` owns one strictly increasing octave of unique 0-11 semitone intervals beginning at zero and resolves against an absolute tonic with floor wrapping in `long` arithmetic. Results outside MIDI 0-127 are rejected; the existing pattern, sequencer, and `NoteEvent` boundary remains resolved `Note` data |
 | Percussion note contract | `PercussionNote` is a separate immutable value identified by a nonzero instrument-local `ulong` sample-slot ID. It has no MIDI pitch, scale degree, octave, asset path, Unity, or FMOD dependency; the assigned percussion backend owns slot-to-resource mapping |
@@ -302,6 +302,8 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Add explicit per-track FMOD instrument routing.
 - [x] `DONE` Add track gain, mute, and basic effect parameters.
 - [x] `DONE` Demonstrate independent pattern lengths and stable scheduling order.
+- [x] `DONE` Recover from runtime bus DSP-clock regression without disabling playback.
+- [x] `DONE` Preserve native scheduling lead across per-event FMOD submission work.
 
 ### Acceptance criteria
 
@@ -310,6 +312,8 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] Percussion uses explicit instrument slots.
 - [x] Mixer controls affect only their intended tracks.
 - [x] Same-tick event ordering is stable and tested.
+- [x] A regressed runtime bus DSP clock reanchors at the last accepted logical tick without disabling playback.
+- [x] Native submission preserves gate duration and playback when its clock advances beyond the dispatch snapshot.
 
 ### Verification evidence
 
@@ -347,6 +351,11 @@ The first product is an engine playground. It must let a developer play notes an
 - The live demo uses independent 3/4/5/7-beat patterns and dispatched at least one event on every declared bus during the focused PlayMode smoke. The separate Core coordinator remains the canonical source of cross-track same-tick ordering.
 - Four-track cleanup exposed and fixed a scheduled-voice lifetime defect: the channel could auto-stop before its attached low-pass DSP was removed. Delayed stops now retain the channel through the release boundary, detach the filter explicitly, and then stop and release cleanly.
 - Final M3 verification on 2026-08-02 passed 549/549 `Loom.Tests.EditMode` cases and 13/13 `Loom.Tests.PlayMode` cases in the open Unity Editor. The repository checker passed 114 text files plus Unity metadata parity, `git diff --check` passed, and the final Console contained no C#, LOOM, or FMOD errors.
+- `FmodTransportScheduler` now detects a raw routed-bus DSP clock below its last observation before projecting Core time. Recovery cancels voices scheduled in the stale domain, resets pending deterministic generation at the unchanged accepted tick, recreates the mapper and dispatcher with fresh preroll, and reports a cumulative recovery count.
+- The focused live clock-regression case passed 1/1, then the complete open-Editor suites passed 549/549 EditMode and 14/14 PlayMode cases. The four-track demo smoke remained green, the repository checker passed 114 text files plus Unity metadata parity, and `git diff --check` passed; the Console contained no C#, LOOM, or FMOD errors.
+- The dispatcher now reserves two native DSP buffers from its batch snapshot. `FmodOscillatorVoice` performs a final fresh-clock validation and moves a stale start/release interval together instead of throwing, while the instrument reports that adjustment so late-event telemetry remains exact without double-counting.
+- Focused final-lead coverage passed 1/1 EditMode and 1/1 PlayMode, including a deliberately one-buffer-stale snapshot that reproduced the original exception before the final-boundary correction. Complete open-Editor suites passed 550/550 EditMode and 15/15 PlayMode cases; the active demo was temporarily disabled only for the isolated bus-ownership suite.
+- A separate live smoke kept `LOOM Four Track Demo` active, maximized the Game view, and toggled normal-to-maximized while playing. All four schedulers remained active, dispatch counters advanced from `28/21/22/12` to `87/65/65/38`, and the Console reported zero errors after the transition.
 
 ## M4 — Mutation Layer
 
@@ -482,6 +491,8 @@ Before ending a task that changed LOOM:
 - Added the disabled-by-default scene-backed four-track demo with independent 3/4/5/7-beat patterns, direct Drums/Bass/Lead/Pad routing, and fixed runtime pump order.
 - Fixed scheduled voice cleanup by retaining the channel through its release boundary and detaching the owned low-pass before stopping the channel.
 - Passed the final 549/549 EditMode and 13/13 PlayMode suites, completed every M3 work item and acceptance criterion, marked M3 done, and advanced the plan to M4 mutation contracts.
+- Stabilized the completed M3 runtime scheduler against routed-bus DSP-clock regression observed during an Editor view-mode transition; focused recovery and complete 549/549 EditMode plus 14/14 PlayMode verification passed before returning M4 to ready.
+- Closed the remaining maximized-Game scheduling race by combining two-buffer dispatcher headroom with a final fresh-clock interval shift at the voice boundary; focused tests, 550/550 EditMode, 15/15 PlayMode, and an active four-track maximized-view smoke passed before returning M4 to ready.
 
 ### 2026-08-01
 

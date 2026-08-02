@@ -111,6 +111,37 @@ namespace Loom.Tests.EditMode
         }
 
         [Test]
+        public void NativeStartAdjustmentIsReportedAsOneLateEvent()
+        {
+            var mapper = new FakeClockMapper
+            {
+                CurrentDspClock = 1_000UL,
+                BaseDspClock = 10_000UL,
+                SampleFramesPerTick = 2UL
+            };
+            var instrument = new FakeScheduledInstrument
+            {
+                WasStartAdjusted = true
+            };
+            var dispatcher = new Fmod.FmodScheduledNoteDispatcher(
+                mapper,
+                instrument,
+                100UL);
+            var source = new Core.SchedulingBuffer<Core.ScheduledNoteEvent>(1);
+            Assert.That(source.TryEnqueue(CreateEvent(100, 10, 0UL)), Is.True);
+
+            int count = dispatcher.DispatchAvailable(
+                source,
+                1,
+                out int lateCount,
+                out int plateauCount);
+
+            Assert.That(count, Is.EqualTo(1));
+            Assert.That(lateCount, Is.EqualTo(1));
+            Assert.That(plateauCount, Is.Zero);
+        }
+
+        [Test]
         public void DispatcherHonorsTheBatchLimit()
         {
             var instrument = new FakeScheduledInstrument();
@@ -268,13 +299,15 @@ namespace Loom.Tests.EditMode
 
             public Exception Failure { get; set; }
 
+            public bool WasStartAdjusted { get; set; }
+
             public Core.NoteEvent[] Events => events;
 
             public ulong[] StartClocks => startClocks;
 
             public ulong[] EndClocks => endClocks;
 
-            public Core.VoiceHandle ScheduleNote(
+            public Fmod.FmodScheduledNoteSubmission ScheduleNote(
                 Core.NoteEvent noteEvent,
                 ulong startDspClock,
                 ulong releaseStartDspClock)
@@ -288,7 +321,9 @@ namespace Loom.Tests.EditMode
                 startClocks[CallCount] = startDspClock;
                 endClocks[CallCount] = releaseStartDspClock;
                 CallCount++;
-                return new Core.VoiceHandle((ulong)CallCount);
+                return new Fmod.FmodScheduledNoteSubmission(
+                    new Core.VoiceHandle((ulong)CallCount),
+                    WasStartAdjusted);
             }
         }
     }

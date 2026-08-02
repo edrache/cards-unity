@@ -8,12 +8,15 @@ namespace Loom.Fmod
     /// </summary>
     public sealed class FmodScheduledNoteDispatcher
     {
+        private const ulong SubmissionHeadroomBufferCount = 2UL;
+
         private readonly IFmodScheduledNoteClockMapper clockMapper;
         private readonly IFmodScheduledInstrument instrument;
         private readonly ulong minimumLeadSampleFrames;
 
         /// <summary>
-        /// Creates a dispatcher using one runtime DSP buffer as the minimum native lead.
+        /// Creates a dispatcher with one required runtime DSP buffer plus one buffer of
+        /// submission headroom before the native voice validates its start clock.
         /// </summary>
         public FmodScheduledNoteDispatcher(
             FMOD.System coreSystem,
@@ -41,7 +44,8 @@ namespace Loom.Fmod
                     "FMOD returned a zero DSP buffer length.");
             }
 
-            minimumLeadSampleFrames = bufferLength;
+            minimumLeadSampleFrames = checked(
+                bufferLength * SubmissionHeadroomBufferCount);
         }
 
         internal FmodScheduledNoteDispatcher(
@@ -241,18 +245,22 @@ namespace Loom.Fmod
             }
 
             ulong effectiveStartDspClock = mappedStartDspClock;
-            if (effectiveStartDspClock < earliestStartDspClock)
+            bool wasLate = effectiveStartDspClock < earliestStartDspClock;
+            if (wasLate)
             {
                 effectiveStartDspClock = earliestStartDspClock;
-                lateEventCount++;
             }
 
             ulong effectiveEndDspClock = checked(
                 effectiveStartDspClock + durationSampleFrames);
-            instrument.ScheduleNote(
+            FmodScheduledNoteSubmission submission = instrument.ScheduleNote(
                 noteEvent,
                 effectiveStartDspClock,
                 effectiveEndDspClock);
+            if (wasLate || submission.WasStartAdjusted)
+            {
+                lateEventCount++;
+            }
         }
     }
 }

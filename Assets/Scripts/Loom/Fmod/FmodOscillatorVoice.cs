@@ -320,9 +320,11 @@ namespace Loom.Fmod
         }
 
         /// <summary>
-        /// Starts and releases the voice at exact clocks in the target parent-group domain.
+        /// Starts and releases the voice in the target parent-group domain, shifting a stale
+        /// requested interval together when native submission no longer has one buffer of lead.
         /// </summary>
-        public void StartScheduled(
+        /// <returns>True when the requested interval was shifted to restore native lead.</returns>
+        public bool StartScheduled(
             FMOD.ChannelGroup targetChannelGroup,
             ulong startDspClock,
             ulong releaseStartDspClock)
@@ -359,12 +361,14 @@ namespace Loom.Fmod
 
             ulong earliestStartDspClock = checked(
                 currentDspClock + scheduledBufferLength);
-            if (startDspClock < earliestStartDspClock)
+            bool wasStartAdjusted = startDspClock < earliestStartDspClock;
+            if (wasStartAdjusted)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(startDspClock),
-                    startDspClock,
-                    "Scheduled start DSP clock must be at least one DSP buffer ahead.");
+                ulong durationSampleFrames =
+                    releaseStartDspClock - startDspClock;
+                startDspClock = earliestStartDspClock;
+                releaseStartDspClock = checked(
+                    startDspClock + durationSampleFrames);
             }
 
             ulong scheduledReleaseEndDspClock = checked(
@@ -382,6 +386,7 @@ namespace Loom.Fmod
                 scheduledReleaseEndDspClock,
                 scheduledReleaseStartLevel,
                 scheduledBufferLength);
+            return wasStartAdjusted;
         }
 
         private void StartCore(

@@ -335,9 +335,32 @@ namespace Loom.Fmod
         }
 
         /// <summary>
-        /// Schedules one resolved logical note at exact clocks in the synth bus domain.
+        /// Schedules one resolved logical note at requested clocks in the synth bus domain.
+        /// A stale interval may move forward intact to restore native submission lead.
         /// </summary>
         public VoiceHandle ScheduleNote(
+            NoteEvent noteEvent,
+            ulong startDspClock,
+            ulong releaseStartDspClock)
+        {
+            return ScheduleNoteCore(
+                noteEvent,
+                startDspClock,
+                releaseStartDspClock).VoiceHandle;
+        }
+
+        FmodScheduledNoteSubmission IFmodScheduledInstrument.ScheduleNote(
+            NoteEvent noteEvent,
+            ulong startDspClock,
+            ulong releaseStartDspClock)
+        {
+            return ScheduleNoteCore(
+                noteEvent,
+                startDspClock,
+                releaseStartDspClock);
+        }
+
+        private FmodScheduledNoteSubmission ScheduleNoteCore(
             NoteEvent noteEvent,
             ulong startDspClock,
             ulong releaseStartDspClock)
@@ -363,6 +386,7 @@ namespace Loom.Fmod
             ulong startOrder = TakeNextStartOrder();
             int slotIndex = FindSlotForNewVoice();
             VoiceSlot slot = voiceSlots[slotIndex];
+            bool wasStartAdjusted;
 
             try
             {
@@ -373,7 +397,9 @@ namespace Loom.Fmod
 
                 slot.ClearOwnership();
                 slot.Voice.Prepare(noteEvent.Note, noteEvent.Velocity);
-                slot.Voice.StartScheduled(startDspClock, releaseStartDspClock);
+                wasStartAdjusted = slot.Voice.StartScheduled(
+                    startDspClock,
+                    releaseStartDspClock);
             }
             catch (Exception startException)
             {
@@ -392,7 +418,9 @@ namespace Loom.Fmod
 
             slot.Assign(handle, startOrder, true);
             voiceSlots[slotIndex] = slot;
-            return handle;
+            return new FmodScheduledNoteSubmission(
+                handle,
+                wasStartAdjusted);
         }
 
         public bool NoteOff(VoiceHandle voice)
@@ -887,7 +915,7 @@ namespace Loom.Fmod
 
         void Start();
 
-        void StartScheduled(ulong startDspClock, ulong releaseStartDspClock);
+        bool StartScheduled(ulong startDspClock, ulong releaseStartDspClock);
 
         void BeginRelease();
 
@@ -896,10 +924,25 @@ namespace Loom.Fmod
 
     internal interface IFmodScheduledInstrument
     {
-        VoiceHandle ScheduleNote(
+        FmodScheduledNoteSubmission ScheduleNote(
             NoteEvent noteEvent,
             ulong startDspClock,
             ulong releaseStartDspClock);
+    }
+
+    internal readonly struct FmodScheduledNoteSubmission
+    {
+        public FmodScheduledNoteSubmission(
+            VoiceHandle voiceHandle,
+            bool wasStartAdjusted)
+        {
+            VoiceHandle = voiceHandle;
+            WasStartAdjusted = wasStartAdjusted;
+        }
+
+        public VoiceHandle VoiceHandle { get; }
+
+        public bool WasStartAdjusted { get; }
     }
 
     internal sealed class FmodOscillatorInstrumentVoice
@@ -988,11 +1031,11 @@ namespace Loom.Fmod
             voice.Start(busRouting.GetChannelGroup());
         }
 
-        public void StartScheduled(
+        public bool StartScheduled(
             ulong startDspClock,
             ulong releaseStartDspClock)
         {
-            voice.StartScheduled(
+            return voice.StartScheduled(
                 busRouting.GetChannelGroup(),
                 startDspClock,
                 releaseStartDspClock);

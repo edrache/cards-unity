@@ -23,6 +23,8 @@ namespace Loom.Fmod
 
         private FmodTickDspClockMapper clockMapper;
         private FmodScheduledNoteDispatcher dispatcher;
+        private ulong lastObservedDspClock;
+        private bool hasObservedDspClock;
         private bool isDisposed;
 
         public FmodTransportScheduler(
@@ -122,6 +124,11 @@ namespace Loom.Fmod
 
         public long BackpressurePumpCount { get; private set; }
 
+        /// <summary>
+        /// Gets the number of runtime DSP-clock domain regressions recovered since start.
+        /// </summary>
+        public long ClockRegressionRecoveryCount { get; private set; }
+
         public void Start(long startTick = 0)
         {
             ThrowIfDisposed();
@@ -169,39 +176,67 @@ namespace Loom.Fmod
 
             try
             {
-                ResolveSchedulingWindow(
-                    out ulong currentDspClock,
-                    out long currentTick,
-                    out long targetTickExclusive);
-                TransportUpdateStatus status = transport.Update(
-                    currentTick,
-                    targetTickExclusive);
-                if ((status & TransportUpdateStatus.Underrun) != 0)
-                {
-                    UnderrunPumpCount++;
-                }
-
-                if ((status & TransportUpdateStatus.BufferFull) != 0)
-                {
-                    BackpressurePumpCount++;
-                }
-
-                int dispatchedCount = dispatcher.DispatchAvailable(
-                    transport,
-                    maxDispatchEventsPerPump,
-                    currentDspClock,
-                    out int lateEventCount,
-                    out int plateauDurationCount);
-                DispatchedEventCount += dispatchedCount;
-                LateEventCount += lateEventCount;
-                PlateauDurationCount += plateauDurationCount;
-                return status;
+                ulong currentDspClock = clockMapper.GetCurrentDspClock();
+                return PumpAtDspClock(currentDspClock);
             }
             catch (Exception pumpFailure)
             {
                 FailClosed(pumpFailure);
                 throw;
             }
+        }
+
+        internal TransportUpdateStatus PumpAtDspClock(ulong currentDspClock)
+        {
+            if (transport.State != TransportState.Playing
+                || clockMapper == null
+                || dispatcher == null)
+            {
+                throw new InvalidOperationException(
+                    "Transport scheduler can pump only while playing and anchored.");
+            }
+
+            if (hasObservedDspClock && currentDspClock < lastObservedDspClock)
+            {
+                RecoverFromClockRegression();
+                return TransportUpdateStatus.Completed;
+            }
+
+            lastObservedDspClock = currentDspClock;
+            hasObservedDspClock = true;
+            ResolveSchedulingWindow(
+                currentDspClock,
+                out long currentTick,
+                out long targetTickExclusive);
+            if (currentTick < transport.CurrentTick)
+            {
+                RecoverFromClockRegression();
+                return TransportUpdateStatus.Completed;
+            }
+
+            TransportUpdateStatus status = transport.Update(
+                currentTick,
+                targetTickExclusive);
+            if ((status & TransportUpdateStatus.Underrun) != 0)
+            {
+                UnderrunPumpCount++;
+            }
+
+            if ((status & TransportUpdateStatus.BufferFull) != 0)
+            {
+                BackpressurePumpCount++;
+            }
+
+            int dispatchedCount = dispatcher.DispatchAvailable(
+                transport,
+                maxDispatchEventsPerPump,
+                currentDspClock,
+                out int lateEventCount,
+                out int plateauDurationCount);
+            DispatchedEventCount += dispatchedCount;
+            LateEventCount += lateEventCount;
+            PlateauDurationCount += plateauDurationCount;
+            return status;
         }
 
         public void Pause()
@@ -335,24 +370,28 @@ namespace Loom.Fmod
                 throw new InvalidOperationException(
                     "FMOD runtime sample rate changed during the scheduler lifetime.");
             }
+
+            lastObservedDspClock = checked(
+                clockMapper.AnchorDspClock - anchorLeadSampleFrames);
+            hasObservedDspClock = true;
         }
 
         private long ResolveCurrentTick()
         {
             ulong currentDspClock = clockMapper.GetCurrentDspClock();
-            return clockMapper.TryToTickAtOrBeforeDspClock(
+            long currentTick = clockMapper.TryToTickAtOrBeforeDspClock(
                 currentDspClock,
-                out long currentTick)
-                    ? currentTick
+                out long resolvedCurrentTick)
+                    ? resolvedCurrentTick
                     : transport.CurrentTick;
+            return Math.Max(currentTick, transport.CurrentTick);
         }
 
         private void ResolveSchedulingWindow(
-            out ulong currentDspClock,
+            ulong currentDspClock,
             out long currentTick,
             out long targetTickExclusive)
         {
-            currentDspClock = clockMapper.GetCurrentDspClock();
             currentTick = clockMapper.TryToTickAtOrBeforeDspClock(
                 currentDspClock,
                 out long resolvedCurrentTick)
@@ -371,6 +410,16 @@ namespace Loom.Fmod
             }
         }
 
+        private void RecoverFromClockRegression()
+        {
+            long recoveryTick = transport.CurrentTick;
+            instrument.CancelAllScheduledNotes();
+            transport.Panic(recoveryTick);
+            ClearAnchor();
+            Reanchor(recoveryTick);
+            ClockRegressionRecoveryCount++;
+        }
+
         private static ulong ResolveLookaheadSampleFrames(
             int sampleRate,
             int milliseconds)
@@ -386,12 +435,15 @@ namespace Loom.Fmod
             PlateauDurationCount = 0L;
             UnderrunPumpCount = 0L;
             BackpressurePumpCount = 0L;
+            ClockRegressionRecoveryCount = 0L;
         }
 
         private void ClearAnchor()
         {
             clockMapper = null;
             dispatcher = null;
+            lastObservedDspClock = 0UL;
+            hasObservedDspClock = false;
         }
 
         private void FailClosed(Exception pumpFailure)

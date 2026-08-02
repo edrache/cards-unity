@@ -211,19 +211,35 @@ namespace Loom.Tests.PlayMode
                     new Core.Note(60),
                     new Fmod.FmodAdsrEnvelope(0.01d, 0.01d, 0.5f, 0.02d),
                     new Fmod.FmodOscillatorSettings(gain: 0.01f));
-                Assert.Throws<System.ArgumentOutOfRangeException>(
-                    () => voice.StartScheduled(
-                        synthGroup,
-                        currentClock,
-                        currentClock + (bufferLength * 2UL)));
-                Assert.That(voice.IsStarted, Is.False);
+                ulong staleDuration = bufferLength * 2UL;
+                bool wasStaleStartAdjusted = voice.StartScheduled(
+                    synthGroup,
+                    currentClock,
+                    currentClock + staleDuration);
+
+                Assert.That(wasStaleStartAdjusted, Is.True);
+                Assert.That(
+                    voice.ScheduledStartDspClock,
+                    Is.GreaterThanOrEqualTo(currentClock + bufferLength));
+                Assert.That(
+                    voice.ReleaseStartDspClock - voice.ScheduledStartDspClock,
+                    Is.EqualTo(staleDuration));
+                voice.Stop();
+
+                Assert.That(
+                    synthGroup.getDSPClock(out currentClock, out _),
+                    Is.EqualTo(FMOD.RESULT.OK));
 
                 ulong startClock = checked(currentClock + (bufferLength * 4UL));
                 ulong releaseStartClock = checked(
                     startClock + (ulong)(voice.SampleRate / 50));
 
-                voice.StartScheduled(synthGroup, startClock, releaseStartClock);
+                bool wasFutureStartAdjusted = voice.StartScheduled(
+                    synthGroup,
+                    startClock,
+                    releaseStartClock);
 
+                Assert.That(wasFutureStartAdjusted, Is.False);
                 Assert.That(voice.ScheduledStartDspClock, Is.EqualTo(startClock));
                 Assert.That(voice.ReleaseStartDspClock, Is.EqualTo(releaseStartClock));
                 Assert.That(
@@ -267,6 +283,70 @@ namespace Loom.Tests.PlayMode
                         Is.EqualTo(FMOD.RESULT.OK));
                 }
 
+                Object.Destroy(listenerObject);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator DispatcherPreservesNativeLeadFromOneBufferStaleSnapshot()
+        {
+            var listenerObject = new GameObject("LOOM Dispatcher Lead Test Listener")
+            {
+                hideFlags = HideFlags.DontSave
+            };
+            listenerObject.AddComponent<StudioListener>();
+
+            Fmod.FmodOscillatorInstrument instrument = null;
+
+            try
+            {
+                instrument = new Fmod.FmodOscillatorInstrument(
+                    RuntimeManager.CoreSystem,
+                    RuntimeManager.StudioSystem,
+                    new Fmod.FmodAdsrEnvelope(0.005d, 0.01d, 0.5f, 0.02d),
+                    new Fmod.FmodOscillatorSettings(gain: 0.01f));
+                Fmod.FmodTickDspClockMapper mapper =
+                    instrument.CreateTickDspClockMapper(Core.TempoMap.Default, 0L);
+                var dispatcher = new Fmod.FmodScheduledNoteDispatcher(
+                    RuntimeManager.CoreSystem,
+                    mapper,
+                    instrument);
+                var pattern = new Core.StepPattern(
+                    4,
+                    new Core.PatternStep(new Core.Note(60), 90, 120L));
+                var transport = new Core.Transport(
+                    new Core.StepSequencer(pattern, 789UL, 9UL),
+                    1);
+                transport.Start();
+                transport.Update(0L, 1L);
+
+                Assert.That(
+                    RuntimeManager.CoreSystem.getDSPBufferSize(
+                        out uint bufferLength,
+                        out _),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                ulong currentDspClock = mapper.GetCurrentDspClock();
+                Assert.That(currentDspClock, Is.GreaterThanOrEqualTo(bufferLength));
+                ulong staleDspClock = currentDspClock - bufferLength;
+
+                int dispatchedCount = dispatcher.DispatchAvailable(
+                    transport,
+                    1,
+                    staleDspClock,
+                    out int lateEventCount,
+                    out int plateauDurationCount);
+
+                Assert.That(dispatchedCount, Is.EqualTo(1));
+                Assert.That(lateEventCount, Is.EqualTo(1));
+                Assert.That(plateauDurationCount, Is.Zero);
+                Assert.That(transport.PendingEventCount, Is.Zero);
+                Assert.That(instrument.OwnedVoiceCount, Is.EqualTo(1));
+
+                yield return null;
+            }
+            finally
+            {
+                instrument?.Dispose();
                 Object.Destroy(listenerObject);
             }
         }
@@ -350,6 +430,70 @@ namespace Loom.Tests.PlayMode
                 Assert.That(scheduler.State, Is.EqualTo(Core.TransportState.Stopped));
                 Assert.That(scheduler.CurrentTick, Is.Zero);
                 Assert.That(instrument.OwnedVoiceCount, Is.Zero);
+            }
+            finally
+            {
+                scheduler?.Dispose();
+                instrument?.Dispose();
+                Object.Destroy(listenerObject);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator TransportSchedulerReanchorsAfterDspClockRegressionWithoutMovingBackward()
+        {
+            var listenerObject = new GameObject("LOOM Clock Regression Test Listener")
+            {
+                hideFlags = HideFlags.DontSave
+            };
+            listenerObject.AddComponent<StudioListener>();
+
+            Fmod.FmodOscillatorInstrument instrument = null;
+            Fmod.FmodTransportScheduler scheduler = null;
+
+            try
+            {
+                instrument = new Fmod.FmodOscillatorInstrument(
+                    RuntimeManager.CoreSystem,
+                    RuntimeManager.StudioSystem,
+                    new Fmod.FmodAdsrEnvelope(0.005d, 0.01d, 0.5f, 0.02d),
+                    new Fmod.FmodOscillatorSettings(gain: 0.01f));
+                var pattern = new Core.StepPattern(
+                    4,
+                    new Core.PatternStep(new Core.Note(60), 90, 120L));
+                scheduler = new Fmod.FmodTransportScheduler(
+                    RuntimeManager.CoreSystem,
+                    instrument,
+                    Core.TempoMap.Default,
+                    pattern,
+                    seed: 456UL,
+                    streamId: 8UL);
+
+                scheduler.Start();
+                scheduler.Pump();
+                yield return new WaitForSecondsRealtime(0.14f);
+                scheduler.Pump();
+                long tickBeforeRegression = scheduler.CurrentTick;
+
+                Core.TransportUpdateStatus recoveryStatus =
+                    scheduler.PumpAtDspClock(0UL);
+
+                Assert.That(
+                    recoveryStatus,
+                    Is.EqualTo(Core.TransportUpdateStatus.Completed));
+                Assert.That(scheduler.State, Is.EqualTo(Core.TransportState.Playing));
+                Assert.That(scheduler.CurrentTick, Is.EqualTo(tickBeforeRegression));
+                Assert.That(scheduler.PendingEventCount, Is.Zero);
+                Assert.That(instrument.OwnedVoiceCount, Is.Zero);
+                Assert.That(scheduler.ClockRegressionRecoveryCount, Is.EqualTo(1L));
+
+                yield return new WaitForSecondsRealtime(0.14f);
+                scheduler.Pump();
+
+                Assert.That(scheduler.State, Is.EqualTo(Core.TransportState.Playing));
+                Assert.That(scheduler.CurrentTick, Is.GreaterThanOrEqualTo(tickBeforeRegression));
+                Assert.That(scheduler.ScheduledThroughTick, Is.GreaterThan(tickBeforeRegression));
+                Assert.That(instrument.OwnedVoiceCount, Is.GreaterThanOrEqualTo(1));
             }
             finally
             {

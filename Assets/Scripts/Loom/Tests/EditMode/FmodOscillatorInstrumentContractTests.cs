@@ -555,7 +555,7 @@ namespace Loom.Tests.EditMode
                 BeginReleaseCount++;
             }
 
-            public void StartScheduled(
+            public bool StartScheduled(
                 ulong startDspClock,
                 ulong releaseStartDspClock)
             {
@@ -568,6 +568,7 @@ namespace Loom.Tests.EditMode
                 }
 
                 isStarted = true;
+                return false;
             }
 
             public void Complete()
