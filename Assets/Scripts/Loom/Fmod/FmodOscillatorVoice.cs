@@ -18,6 +18,7 @@ namespace Loom.Fmod
         private ulong releaseEndDspClock;
         private float releaseStartLevel;
         private bool isReleaseScheduled;
+        private bool isFilterAttachedToChannel;
         private bool isReleased;
 
         public FmodOscillatorVoice(FMOD.System coreSystem, Note note, float gain = 0.1f)
@@ -420,6 +421,7 @@ namespace Loom.Fmod
                 FmodResult.Ensure(
                     channel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.HEAD, lowPassFilter),
                     "FMOD.Channel.addDSP(MULTIBAND_EQ low-pass)");
+                isFilterAttachedToChannel = true;
 
                 FmodResult.Ensure(
                     channel.getChannelGroup(out parentChannelGroup),
@@ -451,7 +453,7 @@ namespace Loom.Fmod
                     channel.setDelay(
                         scheduledStartDspClock,
                         hasExplicitSchedule ? releaseEndDspClock : 0UL,
-                        true),
+                        false),
                     "FMOD.Channel.setDelay(ADSR start)");
 
                 if (hasExplicitSchedule)
@@ -536,7 +538,7 @@ namespace Loom.Fmod
                         ? scheduledStartDspClock
                         : 0UL;
                 FmodResult.Ensure(
-                    channel.setDelay(preservedStartDspClock, releaseEndDspClock, true),
+                    channel.setDelay(preservedStartDspClock, releaseEndDspClock, false),
                     "FMOD.Channel.setDelay(ADSR release stop)");
 
                 isReleaseScheduled = true;
@@ -561,6 +563,7 @@ namespace Loom.Fmod
                 return;
             }
 
+            DetachLowPassFilterFromChannel();
             FmodResult.Ensure(
                 channel.stop(),
                 "FMOD.Channel.stop");
@@ -785,6 +788,10 @@ namespace Loom.Fmod
                 return;
             }
 
+            DetachLowPassFilterFromChannel();
+            FmodResult.Ensure(
+                channel.stop(),
+                "FMOD.Channel.stop after scheduled release");
             channel.clearHandle();
             parentChannelGroup.clearHandle();
         }
@@ -798,6 +805,7 @@ namespace Loom.Fmod
             releaseEndDspClock = 0UL;
             releaseStartLevel = 0f;
             isReleaseScheduled = false;
+            isFilterAttachedToChannel = false;
         }
 
         private Exception TryStopChannelAfterFailure()
@@ -805,6 +813,19 @@ namespace Loom.Fmod
             if (!channel.hasHandle())
             {
                 return null;
+            }
+
+            if (isFilterAttachedToChannel)
+            {
+                FMOD.RESULT detachResult = channel.removeDSP(lowPassFilter);
+                if (detachResult != FMOD.RESULT.OK)
+                {
+                    return new FmodOperationException(
+                        "FMOD.Channel.removeDSP after failed voice start",
+                        detachResult);
+                }
+
+                isFilterAttachedToChannel = false;
             }
 
             FMOD.RESULT result = channel.stop();
@@ -818,6 +839,19 @@ namespace Loom.Fmod
             channel.clearHandle();
             parentChannelGroup.clearHandle();
             return null;
+        }
+
+        private void DetachLowPassFilterFromChannel()
+        {
+            if (!isFilterAttachedToChannel)
+            {
+                return;
+            }
+
+            FmodResult.Ensure(
+                channel.removeDSP(lowPassFilter),
+                "FMOD.Channel.removeDSP(MULTIBAND_EQ low-pass)");
+            isFilterAttachedToChannel = false;
         }
 
         private static Exception TryReleaseDsp(ref FMOD.DSP dsp, string operation)

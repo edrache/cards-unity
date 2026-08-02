@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.36
+**Plan version:** 1.37
 **Last updated:** 2026-08-02
-**Current milestone:** M3 — Tracks, scale, harmony, and mixer
-**Current status:** IN PROGRESS
-**Next action:** Add the playable four-track M3 demonstration, exercise independent pattern lengths and fixed pump order, then run the complete milestone verification suites.
+**Current milestone:** M4 — Mutation layer
+**Current status:** READY
+**Next action:** Define versioned mutation verbs, targets, values, priorities, and sequence numbers without exposing sequencer internals to game code.
 
 ## Purpose
 
@@ -83,6 +83,8 @@ The first product is an engine playground. It must let a developer play notes an
 | Track bus paths | `FmodTrackBusPaths` is the shared code contract for every authored Studio track bus. Generated Desktop banks remain ignored build artifacts; committed FMOD metadata is the source configuration |
 | Track mixer controls | `FmodTrackMixerControls` owns one selected Studio bus fader, mute state, and runtime Multiband EQ 24 dB/octave low-pass. It restores preexisting bus state on dispose or reload preparation, recreates its owned DSP after routing restoration, and never mutates another bus |
 | Multi-track ordering | `FourTrackSequencer` owns bounded per-track buffers and merges drums, bass, lead, and pad by `(StartTick, TrackId.Value, TrackSequenceNumber)`. The merge is partition-invariant, backpressure-safe, resettable, and allocation-free after initialization |
+| Four-track demo | The disabled-by-default `LOOM Four Track Demo` object in `Assets/Scenes/scn_loom.unity` runs drums, bass, lead, and pad in fixed pump order on direct track buses with independent 3/4/5/7-beat resolved-note patterns. Drums use an oscillator/noise rendering placeholder; explicit `PercussionNote` slots remain the canonical Core data contract until a sample backend is selected |
+| Scheduled voice cleanup | Per-voice filters are detached explicitly before a scheduled or hard channel stop. Scheduled delays keep the channel alive through the silent release boundary so cleanup never loses the handle while its DSP remains connected |
 | Pitch-to-frequency conversion | `Note.FrequencyHz` returns `double` using twelve-tone equal temperament and A4 = MIDI 69 = 440 Hz; conversion to FMOD `float` occurs explicitly at the adapter boundary |
 | Logical note event | `NoteEvent` stores a playable velocity from 1 through 127 and a non-overflowing `[StartTick, EndTick)` interval in `long` ticks |
 | Voice ownership | `IInstrument.NoteOn` returns a non-zero stable `VoiceHandle`; `NoteOff` consumes that exact handle, `AllNotesOff` invalidates outstanding handles, and the instrument owns disposable resources |
@@ -114,8 +116,8 @@ The first product is an engine playground. It must let a developer play notes an
 | M0 | Repository rules and verified FMOD foundation | DONE |
 | M1 | Playable polyphonic synth playground | DONE |
 | M2 | Deterministic transport and step sequencer | DONE |
-| M3 | Multiple tracks, scale, harmony, and routing | READY |
-| M4 | Quantized mutation layer and game-facing API | NOT STARTED |
+| M3 | Multiple tracks, scale, harmony, and routing | DONE |
+| M4 | Quantized mutation layer and game-facing API | READY |
 | M5 | Save/replay determinism and engine hardening | NOT STARTED |
 | M6 | Authoring, MIDI, samples, and advanced synthesis | DEFERRED |
 
@@ -299,15 +301,15 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Add deterministic four-track coordination and canonical same-tick ordering.
 - [x] `DONE` Add explicit per-track FMOD instrument routing.
 - [x] `DONE` Add track gain, mute, and basic effect parameters.
-- [ ] `NOT STARTED` Demonstrate independent pattern lengths and stable scheduling order.
+- [x] `DONE` Demonstrate independent pattern lengths and stable scheduling order.
 
 ### Acceptance criteria
 
-- Four tracks run concurrently with independent lengths.
-- Pitched tracks resolve deterministically through scale and harmony data.
-- Percussion uses explicit instrument slots.
-- Mixer controls affect only their intended tracks.
-- Same-tick event ordering is stable and tested.
+- [x] Four tracks run concurrently with independent lengths.
+- [x] Pitched tracks resolve deterministically through scale and harmony data.
+- [x] Percussion uses explicit instrument slots.
+- [x] Mixer controls affect only their intended tracks.
+- [x] Same-tick event ordering is stable and tested.
 
 ### Verification evidence
 
@@ -341,6 +343,10 @@ The first product is an engine playground. It must let a developer play notes an
 - On 2026-08-02, all 23 focused instrument-contract EditMode cases passed, and a focused live PlayMode case created, played, released, and disposed an oscillator instrument bound to `bus:/MUS_Lead`.
 - `FmodTrackMixerControls` provides validated linear gain, mute, and 20–22000 Hz low-pass cutoff for one declared Studio bus. It owns only its runtime EQ DSP, preserves the original bus state, and follows explicit prepare/restore/dispose lifecycle rules.
 - On 2026-08-02, all 12 focused mixer-control EditMode cases and 2/2 focused live PlayMode cases passed. Live coverage verified state round trips, lifecycle restoration, and that lead controls leave the bass bus unchanged.
+- `LoomFourTrackDemoController` creates four oscillator instruments on `MUS_Drums`, `MUS_Bass`, `MUS_Lead`, and `MUS_Pad`, then pumps their schedulers in fixed drums/bass/lead/pad order. The scene stores the demo object disabled by default so explicit activation cannot interfere with the interactive synth or bank-reload lifecycle tests.
+- The live demo uses independent 3/4/5/7-beat patterns and dispatched at least one event on every declared bus during the focused PlayMode smoke. The separate Core coordinator remains the canonical source of cross-track same-tick ordering.
+- Four-track cleanup exposed and fixed a scheduled-voice lifetime defect: the channel could auto-stop before its attached low-pass DSP was removed. Delayed stops now retain the channel through the release boundary, detach the filter explicitly, and then stop and release cleanly.
+- Final M3 verification on 2026-08-02 passed 549/549 `Loom.Tests.EditMode` cases and 13/13 `Loom.Tests.PlayMode` cases in the open Unity Editor. The repository checker passed 114 text files plus Unity metadata parity, `git diff --check` passed, and the final Console contained no C#, LOOM, or FMOD errors.
 
 ## M4 — Mutation Layer
 
@@ -473,6 +479,9 @@ Before ending a task that changed LOOM:
 - Completed per-track audio routing and advanced to the already parallelized mixer-control slice.
 - Added lifecycle-safe per-track gain, mute, and low-pass controls with live cross-bus isolation; 12/12 focused EditMode and 2/2 focused PlayMode cases passed.
 - Completed the mixer-control work item and advanced M3 to its playable four-track demonstration and final milestone verification.
+- Added the disabled-by-default scene-backed four-track demo with independent 3/4/5/7-beat patterns, direct Drums/Bass/Lead/Pad routing, and fixed runtime pump order.
+- Fixed scheduled voice cleanup by retaining the channel through its release boundary and detaching the owned low-pass before stopping the channel.
+- Passed the final 549/549 EditMode and 13/13 PlayMode suites, completed every M3 work item and acceptance criterion, marked M3 done, and advanced the plan to M4 mutation contracts.
 
 ### 2026-08-01
 
