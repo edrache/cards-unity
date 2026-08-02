@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.30
+**Plan version:** 1.31
 **Last updated:** 2026-08-02
 **Current milestone:** M3 — Tracks, scale, harmony, and mixer
 **Current status:** READY
-**Next action:** Create `Master/MUS_Drums`, `Master/MUS_Bass`, `Master/MUS_Lead`, `Master/MUS_Pad`, and `Master/MUS_FX` in FMOD Studio, rebuild the Desktop Master Bank, and verify every Studio bus resolves in the open Unity Editor.
+**Next action:** Add harmony-aware pitched and explicit percussion-slot pattern-to-event pipelines while preserving the existing resolved-note sequencer contract and deterministic hot-path behavior.
 
 ## Purpose
 
@@ -55,7 +55,7 @@ The first product is an engine playground. It must let a developer play notes an
 | FMOD bank output | `fmod/loom/Build/<platform>`; generated banks are ignored build artifacts |
 | Initial platforms | macOS and Windows desktop |
 | Initial synthesis | Built-in FMOD oscillator/DSP graph; no samples required |
-| Studio bus | `bus:/MUS_Synth` |
+| Studio buses | `bus:/MUS_Synth`, `bus:/MUS_Drums`, `bus:/MUS_Bass`, `bus:/MUS_Lead`, `bus:/MUS_Pad`, and `bus:/MUS_FX`; every group is a direct child of the Master Bus |
 | Musical clock | Integer `long` ticks, 960 PPQN |
 | Initial meter | 4/4 |
 | Musical-time decomposition | `MusicalTime` accepts ticks from zero through `long.MaxValue` and exposes zero-based `long` bar, `int` beat-within-bar, and `int` tick-within-beat values without reconstructive multiplication |
@@ -78,6 +78,7 @@ The first product is an engine playground. It must let a developer play notes an
 | Resolved pitch contract | `ScaleDegreePitch` stores a signed zero-based degree plus an additional octave offset. Immutable `Scale` owns one strictly increasing octave of unique 0-11 semitone intervals beginning at zero and resolves against an absolute tonic with floor wrapping in `long` arithmetic. Results outside MIDI 0-127 are rejected; the existing pattern, sequencer, and `NoteEvent` boundary remains resolved `Note` data |
 | Percussion note contract | `PercussionNote` is a separate immutable value identified by a nonzero instrument-local `ulong` sample-slot ID. It has no MIDI pitch, scale degree, octave, asset path, Unity, or FMOD dependency; the assigned percussion backend owns slot-to-resource mapping |
 | Harmony resolution | Immutable positive-duration `HarmonyStep` values form one defensively owned cyclic `HarmonyPlan`. `HarmonyResolver` keeps leads free in the scale, maps bass to the active root, and maps signed pad degrees through root-third-fifth diatonic tones using floor wrapping. `TrackRole` contains only pitched roles; percussion never enters this resolver |
+| Track bus paths | `FmodTrackBusPaths` is the shared code contract for every authored Studio track bus. Generated Desktop banks remain ignored build artifacts; committed FMOD metadata is the source configuration |
 | Pitch-to-frequency conversion | `Note.FrequencyHz` returns `double` using twelve-tone equal temperament and A4 = MIDI 69 = 440 Hz; conversion to FMOD `float` occurs explicitly at the adapter boundary |
 | Logical note event | `NoteEvent` stores a playable velocity from 1 through 127 and a non-overflowing `[StartTick, EndTick)` interval in `long` ticks |
 | Voice ownership | `IInstrument.NoteOn` returns a non-zero stable `VoiceHandle`; `NoteOff` consumes that exact handle, `AllNotesOff` invalidates outstanding handles, and the instrument owns disposable resources |
@@ -288,7 +289,9 @@ The first product is an engine playground. It must let a developer play notes an
 - [x] `DONE` Add scale-degree resolution for pitched tracks.
 - [x] `DONE` Add a separate percussion/sample-slot note model rather than routing drums through scale degrees.
 - [x] `DONE` Add harmony-plan and track-role resolution.
-- [ ] `NOT STARTED` Add `MUS_Drums`, `MUS_Bass`, `MUS_Lead`, `MUS_Pad`, and `MUS_FX` buses when required.
+- [x] `DONE` Add `MUS_Drums`, `MUS_Bass`, `MUS_Lead`, `MUS_Pad`, and `MUS_FX` buses when required.
+- [ ] `READY` Add harmony-aware pitched and explicit percussion-slot pattern-to-event pipelines.
+- [ ] `NOT STARTED` Add deterministic multi-track coordination and per-track instrument routing.
 - [ ] `NOT STARTED` Add track gain, mute, and basic effect parameters.
 - [ ] `NOT STARTED` Demonstrate independent pattern lengths and stable scheduling order.
 
@@ -317,6 +320,9 @@ The first product is an engine playground. It must let a developer play notes an
 - `HarmonyStep` and `HarmonyPlan` provide an immutable cyclic chord-root timeline with positive durations, checked total length, defensive ownership, half-open boundaries, binary lookup, and deterministic `long.MaxValue` behavior.
 - `HarmonyResolver` preserves free scale degrees for lead, maps bass to the active root, and maps signed pad degrees through a diatonic root-third-fifth triad. It rejects undefined roles, leaves `PercussionNote` structurally separate, and emits the existing resolved `Note` boundary without mutable state.
 - On 2026-08-02, the focused harmony set passed 39/39 and the complete `Loom.Tests.EditMode` assembly passed 426/426 in the open Unity Editor. A warmed 10,000-call resolver loop allocated zero managed bytes. The repository checker passed 86 text files plus Unity metadata parity, and `git diff --check` passed; the Console contained no C# or LOOM errors, only Test Runner result-save messages.
+- FMOD Studio now owns five direct Master Bus children for drums, bass, lead, pad, and effects alongside the existing synth bus. The Desktop Master Bank was rebuilt from the saved Studio project on 2026-08-02.
+- `FmodTrackBusPaths` freezes the six authored Studio paths as one shared adapter contract, and the existing synth instrument aliases that contract rather than duplicating its literal path.
+- The focused live bus test resolved and materialized valid ChannelGroups for all five new paths. The complete suites passed 426/426 EditMode and 9/9 PlayMode in the open Unity Editor; the repository coding-standard checker passed 88 text files plus Unity metadata parity.
 
 ## M4 — Mutation Layer
 
@@ -437,6 +443,8 @@ Before ending a task that changed LOOM:
 - Added immutable cyclic `HarmonyPlan` data, pitched `TrackRole` policies, and allocation-free `HarmonyResolver` behavior for free lead, root bass, and diatonic triad pad resolution.
 - Added 39 focused harmony validation, boundary, cyclic lookup, role, determinism, overflow, integration, and allocation cases; the focused set passed 39/39 and the complete EditMode assembly passed 426/426.
 - Completed the fourth M3 work item and advanced the next action to the five required FMOD Studio track buses.
+- Added five direct-child FMOD Studio track buses, rebuilt the Desktop Master Bank, froze all authored bus paths in `FmodTrackBusPaths`, and verified every new bus as a valid live ChannelGroup.
+- Completed the FMOD bus work item and advanced M3 to harmony-aware pitched and explicit percussion-slot pattern-to-event pipelines required by the four-track coordinator.
 
 ### 2026-08-01
 

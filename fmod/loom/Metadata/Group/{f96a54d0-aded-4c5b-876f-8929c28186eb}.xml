@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="MixerGroup" id="{f96a54d0-aded-4c5b-876f-8929c28186eb}">
+		<property name="name">
+			<value>MUS_Drums</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{0863ad23-92d9-4b6b-b069-4a2cfa37226f}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{ec1bb941-d188-4225-a8ee-cdba274dad9e}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{5f6deef9-cbde-4bfe-9953-7f96533cb579}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{0863ad23-92d9-4b6b-b069-4a2cfa37226f}">
+		<relationship name="effects">
+			<destination>{3b7694ea-8003-4ef7-b12d-c5373e440ee1}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{ec1bb941-d188-4225-a8ee-cdba274dad9e}" />
+	<object class="MixerBusFader" id="{3b7694ea-8003-4ef7-b12d-c5373e440ee1}" />
+</objects>

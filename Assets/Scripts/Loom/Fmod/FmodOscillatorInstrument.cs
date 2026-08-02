@@ -9,7 +9,7 @@ namespace Loom.Fmod
         : IInstrument, IFmodScheduledInstrument
     {
         public const int DefaultVoiceCapacity = 8;
-        public const string SynthBusPath = "bus:/MUS_Synth";
+        public const string SynthBusPath = FmodTrackBusPaths.Synth;
 
         private static long lastIssuedVoiceId;
 
