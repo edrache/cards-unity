@@ -5,7 +5,8 @@ using Loom.Core;
 
 namespace Loom.Fmod
 {
-    public sealed class FmodOscillatorInstrument : IInstrument
+    public sealed class FmodOscillatorInstrument
+        : IInstrument, IFmodScheduledInstrument
     {
         public const int DefaultVoiceCapacity = 8;
         public const string SynthBusPath = "bus:/MUS_Synth";
@@ -299,7 +300,68 @@ namespace Loom.Fmod
                 throw;
             }
 
-            slot.Assign(handle, startOrder);
+            slot.Assign(handle, startOrder, false);
+            voiceSlots[slotIndex] = slot;
+            return handle;
+        }
+
+        /// <summary>
+        /// Schedules one resolved logical note at exact clocks in the synth bus domain.
+        /// </summary>
+        public VoiceHandle ScheduleNote(
+            NoteEvent noteEvent,
+            ulong startDspClock,
+            ulong releaseStartDspClock)
+        {
+            ThrowIfDisposed();
+            if (startDspClock == 0UL)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(startDspClock),
+                    startDspClock,
+                    "Scheduled start DSP clock must be positive.");
+            }
+
+            if (releaseStartDspClock <= startDspClock)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(releaseStartDspClock),
+                    releaseStartDspClock,
+                    "Scheduled release DSP clock must be after the start clock.");
+            }
+
+            VoiceHandle handle = TakeNextVoiceHandle();
+            ulong startOrder = TakeNextStartOrder();
+            int slotIndex = FindSlotForNewVoice();
+            VoiceSlot slot = voiceSlots[slotIndex];
+
+            try
+            {
+                if (slot.Voice.IsStarted)
+                {
+                    slot.Voice.Stop();
+                }
+
+                slot.ClearOwnership();
+                slot.Voice.Prepare(noteEvent.Note, noteEvent.Velocity);
+                slot.Voice.StartScheduled(startDspClock, releaseStartDspClock);
+            }
+            catch (Exception startException)
+            {
+                slot.ClearOwnership();
+                Exception cleanupException = TryDisposeSlotVoice(ref slot);
+                voiceSlots[slotIndex] = slot;
+                if (cleanupException != null)
+                {
+                    throw new AggregateException(
+                        startException,
+                        cleanupException);
+                }
+
+                throw;
+            }
+
+            slot.Assign(handle, startOrder, true);
             voiceSlots[slotIndex] = slot;
             return handle;
         }
@@ -317,6 +379,11 @@ namespace Loom.Fmod
                 if (!voiceSlots[i].IsOwned || voiceSlots[i].Handle != voice)
                 {
                     continue;
+                }
+
+                if (voiceSlots[i].IsScheduled)
+                {
+                    return false;
                 }
 
                 voiceSlots[i].IsOwned = false;
@@ -344,6 +411,87 @@ namespace Loom.Fmod
             return false;
         }
 
+        /// <summary>
+        /// Hard-stops and consumes one exact scheduled voice handle.
+        /// </summary>
+        public bool CancelScheduledNote(VoiceHandle voice)
+        {
+            if (isDisposed || !voice.IsValid)
+            {
+                return false;
+            }
+
+            ReclaimCompletedVoices();
+            for (int i = 0; i < voiceSlots.Length; i++)
+            {
+                if (!voiceSlots[i].IsOwned
+                    || !voiceSlots[i].IsScheduled
+                    || voiceSlots[i].Handle != voice)
+                {
+                    continue;
+                }
+
+                voiceSlots[i].ClearOwnership();
+                try
+                {
+                    voiceSlots[i].Voice.Stop();
+                }
+                catch (Exception stopException)
+                {
+                    Exception cleanupException = TryDisposeSlotVoice(
+                        ref voiceSlots[i]);
+                    if (cleanupException != null)
+                    {
+                        throw new AggregateException(
+                            stopException,
+                            cleanupException);
+                    }
+
+                    throw;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Hard-stops every owned scheduled voice without affecting interactive notes.
+        /// </summary>
+        public void CancelAllScheduledNotes()
+        {
+            if (isDisposed)
+            {
+                return;
+            }
+
+            ReclaimCompletedVoices();
+            List<Exception> failures = null;
+            for (int i = 0; i < voiceSlots.Length; i++)
+            {
+                if (!voiceSlots[i].IsOwned || !voiceSlots[i].IsScheduled)
+                {
+                    continue;
+                }
+
+                voiceSlots[i].ClearOwnership();
+                try
+                {
+                    voiceSlots[i].Voice.Stop();
+                }
+                catch (Exception stopException)
+                {
+                    AddFailure(ref failures, stopException);
+                    AddFailure(
+                        ref failures,
+                        TryDisposeSlotVoice(ref voiceSlots[i]));
+                }
+            }
+
+            ThrowFailures(failures);
+        }
+
         public void AllNotesOff()
         {
             if (isDisposed)
@@ -360,10 +508,19 @@ namespace Loom.Fmod
                     continue;
                 }
 
+                bool isScheduled = voiceSlots[i].IsScheduled;
                 voiceSlots[i].IsOwned = false;
                 try
                 {
-                    voiceSlots[i].Voice.BeginRelease();
+                    if (isScheduled)
+                    {
+                        voiceSlots[i].Voice.Stop();
+                        voiceSlots[i].ClearOwnership();
+                    }
+                    else
+                    {
+                        voiceSlots[i].Voice.BeginRelease();
+                    }
                 }
                 catch (Exception releaseException)
                 {
@@ -647,6 +804,7 @@ namespace Loom.Fmod
                 Handle = default;
                 StartOrder = 0UL;
                 IsOwned = false;
+                IsScheduled = false;
             }
 
             public IOscillatorInstrumentVoice Voice;
@@ -657,11 +815,17 @@ namespace Loom.Fmod
 
             public bool IsOwned;
 
-            public void Assign(VoiceHandle handle, ulong startOrder)
+            public bool IsScheduled;
+
+            public void Assign(
+                VoiceHandle handle,
+                ulong startOrder,
+                bool isScheduled)
             {
                 Handle = handle;
                 StartOrder = startOrder;
                 IsOwned = true;
+                IsScheduled = isScheduled;
             }
 
             public void ClearOwnership()
@@ -669,6 +833,7 @@ namespace Loom.Fmod
                 Handle = default;
                 StartOrder = 0UL;
                 IsOwned = false;
+                IsScheduled = false;
             }
         }
     }
@@ -693,9 +858,19 @@ namespace Loom.Fmod
 
         void Start();
 
+        void StartScheduled(ulong startDspClock, ulong releaseStartDspClock);
+
         void BeginRelease();
 
         void Stop();
+    }
+
+    internal interface IFmodScheduledInstrument
+    {
+        VoiceHandle ScheduleNote(
+            NoteEvent noteEvent,
+            ulong startDspClock,
+            ulong releaseStartDspClock);
     }
 
     internal sealed class FmodOscillatorInstrumentVoice
@@ -782,6 +957,16 @@ namespace Loom.Fmod
         public void Start()
         {
             voice.Start(busRouting.GetChannelGroup());
+        }
+
+        public void StartScheduled(
+            ulong startDspClock,
+            ulong releaseStartDspClock)
+        {
+            voice.StartScheduled(
+                busRouting.GetChannelGroup(),
+                startDspClock,
+                releaseStartDspClock);
         }
 
         public void BeginRelease()

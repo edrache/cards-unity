@@ -6,7 +6,7 @@ namespace Loom.Fmod
     /// <summary>
     /// Maps absolute musical ticks into one FMOD parent-channel-group DSP clock domain.
     /// </summary>
-    public sealed class FmodTickDspClockMapper
+    public sealed class FmodTickDspClockMapper : IFmodScheduledNoteClockMapper
     {
         private const string GetSoftwareFormatOperation =
             "FMOD.System.getSoftwareFormat";
@@ -242,5 +242,12 @@ namespace Loom.Fmod
         FMOD.RESULT GetSoftwareFormat(out int sampleRate);
 
         FMOD.RESULT GetDspClock(out ulong dspClock);
+    }
+
+    internal interface IFmodScheduledNoteClockMapper
+    {
+        ulong GetCurrentDspClock();
+
+        ulong ToDspClock(long tick);
     }
 }

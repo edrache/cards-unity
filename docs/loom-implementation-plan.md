@@ -1,10 +1,10 @@
 # LOOM Implementation Plan
 
-**Plan version:** 1.22
+**Plan version:** 1.23
 **Last updated:** 2026-08-02
 **Current milestone:** M2 — Deterministic transport and step sequencer
 **Current status:** IN PROGRESS
-**Next action:** Add explicit-clock FMOD note dispatch and hard cancellation for future scheduled voices, preserving the interactive instrument API while allowing scheduler events to use exact start and release DSP clocks on the `MUS_Synth` parent domain.
+**Next action:** Implement the pure Core transport state machine with start, stop, pause, resume, panic, arbitrary-tick sequencer reset, monotonic lookahead coalescing, exact backpressure recovery, and allocation-free peek/dequeue access for the FMOD boundary.
 
 ## Purpose
 
@@ -69,6 +69,8 @@ The first product is an engine playground. It must let a developer play notes an
 | Stateless randomness | `StatelessRng` hashes the ordered unsigned lanes seed, stable stream ID, non-negative absolute tick, and frozen nonzero `RandomSlot` through the documented unchecked SplitMix64 finalizer. Slot identifiers are serialized contracts that are never renumbered or reused; `Float01` maps the upper 24 bits exactly into `[0, 1)` without mutable PRNG state |
 | Scheduling buffer | `SchedulingBuffer<T>` is a single-owner, fixed-capacity FIFO for value types. It allocates its array only at construction, never overwrites or drops unread values when full, preserves insertion order through wraparound, clears dequeued slots, and exposes only non-enumerating enqueue, peek, dequeue, and clear operations on the hot path |
 | Step-pattern data | `PatternStep` is an immutable resolved `Note` or canonical default rest with playable velocity, positive tick duration, finite normalized probability, one through 255 total ratchet attacks, and an integer microtiming offset. `StepPattern` owns a non-empty defensive copy on a positive divisor of 960 PPQN, bounds note offsets inside one step, and requires no more ratchets than distinct ticks in that step |
+| Scheduled FMOD voices | The interactive `IInstrument` API remains unchanged. `FmodOscillatorInstrument.ScheduleNote` owns future voices separately, sends exact start and release clocks to the lifecycle-bound `MUS_Synth` group, and uses hard `Channel.stop` cancellation rather than the interactive release path |
+| Scheduled dispatch | `FmodScheduledNoteDispatcher` reads the current parent clock once per batch, enforces at least one DSP buffer of lead, preserves mapped gate duration when shifting late events, promotes rounding-plateau gates to one sample frame, and dequeues only after atomic instrument success. Late and plateau counts remain separate runtime timing evidence from the deterministic logical stream |
 | Core boundary | Pure C#, with no Unity or FMOD references |
 | Resolved pitch contract | `Note` stores a validated MIDI note number from 0 through 127; scale-degree resolution remains a later Conductor concern |
 | Pitch-to-frequency conversion | `Note.FrequencyHz` returns `double` using twelve-tone equal temperament and A4 = MIDI 69 = 440 Hz; conversion to FMOD `float` occurs explicitly at the adapter boundary |
@@ -261,6 +263,8 @@ The first product is an engine playground. It must let a developer play notes an
 - On 2026-08-02, all 22 new sequencer/event cases and the complete 287/287 `Loom.Tests.EditMode` cases passed in the open Unity Editor. Coverage includes rests, probability boundaries and a frozen stream, uneven ratchets, cross-cycle microtiming, same-onset ordering, partition invariance, backpressure, reset replay, overflow, and zero steady-state allocations.
 - `TickSampleConverter` now projects a sample frame to the final qualifying tick with an exception-free upper-bound search, including rounding plateaus and the last representable tick below forward overflow. `FmodTickDspClockMapper` performs the same inverse through its immutable affine anchor without another native clock read and exposes non-throwing preroll detection.
 - On 2026-08-02, all 74 focused converter/mapper cases, the complete 313/313 `Loom.Tests.EditMode` cases, the focused live mapper smoke, and the complete 6/6 `Loom.Tests.PlayMode` cases passed in the open Unity Editor. A warmed 10,000-call inverse-conversion loop measured zero current-thread managed allocations.
+- `FmodOscillatorVoice` now validates one-buffer lead before creating an exact-clock channel, sets one start/stop delay, truncates ADSR points at the resolved release, and supports hard cancellation before onset. The instrument distinguishes scheduled ownership from keyboard notes, while `FmodScheduledNoteDispatcher` clamps late batches without shortening gates and retains a failed head for retry.
+- On 2026-08-02, all 30 focused instrument/dispatcher cases, the complete 328/328 `Loom.Tests.EditMode` cases, the exact-clock live voice test, and the complete 7/7 `Loom.Tests.PlayMode` cases passed in the open Unity Editor. A warmed 10,000-event dispatcher loop measured zero current-thread managed allocations.
 
 ## M3 — Tracks, Scale, Harmony, and Mixer
 
@@ -379,6 +383,9 @@ Before ending a task that changed LOOM:
 - Added allocation-free inverse sample-frame and DSP-clock projection with rightmost plateau semantics, checked affine translation, explicit preroll detection, and no native clock rereads.
 - Added 26 inverse-projection cases; the focused converter/mapper set passed 74/74, the complete suites passed 313/313 EditMode and 6/6 PlayMode, and the inverse hot path measured zero allocations after warmup.
 - Advanced the transport item to exact-clock scheduled voice dispatch and hard cancellation before lifecycle orchestration.
+- Added exact-clock scheduled oscillator starts and releases, scheduled-voice ownership and cancellation, and a retry-safe FIFO dispatcher with late-event and rounding-plateau accounting.
+- Added 15 EditMode cases and one live PlayMode case; the focused instrument/dispatcher set passed 30/30, the complete suites passed 328/328 EditMode and 7/7 PlayMode, and the dispatcher hot path measured zero allocations after warmup.
+- Advanced the transport item to the pure Core lifecycle and lookahead state machine.
 
 ### 2026-08-01
 

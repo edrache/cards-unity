@@ -295,7 +295,10 @@ namespace Loom.Fmod
         {
             StartCore(
                 default,
-                "FMOD.System.playDSP(OSCILLATOR, default Core output)");
+                "FMOD.System.playDSP(OSCILLATOR, default Core output)",
+                false,
+                0UL,
+                0UL);
         }
 
         public void Start(FMOD.ChannelGroup targetChannelGroup)
@@ -309,12 +312,86 @@ namespace Loom.Fmod
 
             StartCore(
                 targetChannelGroup,
-                "FMOD.System.playDSP(OSCILLATOR, target Studio bus ChannelGroup)");
+                "FMOD.System.playDSP(OSCILLATOR, target Studio bus ChannelGroup)",
+                false,
+                0UL,
+                0UL);
+        }
+
+        /// <summary>
+        /// Starts and releases the voice at exact clocks in the target parent-group domain.
+        /// </summary>
+        public void StartScheduled(
+            FMOD.ChannelGroup targetChannelGroup,
+            ulong startDspClock,
+            ulong releaseStartDspClock)
+        {
+            if (!targetChannelGroup.hasHandle())
+            {
+                throw new ArgumentException(
+                    "Target FMOD ChannelGroup must have a valid handle.",
+                    nameof(targetChannelGroup));
+            }
+
+            if (startDspClock == 0UL)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(startDspClock),
+                    startDspClock,
+                    "Scheduled start DSP clock must be positive.");
+            }
+
+            if (releaseStartDspClock <= startDspClock)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(releaseStartDspClock),
+                    releaseStartDspClock,
+                    "Scheduled release DSP clock must be after the start clock.");
+            }
+
+            FmodResult.Ensure(
+                coreSystem.getDSPBufferSize(out uint scheduledBufferLength, out _),
+                "FMOD.System.getDSPBufferSize(scheduled voice)");
+            FmodResult.Ensure(
+                targetChannelGroup.getDSPClock(out ulong currentDspClock, out _),
+                "FMOD.ChannelGroup.getDSPClock(scheduled voice lead)");
+
+            ulong earliestStartDspClock = checked(
+                currentDspClock + scheduledBufferLength);
+            if (startDspClock < earliestStartDspClock)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(startDspClock),
+                    startDspClock,
+                    "Scheduled start DSP clock must be at least one DSP buffer ahead.");
+            }
+
+            ulong scheduledReleaseEndDspClock = checked(
+                releaseStartDspClock + envelopeSamples.ReleaseFrames);
+            float scheduledReleaseStartLevel =
+                envelopeSamples.GetAttackDecaySustainLevel(
+                    releaseStartDspClock - startDspClock);
+
+            StartCore(
+                targetChannelGroup,
+                "FMOD.System.playDSP(OSCILLATOR, scheduled Studio bus ChannelGroup)",
+                true,
+                startDspClock,
+                releaseStartDspClock,
+                scheduledReleaseEndDspClock,
+                scheduledReleaseStartLevel,
+                scheduledBufferLength);
         }
 
         private void StartCore(
             FMOD.ChannelGroup targetChannelGroup,
-            string playOperation)
+            string playOperation,
+            bool hasExplicitSchedule,
+            ulong explicitStartDspClock,
+            ulong explicitReleaseStartDspClock,
+            ulong explicitReleaseEndDspClock = 0UL,
+            float explicitReleaseStartLevel = 0f,
+            uint explicitBufferLength = 0U)
         {
             ThrowIfReleased();
 
@@ -348,18 +425,57 @@ namespace Loom.Fmod
                     channel.getChannelGroup(out parentChannelGroup),
                     "FMOD.Channel.getChannelGroup");
 
-                FmodResult.Ensure(
-                    coreSystem.getDSPBufferSize(out dspBufferLength, out _),
-                    "FMOD.System.getDSPBufferSize");
+                if (hasExplicitSchedule)
+                {
+                    dspBufferLength = explicitBufferLength;
+                }
+                else
+                {
+                    FmodResult.Ensure(
+                        coreSystem.getDSPBufferSize(out dspBufferLength, out _),
+                        "FMOD.System.getDSPBufferSize");
+                }
 
-                ulong currentDspClock = GetParentDspClock();
-                scheduledStartDspClock = checked(currentDspClock + dspBufferLength);
+                scheduledStartDspClock = hasExplicitSchedule
+                    ? explicitStartDspClock
+                    : checked(GetParentDspClock() + dspBufferLength);
+
+                if (hasExplicitSchedule)
+                {
+                    releaseStartDspClock = explicitReleaseStartDspClock;
+                    releaseStartLevel = explicitReleaseStartLevel;
+                    releaseEndDspClock = explicitReleaseEndDspClock;
+                }
 
                 FmodResult.Ensure(
-                    channel.setDelay(scheduledStartDspClock, 0UL, true),
+                    channel.setDelay(
+                        scheduledStartDspClock,
+                        hasExplicitSchedule ? releaseEndDspClock : 0UL,
+                        true),
                     "FMOD.Channel.setDelay(ADSR start)");
 
-                ScheduleAttackDecaySustain();
+                if (hasExplicitSchedule)
+                {
+                    ScheduleAttackDecaySustainThrough(
+                        releaseStartDspClock - scheduledStartDspClock);
+                }
+                else
+                {
+                    ScheduleAttackDecaySustain();
+                }
+
+                if (hasExplicitSchedule)
+                {
+                    AddFadePoint(
+                        releaseStartDspClock,
+                        releaseStartLevel,
+                        "scheduled ADSR release start");
+                    AddFadePoint(
+                        releaseEndDspClock,
+                        0f,
+                        "scheduled ADSR release end");
+                    isReleaseScheduled = true;
+                }
 
                 FmodResult.Ensure(
                     channel.setPaused(false),
@@ -601,6 +717,43 @@ namespace Loom.Fmod
                 attackEndDspClock + envelopeSamples.DecayFrames);
             AddFadePoint(
                 decayEndDspClock,
+                envelopeSamples.SustainLevel,
+                "ADSR decay end and sustain");
+        }
+
+        private void ScheduleAttackDecaySustainThrough(ulong releaseElapsedFrames)
+        {
+            AddFadePoint(scheduledStartDspClock, 0f, "ADSR attack start");
+
+            if (envelopeSamples.AttackFrames >= releaseElapsedFrames)
+            {
+                return;
+            }
+
+            ulong attackEndDspClock = scheduledStartDspClock
+                + envelopeSamples.AttackFrames;
+            if (envelopeSamples.DecayFrames == 0UL)
+            {
+                AddFadePoint(
+                    attackEndDspClock,
+                    envelopeSamples.SustainLevel,
+                    "ADSR attack end and sustain");
+                return;
+            }
+
+            AddFadePoint(attackEndDspClock, 1f, "ADSR attack end");
+
+            ulong remainingBeforeRelease =
+                releaseElapsedFrames - envelopeSamples.AttackFrames;
+            if (envelopeSamples.DecayFrames >= remainingBeforeRelease)
+            {
+                return;
+            }
+
+            AddFadePoint(
+                scheduledStartDspClock
+                    + envelopeSamples.AttackFrames
+                    + envelopeSamples.DecayFrames,
                 envelopeSamples.SustainLevel,
                 "ADSR decay end and sustain");
         }

@@ -90,6 +90,57 @@ namespace Loom.Tests.EditMode
         }
 
         [Test]
+        public void ScheduleNotePreservesTheLogicalEventAndExactDspClocks()
+        {
+            var voices = new List<FakeVoice>();
+            using (var instrument = CreateInstrument(1, voices))
+            {
+                var noteEvent = new Core.NoteEvent(
+                    new Core.Note(60),
+                    81,
+                    960,
+                    240);
+
+                Core.VoiceHandle handle = instrument.ScheduleNote(
+                    noteEvent,
+                    1_000_000UL,
+                    1_006_000UL);
+
+                Assert.That(handle.IsValid, Is.True);
+                Assert.That(voices[0].Note, Is.EqualTo(noteEvent.Note));
+                Assert.That(voices[0].Velocity, Is.EqualTo(noteEvent.Velocity));
+                Assert.That(voices[0].StartScheduledCount, Is.EqualTo(1));
+                Assert.That(voices[0].ScheduledStartDspClock, Is.EqualTo(1_000_000UL));
+                Assert.That(
+                    voices[0].ScheduledReleaseStartDspClock,
+                    Is.EqualTo(1_006_000UL));
+                Assert.That(instrument.OwnedVoiceCount, Is.EqualTo(1));
+            }
+        }
+
+        [TestCase(0UL, 1UL)]
+        [TestCase(100UL, 100UL)]
+        [TestCase(100UL, 99UL)]
+        public void ScheduleNoteRejectsInvalidClockOrderBeforePreparingAVoice(
+            ulong startDspClock,
+            ulong releaseStartDspClock)
+        {
+            var voices = new List<FakeVoice>();
+            using (var instrument = CreateInstrument(1, voices))
+            {
+                var noteEvent = new Core.NoteEvent(new Core.Note(60), 100, 0, 1);
+
+                Assert.Throws<ArgumentOutOfRangeException>(
+                    () => instrument.ScheduleNote(
+                        noteEvent,
+                        startDspClock,
+                        releaseStartDspClock));
+                Assert.That(voices[0].PrepareCount, Is.Zero);
+                Assert.That(voices[0].StartScheduledCount, Is.Zero);
+            }
+        }
+
+        [Test]
         public void HandleFromAnotherInstrumentCannotReleaseALocalVoice()
         {
             using (var firstInstrument = new Fmod.FmodOscillatorInstrument(
@@ -127,6 +178,82 @@ namespace Loom.Tests.EditMode
                 Assert.That(voices[1].BeginReleaseCount, Is.Zero);
                 Assert.That(instrument.OwnedVoiceCount, Is.EqualTo(1));
                 Assert.That(instrument.NoteOff(second), Is.True);
+            }
+        }
+
+        [Test]
+        public void ScheduledHandlesRequireHardCancellation()
+        {
+            var voices = new List<FakeVoice>();
+            using (var instrument = CreateInstrument(1, voices))
+            {
+                var noteEvent = new Core.NoteEvent(new Core.Note(60), 100, 0, 1);
+                Core.VoiceHandle handle = instrument.ScheduleNote(
+                    noteEvent,
+                    100UL,
+                    101UL);
+
+                Assert.That(instrument.NoteOff(handle), Is.False);
+                Assert.That(instrument.CancelScheduledNote(default), Is.False);
+                Assert.That(instrument.CancelScheduledNote(handle), Is.True);
+                Assert.That(instrument.CancelScheduledNote(handle), Is.False);
+                Assert.That(voices[0].BeginReleaseCount, Is.Zero);
+                Assert.That(voices[0].StopCount, Is.EqualTo(1));
+                Assert.That(instrument.OwnedVoiceCount, Is.Zero);
+            }
+        }
+
+        [Test]
+        public void CancelAllScheduledNotesLeavesKeyboardVoicesOwned()
+        {
+            var voices = new List<FakeVoice>();
+            using (var instrument = CreateInstrument(2, voices))
+            {
+                Core.VoiceHandle keyboardHandle = instrument.NoteOn(
+                    new Core.Note(60),
+                    100);
+                var noteEvent = new Core.NoteEvent(new Core.Note(64), 90, 240, 120);
+                Core.VoiceHandle scheduledHandle = instrument.ScheduleNote(
+                    noteEvent,
+                    1_000UL,
+                    1_100UL);
+
+                instrument.CancelAllScheduledNotes();
+                instrument.CancelAllScheduledNotes();
+
+                Assert.That(voices[0].StopCount, Is.Zero);
+                Assert.That(voices[0].BeginReleaseCount, Is.Zero);
+                Assert.That(voices[1].StopCount, Is.EqualTo(1));
+                Assert.That(voices[1].BeginReleaseCount, Is.Zero);
+                Assert.That(instrument.CancelScheduledNote(scheduledHandle), Is.False);
+                Assert.That(instrument.OwnedVoiceCount, Is.EqualTo(1));
+
+                instrument.AllNotesOff();
+
+                Assert.That(voices[0].BeginReleaseCount, Is.EqualTo(1));
+                Assert.That(instrument.NoteOff(keyboardHandle), Is.False);
+            }
+        }
+
+        [Test]
+        public void AllNotesOffReleasesKeyboardAndStopsScheduledVoices()
+        {
+            var voices = new List<FakeVoice>();
+            using (var instrument = CreateInstrument(2, voices))
+            {
+                instrument.NoteOn(new Core.Note(60), 100);
+                instrument.ScheduleNote(
+                    new Core.NoteEvent(new Core.Note(64), 100, 0, 1),
+                    100UL,
+                    101UL);
+
+                instrument.AllNotesOff();
+
+                Assert.That(voices[0].BeginReleaseCount, Is.EqualTo(1));
+                Assert.That(voices[0].StopCount, Is.Zero);
+                Assert.That(voices[1].BeginReleaseCount, Is.Zero);
+                Assert.That(voices[1].StopCount, Is.EqualTo(1));
+                Assert.That(instrument.OwnedVoiceCount, Is.Zero);
             }
         }
 
@@ -289,6 +416,29 @@ namespace Loom.Tests.EditMode
             }
         }
 
+        [Test]
+        public void FailedScheduledVoiceStartDisposesTheUnownedVoice()
+        {
+            var voice = new FakeVoice
+            {
+                StartFailure = new InvalidOperationException("Scheduled start failed.")
+            };
+            using (var instrument = new Fmod.FmodOscillatorInstrument(
+                1,
+                () => voice))
+            {
+                var noteEvent = new Core.NoteEvent(new Core.Note(60), 100, 0, 1);
+
+                Assert.Throws<InvalidOperationException>(
+                    () => instrument.ScheduleNote(noteEvent, 100UL, 101UL));
+
+                Assert.That(voice.DisposeCount, Is.EqualTo(1));
+                Assert.That(instrument.ActiveVoiceCount, Is.Zero);
+                Assert.That(instrument.CreatedVoiceCount, Is.Zero);
+                Assert.That(instrument.OwnedVoiceCount, Is.Zero);
+            }
+        }
+
         private static Fmod.FmodOscillatorInstrument CreateInstrument(
             int capacity,
             ICollection<FakeVoice> voices)
@@ -319,6 +469,12 @@ namespace Loom.Tests.EditMode
             public int PrepareCount { get; private set; }
 
             public int StartCount { get; private set; }
+
+            public int StartScheduledCount { get; private set; }
+
+            public ulong ScheduledStartDspClock { get; private set; }
+
+            public ulong ScheduledReleaseStartDspClock { get; private set; }
 
             public int BeginReleaseCount { get; private set; }
 
@@ -393,6 +549,21 @@ namespace Loom.Tests.EditMode
             public void BeginRelease()
             {
                 BeginReleaseCount++;
+            }
+
+            public void StartScheduled(
+                ulong startDspClock,
+                ulong releaseStartDspClock)
+            {
+                StartScheduledCount++;
+                ScheduledStartDspClock = startDspClock;
+                ScheduledReleaseStartDspClock = releaseStartDspClock;
+                if (StartFailure != null)
+                {
+                    throw StartFailure;
+                }
+
+                isStarted = true;
             }
 
             public void Complete()

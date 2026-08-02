@@ -1,0 +1,151 @@
+using System;
+using Loom.Core;
+
+namespace Loom.Fmod
+{
+    /// <summary>
+    /// Submits sequenced note events to FMOD without removing a buffer item before success.
+    /// </summary>
+    public sealed class FmodScheduledNoteDispatcher
+    {
+        private readonly IFmodScheduledNoteClockMapper clockMapper;
+        private readonly IFmodScheduledInstrument instrument;
+        private readonly ulong minimumLeadSampleFrames;
+
+        /// <summary>
+        /// Creates a dispatcher using one runtime DSP buffer as the minimum native lead.
+        /// </summary>
+        public FmodScheduledNoteDispatcher(
+            FMOD.System coreSystem,
+            FmodTickDspClockMapper clockMapper,
+            FmodOscillatorInstrument instrument)
+        {
+            if (!coreSystem.hasHandle())
+            {
+                throw new ArgumentException(
+                    "FMOD Core system must have a valid handle.",
+                    nameof(coreSystem));
+            }
+
+            this.clockMapper = clockMapper
+                ?? throw new ArgumentNullException(nameof(clockMapper));
+            this.instrument = instrument
+                ?? throw new ArgumentNullException(nameof(instrument));
+
+            FmodResult.Ensure(
+                coreSystem.getDSPBufferSize(out uint bufferLength, out _),
+                "FMOD.System.getDSPBufferSize(scheduled dispatcher)");
+            if (bufferLength == 0U)
+            {
+                throw new InvalidOperationException(
+                    "FMOD returned a zero DSP buffer length.");
+            }
+
+            minimumLeadSampleFrames = bufferLength;
+        }
+
+        internal FmodScheduledNoteDispatcher(
+            IFmodScheduledNoteClockMapper clockMapper,
+            IFmodScheduledInstrument instrument,
+            ulong minimumLeadSampleFrames)
+        {
+            this.clockMapper = clockMapper
+                ?? throw new ArgumentNullException(nameof(clockMapper));
+            this.instrument = instrument
+                ?? throw new ArgumentNullException(nameof(instrument));
+            if (minimumLeadSampleFrames == 0UL)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(minimumLeadSampleFrames),
+                    minimumLeadSampleFrames,
+                    "Minimum scheduling lead must be positive.");
+            }
+
+            this.minimumLeadSampleFrames = minimumLeadSampleFrames;
+        }
+
+        /// <summary>
+        /// Dispatches up to <paramref name="maxEvents"/> buffered events in FIFO order.
+        /// </summary>
+        /// <returns>The number of events successfully submitted and removed.</returns>
+        public int DispatchAvailable(
+            SchedulingBuffer<ScheduledNoteEvent> source,
+            int maxEvents,
+            out int lateEventCount,
+            out int plateauDurationCount)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (maxEvents <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(maxEvents),
+                    maxEvents,
+                    "Maximum dispatch count must be positive.");
+            }
+
+            lateEventCount = 0;
+            plateauDurationCount = 0;
+            if (source.IsEmpty)
+            {
+                return 0;
+            }
+
+            ulong currentDspClock = clockMapper.GetCurrentDspClock();
+            ulong earliestStartDspClock = checked(
+                currentDspClock + minimumLeadSampleFrames);
+            int dispatchedCount = 0;
+
+            while (dispatchedCount < maxEvents
+                && source.TryPeek(out ScheduledNoteEvent scheduledEvent))
+            {
+                NoteEvent noteEvent = scheduledEvent.NoteEvent;
+                ulong mappedStartDspClock = clockMapper.ToDspClock(
+                    noteEvent.StartTick);
+                ulong mappedEndDspClock = clockMapper.ToDspClock(
+                    noteEvent.EndTick);
+                if (mappedEndDspClock < mappedStartDspClock)
+                {
+                    throw new InvalidOperationException(
+                        "Mapped note end clock precedes its start clock.");
+                }
+
+                ulong durationSampleFrames =
+                    mappedEndDspClock - mappedStartDspClock;
+                if (durationSampleFrames == 0UL)
+                {
+                    durationSampleFrames = 1UL;
+                    plateauDurationCount++;
+                }
+
+                ulong effectiveStartDspClock = mappedStartDspClock;
+                if (effectiveStartDspClock < earliestStartDspClock)
+                {
+                    effectiveStartDspClock = earliestStartDspClock;
+                    lateEventCount++;
+                }
+
+                ulong effectiveEndDspClock = checked(
+                    effectiveStartDspClock + durationSampleFrames);
+                instrument.ScheduleNote(
+                    noteEvent,
+                    effectiveStartDspClock,
+                    effectiveEndDspClock);
+
+                if (!source.TryDequeue(out ScheduledNoteEvent dequeuedEvent)
+                    || dequeuedEvent != scheduledEvent)
+                {
+                    throw new InvalidOperationException(
+                        "Scheduling buffer ownership changed during FMOD dispatch.");
+                }
+
+                dispatchedCount++;
+            }
+
+            return dispatchedCount;
+        }
+    }
+}

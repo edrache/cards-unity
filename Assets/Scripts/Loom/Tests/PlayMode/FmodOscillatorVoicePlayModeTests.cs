@@ -170,6 +170,108 @@ namespace Loom.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator VoiceUsesExactScheduledClocksAndSupportsHardCancellation()
+        {
+            var listenerObject = new GameObject("LOOM Scheduled Voice Test Listener")
+            {
+                hideFlags = HideFlags.DontSave
+            };
+            listenerObject.AddComponent<StudioListener>();
+
+            Fmod.FmodOscillatorVoice voice = null;
+            FMOD.Studio.Bus synthBus = default;
+            bool isBusLocked = false;
+
+            try
+            {
+                Assert.That(
+                    RuntimeManager.StudioSystem.getBus(
+                        Fmod.FmodOscillatorInstrument.SynthBusPath,
+                        out synthBus),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(synthBus.lockChannelGroup(), Is.EqualTo(FMOD.RESULT.OK));
+                isBusLocked = true;
+                Assert.That(
+                    RuntimeManager.StudioSystem.flushCommands(),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(
+                    synthBus.getChannelGroup(out FMOD.ChannelGroup synthGroup),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(
+                    RuntimeManager.CoreSystem.getDSPBufferSize(
+                        out uint bufferLength,
+                        out _),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                Assert.That(
+                    synthGroup.getDSPClock(out ulong currentClock, out _),
+                    Is.EqualTo(FMOD.RESULT.OK));
+
+                voice = new Fmod.FmodOscillatorVoice(
+                    RuntimeManager.CoreSystem,
+                    new Core.Note(60),
+                    new Fmod.FmodAdsrEnvelope(0.01d, 0.01d, 0.5f, 0.02d),
+                    new Fmod.FmodOscillatorSettings(gain: 0.01f));
+                Assert.Throws<System.ArgumentOutOfRangeException>(
+                    () => voice.StartScheduled(
+                        synthGroup,
+                        currentClock,
+                        currentClock + (bufferLength * 2UL)));
+                Assert.That(voice.IsStarted, Is.False);
+
+                ulong startClock = checked(currentClock + (bufferLength * 4UL));
+                ulong releaseStartClock = checked(
+                    startClock + (ulong)(voice.SampleRate / 50));
+
+                voice.StartScheduled(synthGroup, startClock, releaseStartClock);
+
+                Assert.That(voice.ScheduledStartDspClock, Is.EqualTo(startClock));
+                Assert.That(voice.ReleaseStartDspClock, Is.EqualTo(releaseStartClock));
+                Assert.That(
+                    voice.ReleaseEndDspClock,
+                    Is.EqualTo(
+                        releaseStartClock + voice.EnvelopeSamples.ReleaseFrames));
+                Assert.That(voice.CurrentEnvelopeLevel, Is.Zero);
+                Assert.That(voice.IsReleasing, Is.True);
+
+                voice.BeginRelease();
+                Assert.That(voice.ReleaseStartDspClock, Is.EqualTo(releaseStartClock));
+
+                yield return new WaitForSecondsRealtime(0.2f);
+
+                Assert.That(voice.IsStarted, Is.False);
+                Assert.That(voice.IsReleaseComplete, Is.True);
+
+                Assert.That(
+                    synthGroup.getDSPClock(out currentClock, out _),
+                    Is.EqualTo(FMOD.RESULT.OK));
+                startClock = checked(currentClock + (bufferLength * 4UL));
+                releaseStartClock = checked(startClock + (ulong)voice.SampleRate);
+                voice.StartScheduled(synthGroup, startClock, releaseStartClock);
+
+                voice.Stop();
+
+                Assert.That(voice.IsStarted, Is.False);
+                yield return new WaitForSecondsRealtime(0.12f);
+                Assert.That(voice.IsPlaying, Is.False);
+            }
+            finally
+            {
+                voice?.Dispose();
+                if (isBusLocked && synthBus.isValid())
+                {
+                    Assert.That(
+                        synthBus.unlockChannelGroup(),
+                        Is.EqualTo(FMOD.RESULT.OK));
+                    Assert.That(
+                        RuntimeManager.StudioSystem.flushCommands(),
+                        Is.EqualTo(FMOD.RESULT.OK));
+                }
+
+                Object.Destroy(listenerObject);
+            }
+        }
+
+        [UnityTest]
         public IEnumerator InstrumentPlaysEightVoicesAndCleansStolenAndReleasedResources()
         {
             var listenerObject = new GameObject("LOOM Polyphony Test Listener")
