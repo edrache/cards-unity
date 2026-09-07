@@ -167,6 +167,7 @@ MonoBehaviour:
   torsoWidth: 0.78
   torsoDepth: 0.44
   headSize: 0.56
+  armOutwardAngle: 10.1
   helmetVisible: 1
   parts:
   - {fileID: 3466474160620811249}
@@ -377,6 +378,7 @@ MonoBehaviour:
   swayResponse: 0.18
   smokeTrail: 0.55
   gripOffset: {x: 0, y: -0.42, z: 0}
+  armOutwardAngle: 10.1
 --- !u!1 &1330054041817851054
 GameObject:
   m_ObjectHideFlags: 0
@@ -12847,7 +12849,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8614134876798983947}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: -0.088025056, w: 0.99611825}
   m_LocalPosition: {x: -0.42499998, y: 0.67999995, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -12974,7 +12976,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8741450132622969393}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0.088025056, w: 0.99611825}
   m_LocalPosition: {x: 0.42499998, y: 0.67999995, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

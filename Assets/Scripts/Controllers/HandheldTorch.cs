@@ -29,9 +29,16 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0f, 2f)] private float smokeTrail = 0.55f;
         [SerializeField] private Vector3 gripOffset = new Vector3(0f, -0.32f, 0f);
 
+        [SerializeField, HideInInspector] private float armOutwardAngle = 22f;
+
         private Vector3 previousPosition, filteredVelocity, sway, swayVelocity;
         private float flicker = 1f;
         private bool initialized;
+
+        public void SetArmOutwardAngle(float angle)
+        {
+            armOutwardAngle = Mathf.Clamp(angle, 0f, 90f);
+        }
 
         public void SetGripOffset(Vector3 offset)
         {
@@ -72,7 +79,7 @@ namespace CardsUnity.Controllers
             // Retain a little gait swing, while keeping the flame clear of the face.
             if (upperArm != null)
                 upperArm.rotation = Quaternion.Slerp(upperArm.rotation,
-                    character.rotation * Quaternion.Euler(-24f, 0f, 22f), holdingPose);
+                    character.rotation * Quaternion.Euler(-24f, 0f, armOutwardAngle), holdingPose);
             if (forearm != null)
                 forearm.localRotation = Quaternion.Slerp(forearm.localRotation,
                     Quaternion.Euler(-78f, 0f, 0f), holdingPose);

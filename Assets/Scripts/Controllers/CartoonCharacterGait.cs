@@ -43,7 +43,7 @@ namespace CardsUnity.Controllers
         [Tooltip("Forward elevation of the upper arms, in degrees.")]
         [SerializeField, Range(0f, 70f)] private float armRaiseAngle = 8f;
         [Tooltip("Additional outward elevation of the upper arms, in degrees.")]
-        [SerializeField, Range(0f, 45f)] private float armOutwardAngle = 8f;
+        [SerializeField, Range(0f, 90f)] private float armOutwardAngle = 8f;
 
         [Header("Independent forearm controls")]
         [Tooltip("Base elbow bend relative to the upper arm, in degrees.")]
@@ -92,6 +92,11 @@ namespace CardsUnity.Controllers
         {
             if (body != null) bodyOrigin = body.localPosition;
             UpdateStyleWeights(100f);
+        }
+
+        public void SetArmOutwardAngle(float angle)
+        {
+            armOutwardAngle = Mathf.Clamp(angle, 0f, 90f);
         }
 
         public void SetRigDimensions(float thigh, float calf, float hip, float halfWidth, Vector3 origin)

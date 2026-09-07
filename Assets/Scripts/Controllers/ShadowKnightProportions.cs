@@ -16,6 +16,9 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0.4f, 1.2f)] private float torsoWidth = 0.78f;
         [SerializeField, Range(0.25f, 0.8f)] private float torsoDepth = 0.44f;
         [SerializeField, Range(0.25f, 0.9f)] private float headSize = 0.56f;
+        [Header("Arm posture")]
+        [Tooltip("Base angle away from the torso: 0 hangs down, 90 extends sideways. Walking adds its own arm motion.")]
+        [SerializeField, Range(0f, 90f)] private float armOutwardAngle = 8f;
         [Header("Accessory")]
         [SerializeField] private bool helmetVisible = true;
         [SerializeField, HideInInspector] private Transform[] parts;
@@ -56,6 +59,7 @@ namespace CardsUnity.Controllers
             torsoWidth = Mathf.Clamp(torsoWidth, 0.4f, 1.2f);
             torsoDepth = Mathf.Clamp(torsoDepth, 0.25f, 0.8f);
             headSize = Mathf.Clamp(headSize, 0.25f, 0.9f);
+            armOutwardAngle = Mathf.Clamp(armOutwardAngle, 0f, 90f);
             float hip = thighLength + calfLength + 0.04f;
             float halfWidth = torsoWidth * 0.32f;
             Vector3 origin = Vector3.up * (hip + 0.13f);
@@ -67,6 +71,8 @@ namespace CardsUnity.Controllers
             {
                 float sign = side == "Left" ? -1 : 1;
                 Shape(side + " Arm", new Vector3(sign * (torsoWidth * 0.5f + 0.035f), torsoHeight - 0.22f, 0), Vector3.one);
+                var arm = Part(side + " Arm");
+                if (arm != null) arm.localRotation = Quaternion.Euler(0f, 0f, sign * armOutwardAngle);
                 Shape(side + " Upper Arm", Vector3.down * upperArmLength * 0.5f, new Vector3(0.18f, upperArmLength + 0.05f, 0.19f));
                 Shape(side + " Forearm", Vector3.down * upperArmLength, Vector3.one);
                 Shape(side + " Forearm Mesh", Vector3.down * forearmLength * 0.5f, new Vector3(0.13f, forearmLength + 0.03f, 0.15f));
@@ -80,9 +86,17 @@ namespace CardsUnity.Controllers
             var helmet = Part("Helmet");
             if (helmet != null && helmet.gameObject.activeSelf != helmetVisible) helmet.gameObject.SetActive(helmetVisible);
             var gait = GetComponent<CartoonCharacterGait>();
-            if (gait != null) gait.SetRigDimensions(thighLength, calfLength, hip, halfWidth, origin);
+            if (gait != null)
+            {
+                gait.SetRigDimensions(thighLength, calfLength, hip, halfWidth, origin);
+                gait.SetArmOutwardAngle(armOutwardAngle);
+            }
             var torch = GetComponentInChildren<HandheldTorch>(true);
-            if (torch != null) torch.SetGripOffset(Vector3.down * forearmLength);
+            if (torch != null)
+            {
+                torch.SetGripOffset(Vector3.down * forearmLength);
+                torch.SetArmOutwardAngle(armOutwardAngle);
+            }
             var controller = GetComponent<CharacterController>();
             if (controller != null)
             {
