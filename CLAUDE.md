@@ -1,62 +1,15 @@
-# CLAUDE.md
+# Claude Code project instructions
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Read and follow [AGENTS.md](AGENTS.md) before working in this repository. It is the canonical project guide for language, architecture, scenes, controls, Unity MCP, verification, and asset handling.
 
-## Language
+## Claude-specific entry checklist
 
-All code, documentation, comments, and commit messages must be written in **English**.
-Conversation with the user is conducted in **Polish**.
+1. Read `AGENTS.md` and inspect `git status --short`.
+2. Check the relevant scripts and serialized scene settings before implementing changes.
+3. For editor work, discover the configured `unity-mcp` relay tools and inspect the current Unity state.
+4. Verify the changed behavior and commit all outstanding repository changes, including pre-existing changes and new non-ignored files. The user explicitly authorizes committing the full working tree after completing work; do not restrict commits to your own edits. Respect an explicit request to leave changes uncommitted.
+5. Report results and commit identifiers in Polish. Do not push unless requested.
 
-## Project Overview
+Use the relay's current tool definitions rather than assuming the older Coplay MCP API. Keep code, documentation, and commit messages in English.
 
-Unity 6 (6000.3.10f1) project. Currently a bare scaffold — no game logic has been implemented yet.
-
-## Key Dependencies
-
-| Asset | Purpose |
-|---|---|
-| DOTween (Plugins/) | Tweening / animation |
-| Rewired (Rewired/) | Input management |
-| Feel / MMFeedbacks | Screen shake, haptics, VFX feedback |
-| Quibli | Stylized / toon shaders (URP) |
-| TrueShadow (Le Tai's Asset/) | UI drop shadows |
-| Unity Input System (`com.unity.inputsystem`) | New input backend |
-| Cinemachine (`com.unity.cinemachine`) | Camera control |
-| Timeline (`com.unity.timeline`) | Sequenced animations / cutscenes |
-| Post Processing (`com.unity.postprocessing`) | Screen-space effects |
-| Unity MCP (`com.coplaydev.unity-mcp`) | Editor control via MCP protocol |
-
-Rendering: URP 17.3.0. PC and Mobile URP variants are in `Assets/Settings/`.
-
-## Source Layout
-
-Runtime code lives under `Assets/Scripts/`:
-
-- `Data` — game state, runtime instances, immutable definitions, enums.
-- `Config` — ScriptableObject tuning objects.
-- `Runtime` — bootstrap helpers and shared runtime services.
-- `Combat` — combat resolver code, result objects, previews.
-- `Controllers` — MonoBehaviour game-flow coordinators.
-- `UI` — UGUI views and pointer interaction components.
-- `Tests` — Unity Test Framework tests.
-
-Assemblies:
-
-- `CardsUnity.Runtime` — runtime code under `Assets/Scripts/`.
-- `CardsUnity.Tests` — EditMode tests under `Assets/Scripts/Tests/`.
-
-## Verification Commands
-
-Use the Unity 6000.3.10f1 batchmode runner from the repository root.
-
-EditMode tests:
-
-```bash
-/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -quit -projectPath . -runTests -testPlatform EditMode -testResults TestResults/EditMode.xml
-```
-
-PlayMode tests:
-
-```bash
-/Applications/Unity/Hub/Editor/6000.3.10f1/Unity.app/Contents/MacOS/Unity -batchmode -quit -projectPath . -runTests -testPlatform PlayMode -testResults TestResults/PlayMode.xml
-```
+When the project evolves, update shared guidance in `AGENTS.md`; keep this file focused on the Claude Code entry point.
