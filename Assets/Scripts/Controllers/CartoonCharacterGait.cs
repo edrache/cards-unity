@@ -74,6 +74,7 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0.1f, 4f)] private float noiseFrequency = 1.3f;
         [SerializeField, Range(0f, 100f)] private float noiseSeed = 17f;
 
+        private ProceduralSpine spine;
         private float cycle, intensity, intensityVelocity;
         private Vector3 lean, leanVelocity;
         private Vector3 bodyOrigin;
@@ -90,6 +91,7 @@ namespace CardsUnity.Controllers
 
         private void Awake()
         {
+            spine = GetComponent<ProceduralSpine>();
             if (body != null) bodyOrigin = body.localPosition;
             UpdateStyleWeights(100f);
         }
@@ -131,7 +133,7 @@ namespace CardsUnity.Controllers
             leftArmNoise = Noise(37f) * irregularity * 10f;
             rightArmNoise = Noise(53f) * irregularity * 10f;
             Vector3 localAcceleration = transform.InverseTransformDirection(Vector3.ClampMagnitude(acceleration, 16f));
-            Vector3 targetLean = new Vector3(intensity * forwardLeanAngle + localAcceleration.z * 0.8f + style.Lean * activity,
+            Vector3 targetLean = new Vector3(intensity * forwardLeanAngle + localAcceleration.z * 0.8f + style.Lean * activity * (spine != null ? 0.35f : 1f),
                 -wave * intensity * 7f, -localAcceleration.x * turnLeanStrength);
             targetLean += noise * 5f;
             lean = Vector3.SmoothDamp(lean, targetLean, ref leanVelocity, 0.18f, Mathf.Infinity, dt);
@@ -155,7 +157,8 @@ namespace CardsUnity.Controllers
             body.localPosition = bodyOrigin + bodyMotion + Vector3.up * flightLift;
             Vector3 bodyAngles = lean + Vector3.forward * sideRoll;
             body.localRotation = Quaternion.Euler(bodyAngles);
-            if (head != null)
+            if (spine != null) spine.Animate(style, activity, dt);
+            if (head != null && spine == null)
                 head.rotation = transform.rotation;
 
             Leg(leftThigh, leftCalf, leftFoot, -1f, cycle, stride, activity);

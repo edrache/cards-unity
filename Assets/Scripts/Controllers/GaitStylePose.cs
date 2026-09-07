@@ -7,6 +7,8 @@ namespace CardsUnity.Controllers
     {
         public float StrideScale, BounceScale, SwayScale, FootLiftScale, ArmSwingScale;
         public float RunAmount, Lean, BodyY, Flight, ArmPitch, Elbow;
+        public Vector3 SpinePitch, SpineRoll;
+        public float SpineTwist;
 
         public static GaitStylePose Evaluate(int index, float cycle)
         {
@@ -62,6 +64,25 @@ namespace CardsUnity.Controllers
                     p.ArmSwingScale = 1.25f; p.Elbow = 15f;
                     break;
             }
+            float wave = Mathf.Sin(phase), pulse = Mathf.Sin(step);
+            p.SpinePitch = new Vector3(1f, 2f + pulse, -1f);
+            p.SpineTwist = wave * 7f;
+            p.SpineRoll = new Vector3(-wave, wave * 2f, wave);
+            switch (index)
+            {
+                case 1: p.SpinePitch = new Vector3(2f, 4f, 2f) * (1f + 0.6f * Mathf.Sin(step * 2f)); break;
+                case 2: p.SpinePitch = new Vector3(2f, -7f, -5f + pulse * 2f); p.SpineTwist = wave * 14f; break;
+                case 3: p.SpinePitch = new Vector3(5f, 14f + pulse, 12f); p.SpineTwist = wave * 2f; break;
+                case 4: p.SpinePitch = new Vector3(8f + pulse * 5f, 12f + pulse * 7f, -5f - pulse * 3f); p.SpineTwist = wave * 9f; break;
+                case 5: p.SpinePitch = new Vector3(3f + pulse * 2f, 5f - pulse * 3f, -2f); p.SpineTwist = wave * 13f; break;
+                case 6:
+                    float arc = JumpArc(cycle);
+                    p.SpinePitch = Vector3.Lerp(new Vector3(13f, 17f, 9f), new Vector3(-4f, -7f, -3f), arc);
+                    p.SpineTwist = 0f; p.SpineRoll = Vector3.zero; break;
+                case 7: p.SpinePitch = new Vector3(8f, 7f + pulse * 2f, 3f - pulse); p.SpineTwist = wave * 10f; break;
+                case 8: p.SpinePitch = new Vector3(-5f, 14f, 9f + pulse); p.SpineTwist = wave * 3f; p.SpineRoll *= 0.4f; break;
+                case 9: p.SpinePitch = new Vector3(3f * pulse, -4f + pulse * 5f, -2f - pulse * 3f); p.SpineTwist = wave * 11f; p.SpineRoll *= 1.5f; break;
+            }
             return p;
         }
 
@@ -90,6 +111,9 @@ namespace CardsUnity.Controllers
                 result.Flight += p.Flight * w;
                 result.ArmPitch += p.ArmPitch * w;
                 result.Elbow += p.Elbow * w;
+                result.SpinePitch += p.SpinePitch * w;
+                result.SpineRoll += p.SpineRoll * w;
+                result.SpineTwist += p.SpineTwist * w;
             }
             return result;
         }

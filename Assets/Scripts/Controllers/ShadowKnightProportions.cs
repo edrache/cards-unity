@@ -50,7 +50,7 @@ namespace CardsUnity.Controllers
         public void ApplyProportions()
         {
             pending = false;
-            if (parts == null || parts.Length == 0) parts = GetComponentsInChildren<Transform>(true);
+            parts = GetComponentsInChildren<Transform>(true);
             upperArmLength = Mathf.Clamp(upperArmLength, 0.2f, 0.9f);
             forearmLength = Mathf.Clamp(forearmLength, 0.2f, 0.9f);
             thighLength = Mathf.Clamp(thighLength, 0.25f, 0.9f);
@@ -66,11 +66,13 @@ namespace CardsUnity.Controllers
             Shape("Body Pivot", origin, Vector3.one);
             Shape("Torso", new Vector3(0, torsoHeight * 0.5f - 0.13f, 0), new Vector3(torsoWidth, torsoHeight, torsoDepth));
             Shape("Pelvis", new Vector3(0, -0.08f, 0), new Vector3(torsoWidth * 0.9f, 0.22f, torsoDepth * 0.9f));
-            Shape("Head", new Vector3(0, torsoHeight - 0.13f + headSize * 0.3f, 0), Vector3.one * headSize);
+            var spine = GetComponent<ProceduralSpine>();
+            bool articulated = spine != null;
+            Shape("Head", new Vector3(0, (articulated ? 0f : torsoHeight - 0.13f) + headSize * 0.3f, 0), Vector3.one * headSize);
             foreach (string side in new[] { "Left", "Right" })
             {
                 float sign = side == "Left" ? -1 : 1;
-                Shape(side + " Arm", new Vector3(sign * (torsoWidth * 0.5f + 0.035f), torsoHeight - 0.22f, 0), Vector3.one);
+                Shape(side + " Arm", new Vector3(sign * (torsoWidth * 0.5f + 0.035f), (articulated ? torsoHeight * 0.3f - 0.09f : torsoHeight - 0.22f), 0), Vector3.one);
                 var arm = Part(side + " Arm");
                 if (arm != null) arm.localRotation = Quaternion.Euler(0f, 0f, sign * armOutwardAngle);
                 Shape(side + " Upper Arm", Vector3.down * upperArmLength * 0.5f, new Vector3(0.18f, upperArmLength + 0.05f, 0.19f));
@@ -83,6 +85,7 @@ namespace CardsUnity.Controllers
                 Shape(side + " Calf Mesh", Vector3.down * calfLength * 0.5f, new Vector3(0.14f, calfLength + 0.03f, 0.17f));
                 Shape(side + " Foot", Vector3.down * calfLength, Vector3.one);
             }
+            if (spine != null) spine.Configure(torsoHeight);
             var helmet = Part("Helmet");
             if (helmet != null && helmet.gameObject.activeSelf != helmetVisible) helmet.gameObject.SetActive(helmetVisible);
             var gait = GetComponent<CartoonCharacterGait>();

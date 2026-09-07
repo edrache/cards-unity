@@ -32,6 +32,7 @@ Project code currently lives in `Assets/Scripts/Controllers/`, under the `CardsU
 | `GaitStylePose.cs` | Procedural style evaluation and blending, including foot adjustments |
 | `HandheldTorch.cs` | LateUpdate holding pose, torch inertia, smooth light flicker, illumination controls, and particle drift |
 | `ShadowKnightProportions.cs` | Editable limb/body dimensions, rig and collider sizing, torch grip, and optional helmet |
+| `ProceduralSpine.cs` | Three-joint spine, neck stabilization, and per-instance CPU torso deformation driven by gait styles |
 
 There are currently no project-owned `.asmdef` files or automated test suites under `Assets/Scripts/`. Do not assume `CardsUnity.Runtime` or `CardsUnity.Tests` assemblies exist. Add folders and assemblies only when needed; keep data-only calculations independent of scene objects where practical.
 
@@ -54,6 +55,8 @@ There are currently no project-owned `.asmdef` files or automated test suites un
 - `TorchNight` uses `Assets/Prefabs/Shadow Knight.prefab`; the original `Procedural Character.prefab` remains available.
 - Change dimensions on the root `ShadowKnightProportions` component. Its custom Inspector records Undo and prefab overrides. Edit outside Play Mode to retain changes.
 - `Shadow Knight Helmet.prefab` is a nested accessory under `Body Pivot/Head/Helmet`; `Helmet Visible` toggles it. Meshes and materials are in `Assets/Prefabs/ShadowKnight/`.
+- The knight has `Spine Lower -> Spine Middle -> Spine Chest -> Neck` under `Body Pivot`. Arms attach to the chest; head attaches to the neck. The 120-vertex torso uses blended procedural deformation in Play Mode, with an immutable rest mesh asset and a disposable per-instance mesh. This is a procedural rig, not an imported Humanoid Avatar.
+- `ProceduralSpine` exposes bend, twist, side bend, response time and head stabilization. All ten gait styles blend spine poses using the same weights and distance-driven phase; stopping fades to neutral.
 - Keep rig part names stable: the proportions component resolves and caches the named transforms. Limb dimensions also update gait IK and the torch grip offset.
 
 ## Torch and rendering
