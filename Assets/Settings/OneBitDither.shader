@@ -16,6 +16,10 @@ Shader "CardsUnity/One Bit Dither"
         _PaperGrain ("Paper Grain Strength", Range(0, 0.25)) = 0
         _BoundaryStrength ("Light Boundary Irregularity", Range(0, 1)) = 0
         _BoundaryScale ("Light Boundary Size (Dither Pixels)", Range(4, 256)) = 32
+        [NoScaleOffset] _PaperTexture ("Paper Texture (Color Dodge)", 2D) = "black" {}
+        _PaperTileSize ("Paper Tile Size (Screen Pixels)", Range(64, 4096)) = 1024
+        _PaperDodgeStrength ("Paper Color Dodge Strength", Range(0, 1)) = 0
+        _PaperHighlightInfluence ("Paper Influence In Light", Range(0, 1)) = 0.1
     }
     SubShader
     {
@@ -35,9 +39,13 @@ Shader "CardsUnity/One Bit Dither"
                 float _PixelSize, _Exposure, _Contrast, _DitherStrength, _EdgeStrength;
                 float _DitherMode, _NoiseTileSize;
                 float _ToneCount, _PaperGrain, _BoundaryStrength, _BoundaryScale;
+                float _PaperTileSize, _PaperDodgeStrength, _PaperHighlightInfluence;
+                float4 _PaperTexture_TexelSize;
             CBUFFER_END
             TEXTURE2D(_NoiseTexture);
             SAMPLER(sampler_NoiseTexture);
+            TEXTURE2D(_PaperTexture);
+            SAMPLER(sampler_PaperTexture);
 
             float Hash(float2 p)
             {
@@ -107,6 +115,18 @@ Shader "CardsUnity/One Bit Dither"
                 float grain = SAMPLE_TEXTURE2D_LOD(_NoiseTexture, sampler_NoiseTexture, grainUV, 0).r;
                 float3 color = lerp(_Ink.rgb, _Paper.rgb, tone);
                 color *= 1.0 - _PaperGrain * (1.0 - grain);
+                // Paper has its own screen-space scale, independent of the dither pixel size.
+                // Preserve the source aspect ratio; the tile size specifies its width.
+                float2 paperUV = input.texcoord * size / max(1.0, _PaperTileSize);
+                paperUV.y *= _PaperTexture_TexelSize.z / max(1.0, _PaperTexture_TexelSize.w);
+                float3 paperSample = SAMPLE_TEXTURE2D(_PaperTexture, sampler_PaperTexture, paperUV).rgb;
+                // Blend in perceptual space, using monochrome paper to preserve the palette.
+                float paperValue = dot(LinearToSRGB(paperSample), float3(0.2126, 0.7152, 0.0722));
+                float3 baseValue = LinearToSRGB(max(color, 0));
+                float3 dodge = saturate(baseValue / max(1.0 - paperValue, 0.001));
+                // Smooth lighting mask prevents paper opacity stepping at quantized tone bands.
+                float paperMask = lerp(1.0, _PaperHighlightInfluence, smoothstep(0.0, 1.0, luminance));
+                color = lerp(color, SRGBToLinear(dodge), _PaperDodgeStrength * paperMask);
                 return float4(color, 1);
             }
             ENDHLSL
