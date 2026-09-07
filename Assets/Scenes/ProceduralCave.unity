@@ -272,6 +272,63 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!1001 &1502766264
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 6197747900976216852, guid: 2af2917a535e642a58229b5230d77b40, type: 3}
+      propertyPath: m_Name
+      value: Rewired Input Manager
+      objectReference: {fileID: 0}
+    - target: {fileID: 9144188877238050980, guid: 2af2917a535e642a58229b5230d77b40, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 55.86548
+      objectReference: {fileID: 0}
+    - target: {fileID: 9144188877238050980, guid: 2af2917a535e642a58229b5230d77b40, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.00001
+      objectReference: {fileID: 0}
+    - target: {fileID: 9144188877238050980, guid: 2af2917a535e642a58229b5230d77b40, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 6.25589
+      objectReference: {fileID: 0}
+    - target: {fileID: 9144188877238050980, guid: 2af2917a535e642a58229b5230d77b40, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9144188877238050980, guid: 2af2917a535e642a58229b5230d77b40, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9144188877238050980, guid: 2af2917a535e642a58229b5230d77b40, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9144188877238050980, guid: 2af2917a535e642a58229b5230d77b40, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9144188877238050980, guid: 2af2917a535e642a58229b5230d77b40, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9144188877238050980, guid: 2af2917a535e642a58229b5230d77b40, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9144188877238050980, guid: 2af2917a535e642a58229b5230d77b40, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2af2917a535e642a58229b5230d77b40, type: 3}
 --- !u!1 &1667939972
 GameObject:
   m_ObjectHideFlags: 0
@@ -301,15 +358,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 660130bf8fad147c899a0e96ad4fd123, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.ProceduralCave
-  roomCount: 6
-  seed: 173
-  roomRadius: 5.5
-  corridorWidth: 3.5
-  irregularity: 0.65
-  wallHeight: 3.2
-  floorMaterial: {fileID: 2100000, guid: ced424ebf33254a28922610737d84fac, type: 2}
-  wallMaterial: {fileID: 2100000, guid: 2855f7a024e6d433a8a6935c01394c70, type: 2}
-  player: {fileID: 1870170170}
+  roomCount: 20
+  seed: 183
+  roomRadius: 5.36
+  roomSizeVariation: 1
+  extraConnections: 0.074
+  corridorWidth: 3.7
+  irregularity: 0.842
+  wallHeight: 5
+  floorMaterial: {fileID: 2100000, guid: 14fbd045c7f4f429a92d26e9ec18cafa, type: 2}
+  wallMaterial: {fileID: 2100000, guid: aa05295aa904a4ff3a64f766e3627ec9, type: 2}
+  player: {fileID: 0}
 --- !u!4 &1667939974
 Transform:
   m_ObjectHideFlags: 0
@@ -402,3 +461,4 @@ SceneRoots:
   - {fileID: 1870170169}
   - {fileID: 990240585}
   - {fileID: 1667939974}
+  - {fileID: 1502766264}

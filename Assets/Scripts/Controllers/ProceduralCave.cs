@@ -12,6 +12,10 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(1, 24)] private int roomCount = 6;
         [SerializeField] private int seed = 173;
         [SerializeField, Range(4f, 8f)] private float roomRadius = 5.5f;
+        [Tooltip("Radius variation around Room Radius. Zero gives equal base sizes; one ranges from 55% to 145%.")]
+        [SerializeField, Range(0f, 1f)] private float roomSizeVariation = 0.85f;
+        [Tooltip("Fraction of spare neighbouring connections opened as loops. Zero makes a branching tree.")]
+        [SerializeField, Range(0f, 1f)] private float extraConnections = 0.4f;
         [SerializeField, Range(2.5f, 5f)] private float corridorWidth = 3.5f;
         [Header("Rock")]
         [SerializeField, Range(0f, 1f)] private float irregularity = 0.65f;
@@ -24,14 +28,15 @@ namespace CardsUnity.Controllers
 
         private readonly List<Vector2> rooms = new List<Vector2>();
         private readonly List<float> radii = new List<float>();
-        private readonly List<Vector2> path = new List<Vector2>();
+        private readonly List<Vector2[]> corridors = new List<Vector2[]>();
         private GameObject generated;
         private Mesh floorMesh, wallMesh;
         private bool rebuildPending;
         private float noiseOffset;
         public int RoomCount => roomCount;
         public IReadOnlyList<Vector2> RoomCenters => rooms;
-        public IReadOnlyList<Vector2> CorridorPoints => path;
+        public IReadOnlyList<Vector2[]> Corridors => corridors;
+        public IReadOnlyList<float> RoomRadii => radii;
         public Vector3 SpawnPosition => transform.TransformPoint(Vector3.up * 0.1f);
 
         private void OnEnable() { rebuildPending = true; }
@@ -39,6 +44,8 @@ namespace CardsUnity.Controllers
         {
             roomCount = Mathf.Clamp(roomCount, 1, 24);
             roomRadius = Mathf.Clamp(roomRadius, 4f, 8f);
+            roomSizeVariation = Mathf.Clamp01(roomSizeVariation);
+            extraConnections = Mathf.Clamp01(extraConnections);
             corridorWidth = Mathf.Clamp(corridorWidth, 2.5f, 5f);
             irregularity = Mathf.Clamp01(irregularity);
             wallHeight = Mathf.Clamp(wallHeight, 2f, 5f);
@@ -62,30 +69,26 @@ namespace CardsUnity.Controllers
         public void Rebuild()
         {
             rebuildPending = false;
-            Clear(); rooms.Clear(); radii.Clear(); path.Clear();
+            Clear(); rooms.Clear(); radii.Clear(); corridors.Clear();
             var random = new System.Random(seed);
             noiseOffset = (float)random.NextDouble() * 1000f;
-            float spacing = roomRadius * 3.5f;
-            for (int i = 0; i < roomCount; i++)
-            {
-                // A staggered chain keeps chambers distinct and guarantees a connected route.
-                var center = new Vector2(i * spacing, i == 0 ? 0f : ((i % 2 == 0 ? -1f : 1f) * spacing * 0.3f));
-                rooms.Add(center);
-                radii.Add(roomRadius * Mathf.Lerp(0.88f, 1.12f, (float)random.NextDouble()));
-                if (i == 0) { path.Add(center); continue; }
-                Vector2 a = rooms[i - 1];
-                Vector2 normal = Vector2.Perpendicular((center - a).normalized);
-                float bend = ((float)random.NextDouble() - 0.5f) * spacing * 0.24f;
-                for (int j = 1; j <= 8; j++)
-                {
-                    float t = j / 8f;
-                    path.Add(Vector2.Lerp(a, center, t) + normal * (Mathf.Sin(t * Mathf.PI) * bend));
-                }
-            }
+            GenerateLayout(random);
             const float cell = 0.8f;
-            float margin = roomRadius * 1.5f + 3f;
-            Vector2 min = new Vector2(-margin, -spacing * 0.3f - margin);
-            Vector2 max = new Vector2((roomCount - 1) * spacing + margin, spacing * 0.3f + margin);
+            // Include every room and curved passage, rather than assuming a one-dimensional chain.
+            Vector2 min = rooms[0], max = rooms[0];
+            for (int i = 0; i < rooms.Count; i++)
+            {
+                Vector2 extent = Vector2.one * (radii[i] * 1.2f + 3f);
+                min = Vector2.Min(min, rooms[i] - extent);
+                max = Vector2.Max(max, rooms[i] + extent);
+            }
+            foreach (var corridor in corridors)
+                foreach (var point in corridor)
+                {
+                    Vector2 extent = Vector2.one * (corridorWidth * 0.5f + 3f);
+                    min = Vector2.Min(min, point - extent);
+                    max = Vector2.Max(max, point + extent);
+                }
             int nx = Mathf.CeilToInt((max.x - min.x) / cell);
             int nz = Mathf.CeilToInt((max.y - min.y) / cell);
             var values = new float[nx + 1, nz + 1];
@@ -118,6 +121,65 @@ namespace CardsUnity.Controllers
             }
         }
 
+        private void GenerateLayout(System.Random random)
+        {
+            int columns = Mathf.CeilToInt(Mathf.Sqrt(roomCount));
+            float spacing = roomRadius * 4.3f;
+            var edges = new List<Vector2Int>();
+            for (int i = 0; i < roomCount; i++)
+            {
+                int x = i % columns, z = i / columns;
+                Vector2 jitter = i == 0 ? Vector2.zero : new Vector2(
+                    (float)random.NextDouble() - 0.5f, (float)random.NextDouble() - 0.5f) * spacing * 0.16f;
+                rooms.Add(new Vector2(x, z) * spacing + jitter);
+                // Stratified sizes guarantee a visible spread even in small layouts.
+                float size = roomCount == 1 ? 0.5f : (i + (float)random.NextDouble()) / roomCount;
+                radii.Add(Mathf.Max(2.5f, roomRadius * (1f + (size * 2f - 1f) * 0.45f * roomSizeVariation)));
+                if (x > 0) edges.Add(new Vector2Int(i - 1, i));
+                if (z > 0) edges.Add(new Vector2Int(i - columns, i));
+            }
+            for (int i = radii.Count - 1; i > 0; i--)
+            {
+                int j = random.Next(i + 1);
+                float radius = radii[i]; radii[i] = radii[j]; radii[j] = radius;
+            }
+            for (int i = edges.Count - 1; i > 0; i--)
+            {
+                int j = random.Next(i + 1);
+                Vector2Int edge = edges[i]; edges[i] = edges[j]; edges[j] = edge;
+            }
+            // Randomized spanning tree guarantees reachability; spare edges add real cycles.
+            var groups = new int[roomCount];
+            for (int i = 0; i < roomCount; i++) groups[i] = i;
+            var spare = new List<Vector2Int>();
+            foreach (var edge in edges)
+            {
+                int from = groups[edge.x], to = groups[edge.y];
+                if (from == to) { spare.Add(edge); continue; }
+                AddCorridor(edge, random, spacing);
+                for (int i = 0; i < groups.Length; i++) if (groups[i] == to) groups[i] = from;
+            }
+            int loops = Mathf.RoundToInt(spare.Count * extraConnections);
+            if (extraConnections > 0f && spare.Count > 0) loops = Mathf.Max(1, loops);
+            for (int i = 0; i < loops; i++) AddCorridor(spare[i], random, spacing);
+        }
+
+        private void AddCorridor(Vector2Int edge, System.Random random, float spacing)
+        {
+            Vector2 a = rooms[edge.x], b = rooms[edge.y];
+            Vector2 normal = Vector2.Perpendicular((b - a).normalized);
+            float bend = ((float)random.NextDouble() - 0.5f) * spacing * 0.3f;
+            var points = new Vector2[9];
+            for (int i = 0; i < points.Length; i++)
+            {
+                float t = i / 8f;
+                points[i] = Vector2.Lerp(a, b, t) + normal * (Mathf.Sin(t * Mathf.PI) * bend);
+            }
+            points[0] = a;
+            points[points.Length - 1] = b;
+            corridors.Add(points);
+        }
+
         private float Field(Vector2 p)
         {
             float value = float.NegativeInfinity;
@@ -129,9 +191,10 @@ namespace CardsUnity.Controllers
                     + Mathf.Sin(angle * 5f - noiseOffset) * 0.07f;
                 value = Mathf.Max(value, radii[i] * (1f + lobes * irregularity) - delta.magnitude);
             }
-            for (int i = 1; i < path.Count; i++)
+            foreach (var corridor in corridors)
+            for (int i = 1; i < corridor.Length; i++)
             {
-                Vector2 a = path[i - 1], ab = path[i] - a;
+                Vector2 a = corridor[i - 1], ab = corridor[i] - a;
                 float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude);
                 value = Mathf.Max(value, corridorWidth * 0.5f - Vector2.Distance(p, a + t * ab));
             }
