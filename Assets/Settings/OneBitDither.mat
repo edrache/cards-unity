@@ -24,7 +24,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _InkEdgeTexture:
-        m_Texture: {fileID: 2800000, guid: 3d0550f4bdf8e4b8e8983d227bcecbde, type: 3}
+        m_Texture: {fileID: 2800000, guid: 10e7c81bccf528b468314ffae2d979ee, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NoiseTexture:
@@ -44,8 +44,8 @@ Material:
     - _DitherStrength: 0.84
     - _EdgeStrength: 1.01
     - _Exposure: 4
-    - _InkEdgeDistortion: 2
-    - _InkEdgeScale: 0.5
+    - _InkEdgeDistortion: 8
+    - _InkEdgeScale: 1.89
     - _NoiseTileSize: 1024
     - _PaperDodgeStrength: 0.35
     - _PaperGrain: 0.199
