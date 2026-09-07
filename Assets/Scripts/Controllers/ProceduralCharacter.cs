@@ -13,10 +13,8 @@ namespace CardsUnity.Controllers
         [Header("Analog locomotion")]
         [Tooltip("Stick magnitude below which the stick counts as centred. The character stops and the manual style mix returns.")]
         [SerializeField, Range(0.01f, 0.5f)] private float idleThreshold = 0.08f;
-        [Tooltip("Stick magnitude at which walking starts. Between Idle Threshold and this value the character sneaks.")]
-        [SerializeField, Range(0.02f, 0.98f)] private float walkThreshold = 0.35f;
-        [Tooltip("Stick magnitude at which running starts. Must be greater than Walk Threshold.")]
-        [SerializeField, Range(0.03f, 0.99f)] private float runThreshold = 0.8f;
+        [Tooltip("Stick magnitude at which walking starts. Between Idle Threshold and this value the character sneaks. Running stays on the held Run action.")]
+        [SerializeField, Range(0.02f, 0.99f)] private float walkThreshold = 0.35f;
 
         [Header("Movement")]
         [SerializeField] private float speed = 3.5f;
@@ -66,13 +64,13 @@ namespace CardsUnity.Controllers
                 bool joystickMovement = player.IsCurrentInputSource("MoveHorizontal", ControllerType.Joystick)
                     || player.IsCurrentInputSource("MoveVertical", ControllerType.Joystick);
                 if (keyboardMovement || joystickMovement) analogMovement = joystickMovement && !keyboardMovement;
-                running = player.GetButton("Run") && player.IsCurrentInputSource("Run", ControllerType.Keyboard);
+                // Run stays a held action on every controller, so it also works alongside the stick.
+                running = player.GetButton("Run");
                 if (player.GetButtonDown("Sneak") && player.IsCurrentInputSource("Sneak", ControllerType.Keyboard))
                 {
                     sneaking = !sneaking;
                     analogMovement = false;
                 }
-                if (running) analogMovement = false;
             }
             else
             {
@@ -93,19 +91,14 @@ namespace CardsUnity.Controllers
 
             bool activeSneak = sneaking;
             bool activeWalk = false;
-            float movementSpeed = running ? runSpeed : speed;
             if (analogMovement)
             {
-                // Sneak -> Walk -> Run selected purely by stick deflection.
-                running = stickMagnitude >= runThreshold;
-                activeSneak = stickMagnitude < walkThreshold;
+                // Stick deflection only chooses between Sneak and Walk; Run overrides both.
+                activeSneak = !running && stickMagnitude < walkThreshold;
                 activeWalk = !running && !activeSneak;
-                // Keep speed continuous at the Run threshold while reaching Run Speed at full tilt.
-                float targetSpeed = stickMagnitude <= runThreshold ? stickMagnitude * speed
-                    : Mathf.Lerp(runThreshold * speed, runSpeed,
-                        Mathf.InverseLerp(runThreshold, 1f, stickMagnitude));
-                movementSpeed = targetSpeed / stickMagnitude;
             }
+            // The input vector still carries the stick magnitude, so speed scales with deflection.
+            float movementSpeed = running ? runSpeed : speed;
 
             Vector3 forward = movementCamera != null
                 ? Vector3.ProjectOnPlane(movementCamera.forward, Vector3.up).normalized : Vector3.forward;
@@ -152,8 +145,7 @@ namespace CardsUnity.Controllers
         private void OnValidate()
         {
             idleThreshold = Mathf.Clamp(idleThreshold, 0.01f, 0.5f);
-            walkThreshold = Mathf.Clamp(walkThreshold, idleThreshold + 0.01f, 0.98f);
-            runThreshold = Mathf.Clamp(runThreshold, walkThreshold + 0.01f, 0.99f);
+            walkThreshold = Mathf.Clamp(walkThreshold, idleThreshold + 0.01f, 0.99f);
         }
 
         private void ReadLegacyInput(out Vector2 input, out bool running, out bool analog)
@@ -167,12 +159,12 @@ namespace CardsUnity.Controllers
                 input.y = (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed ? 1 : 0)
                     - (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed ? 1 : 0);
             }
-            running = keyboard != null && (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed);
+            var gamepad = Gamepad.current;
+            running = (keyboard != null && (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed))
+                || (gamepad != null && gamepad.leftStickButton.isPressed);
             analog = false;
             // The keyboard keeps priority; the stick only takes over once it is actually deflected.
-            if (input.sqrMagnitude > 0f || running) return;
-            var gamepad = Gamepad.current;
-            if (gamepad == null) return;
+            if (input.sqrMagnitude > 0f || gamepad == null) return;
             Vector2 stick = gamepad.leftStick.ReadValue();
             if (stick.magnitude < idleThreshold) return;
             input = stick;
