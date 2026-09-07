@@ -24,6 +24,8 @@ Shader "CardsUnity/One Bit Dither"
         _PaperHighlightInfluence ("Paper Influence In Light", Range(0, 1)) = 0.1
         [NoScaleOffset] _InkEdgeTexture ("Ink Edge Texture", 2D) = "gray" {}
         _InkEdgeDistortion ("Ink Edge Distortion (Pixels)", Range(0, 8)) = 0
+        [Toggle] _BackgroundInk ("Background Uses Ink", Float) = 1
+        _BackgroundPlaneHeight ("Background Paper Plane Height", Float) = 0
         _InkEdgeScale ("Ink Edge Scale (World Units)", Range(0.05, 5)) = 0.5
     }
     SubShader
@@ -48,6 +50,7 @@ Shader "CardsUnity/One Bit Dither"
                 float _PaperTileSize, _PaperDodgeStrength, _PaperHighlightInfluence;
                 float _PaperMapping, _PaperWorldSize;
                 float _InkEdgeDistortion, _InkEdgeScale;
+                float _BackgroundInk, _BackgroundPlaneHeight;
                 float4 _PaperTexture_TexelSize;
             CBUFFER_END
             TEXTURE2D(_NoiseTexture);
@@ -56,6 +59,39 @@ Shader "CardsUnity/One Bit Dither"
             SAMPLER(sampler_PaperTexture);
             TEXTURE2D(_InkEdgeTexture);
             SAMPLER(sampler_InkEdgeTexture);
+
+            bool HasSurface(float2 uv)
+            {
+                float depth = SampleSceneDepth(uv);
+                #if UNITY_REVERSED_Z
+                    return depth > 0.00001;
+                #else
+                    return depth < 0.99999;
+                #endif
+            }
+
+            float3 PaperWorldPosition(float2 uv)
+            {
+                float depth = SampleSceneDepth(uv);
+                #if UNITY_REVERSED_Z
+                    float nearDepth = 1.0;
+                    float farDepth = 0.0001;
+                #else
+                    depth = lerp(UNITY_NEAR_CLIP_VALUE, 1.0, depth);
+                    float nearDepth = UNITY_NEAR_CLIP_VALUE;
+                    float farDepth = 0.9999;
+                #endif
+                if (HasSurface(uv) || _BackgroundInk < 0.5)
+                    return ComputeWorldSpacePosition(uv, depth, UNITY_MATRIX_I_VP);
+
+                // Near/far unprojection supports both perspective and orthographic cameras.
+                float3 origin = ComputeWorldSpacePosition(uv, nearDepth, UNITY_MATRIX_I_VP);
+                float3 farPoint = ComputeWorldSpacePosition(uv, farDepth, UNITY_MATRIX_I_VP);
+                float3 ray = normalize(farPoint - origin);
+                float safeY = abs(ray.y) < 0.0001 ? (ray.y < 0.0 ? -0.0001 : 0.0001) : ray.y;
+                float distance = clamp((_BackgroundPlaneHeight - origin.y) / safeY, 0.0, 10000.0);
+                return origin + ray * distance;
+            }
 
             float EdgeTexture(float3 p)
             {
@@ -83,6 +119,7 @@ Shader "CardsUnity/One Bit Dither"
 
             float Luma(float2 uv)
             {
+                if (_BackgroundInk > 0.5 && !HasSurface(uv)) return 0.0;
                 float3 color = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_PointClamp, uv).rgb;
                 // Threshold in perceptual space so dark torch gradients stay readable.
                 return dot(LinearToSRGB(max(color, 0)), float3(0.2126, 0.7152, 0.0722));
@@ -98,11 +135,7 @@ Shader "CardsUnity/One Bit Dither"
                 float2 stepUV = pixelSize / size;
                 if (_InkEdgeDistortion > 0.0)
                 {
-                    float depth = SampleSceneDepth(uv);
-                    #if !UNITY_REVERSED_Z
-                        depth = lerp(UNITY_NEAR_CLIP_VALUE, 1.0, depth);
-                    #endif
-                    float3 world = ComputeWorldSpacePosition(uv, depth, UNITY_MATRIX_I_VP);
+                    float3 world = PaperWorldPosition(uv);
                     float3 p = world / max(0.001, _InkEdgeScale);
                     float2 displacement = float2(EdgeTexture(p), EdgeTexture(p + float3(0.37, 0.71, 0.19)));
                     displacement = clamp((displacement - 0.5) * 3.0, -1.0, 1.0);
@@ -132,6 +165,8 @@ Shader "CardsUnity/One Bit Dither"
                 float boundary = PaperNoise(boundaryUV) * 0.7 + PaperNoise(boundaryUV * 2.13) * 0.3;
                 float midtoneMask = 4.0 * luminance * (1.0 - luminance);
                 luminance = saturate(luminance + (boundary - 0.5) * _BoundaryStrength * midtoneMask);
+
+                if (_BackgroundInk > 0.5 && !HasSurface(uv)) luminance = 0.0;
 
                 // A fixed Bayer matrix avoids temporal noise.
                 const float bayer[16] = {
@@ -166,27 +201,22 @@ Shader "CardsUnity/One Bit Dither"
                 float3 paperSample = SAMPLE_TEXTURE2D(_PaperTexture, sampler_PaperTexture, paperUV).rgb;
                 if (_PaperMapping > 0.5)
                 {
-                    float depth = SampleSceneDepth(input.texcoord);
-                    #if UNITY_REVERSED_Z
-                        bool hasSurface = depth > 0.00001;
-                    #else
-                        bool hasSurface = depth < 0.99999;
-                        depth = lerp(UNITY_NEAR_CLIP_VALUE, 1.0, depth);
-                    #endif
-                    float3 world = ComputeWorldSpacePosition(input.texcoord, depth, UNITY_MATRIX_I_VP);
+                    bool hasSurface = HasSurface(input.texcoord);
+                    float3 world = PaperWorldPosition(input.texcoord);
                     // Triplanar projection keeps paper from stretching along vertical walls.
                     float3 normal = cross(ddx(world), ddy(world));
                     normal *= rsqrt(max(dot(normal, normal), 1e-20));
                     float3 weights = pow(abs(normal), 4.0);
                     weights /= max(dot(weights, 1.0), 0.0001);
+                    if (!hasSurface && _BackgroundInk > 0.5) weights = float3(0, 1, 0);
                     float3 p = world / max(_PaperWorldSize, 0.001);
                     float2 aspect = float2(1, _PaperTexture_TexelSize.z / max(1.0, _PaperTexture_TexelSize.w));
                     float3 worldPaper =
                         SAMPLE_TEXTURE2D(_PaperTexture, sampler_PaperTexture, p.zy * aspect).rgb * weights.x +
                         SAMPLE_TEXTURE2D(_PaperTexture, sampler_PaperTexture, p.xz * aspect).rgb * weights.y +
                         SAMPLE_TEXTURE2D(_PaperTexture, sampler_PaperTexture, p.xy * aspect).rgb * weights.z;
-                    // The sky has no world surface; retain screen mapping there.
-                    paperSample = hasSurface ? worldPaper : paperSample;
+                    // Extend the floor projection into empty space when ink background is enabled.
+                    paperSample = (hasSurface || _BackgroundInk > 0.5) ? worldPaper : paperSample;
                 }
                 // Blend in perceptual space, using monochrome paper to preserve the palette.
                 float paperValue = dot(LinearToSRGB(paperSample), float3(0.2126, 0.7152, 0.0722));

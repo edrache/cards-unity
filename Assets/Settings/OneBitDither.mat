@@ -37,23 +37,25 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _BoundaryScale: 153
-    - _BoundaryStrength: 0.163
-    - _Contrast: 1
+    - _BackgroundInk: 1
+    - _BackgroundPlaneHeight: 0
+    - _BoundaryScale: 159
+    - _BoundaryStrength: 0.288
+    - _Contrast: 0.83
     - _DitherMode: 1
-    - _DitherStrength: 0.84
-    - _EdgeStrength: 1.01
-    - _Exposure: 4
+    - _DitherStrength: 0.349
+    - _EdgeStrength: 1.36
+    - _Exposure: 3.4
     - _InkEdgeDistortion: 8
     - _InkEdgeScale: 1.89
-    - _NoiseTileSize: 1024
-    - _PaperDodgeStrength: 0.35
-    - _PaperGrain: 0.199
+    - _NoiseTileSize: 885
+    - _PaperDodgeStrength: 0.311
+    - _PaperGrain: 0.19
     - _PaperHighlightInfluence: 0.05
     - _PaperMapping: 1
-    - _PaperTileSize: 2691
-    - _PaperWorldSize: 10
-    - _PixelSize: 1
+    - _PaperTileSize: 767
+    - _PaperWorldSize: 50
+    - _PixelSize: 1.95
     - _ToneCount: 3
     m_Colors:
     - _Ink: {r: 0.21698111, g: 0.20032176, b: 0.18115875, a: 1}
