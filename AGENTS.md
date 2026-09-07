@@ -33,6 +33,7 @@ Project code currently lives in `Assets/Scripts/Controllers/`, under the `CardsU
 | `HandheldTorch.cs` | LateUpdate holding pose, torch inertia, smooth light flicker, illumination controls, and particle drift |
 | `ShadowKnightProportions.cs` | Editable limb/body dimensions, rig and collider sizing, torch grip, and optional helmet |
 | `ProceduralSpine.cs` | Three-joint spine, neck stabilization, and per-instance CPU torso deformation driven by gait styles |
+| `FootstepAudio.cs` | One-shot footstep playback on gait foot contacts, with per-step pitch randomization and Sneak/Walk/Run volume |
 
 There are currently no project-owned `.asmdef` files or automated test suites under `Assets/Scripts/`. Do not assume `CardsUnity.Runtime` or `CardsUnity.Tests` assemblies exist. Add folders and assemblies only when needed; keep data-only calculations independent of scene objects where practical.
 
@@ -48,6 +49,8 @@ There are currently no project-owned `.asmdef` files or automated test suites un
 - Styles: Walk, Double Bounce Walk, Strut, Shuffle, Sneak, Run, Jump, Fast Run, Tip Toe, and Skip.
 - Style weights are normalized and transitions are smoothed. All-zero weights fall back to Walk.
 - Jump and hop styles are visual animations; they do not jump the CharacterController.
+- `CartoonCharacterGait` raises a `Footstep` event once per foot contact, derived from the travelled distance rather than from time. Even half-cycle indices are the left foot, odd ones the right; standing still produces no steps.
+- `FootstepAudio` sits next to the gait, plays `Assets/Audio/SFX/step_left.wav` and `step_right.wav` through two runtime `AudioSource` children ("Footstep Left"/"Footstep Right") moved to the contacting foot, randomizes pitch per step, and blends volume and base pitch between Sneak, Walk and Run using the blended style weights (Sneak + Tip Toe, Run + Fast Run).
 - Head orientation compensates for torso rotation and looks ahead.
 - Arm elevation controls the upper arm. Forearm controls set elbow bend relative to that arm, with separate speed and swing contributions.
 - Preserve existing Inspector tuning and serialized references. Use serialization migration attributes when renaming fields.

@@ -2,6 +2,25 @@ using UnityEngine;
 
 namespace CardsUnity.Controllers
 {
+    // A single foot contact reported by the gait. Amounts are blended style weights, not raw input.
+    public readonly struct GaitFootstep
+    {
+        public readonly bool LeftFoot;
+        public readonly float Intensity;
+        public readonly float SneakAmount;
+        public readonly float RunAmount;
+        public readonly Vector3 Position;
+
+        public GaitFootstep(bool leftFoot, float intensity, float sneakAmount, float runAmount, Vector3 position)
+        {
+            LeftFoot = leftFoot;
+            Intensity = intensity;
+            SneakAmount = sneakAmount;
+            RunAmount = runAmount;
+            Position = position;
+        }
+    }
+
     public sealed class CartoonCharacterGait : MonoBehaviour
     {
         [SerializeField] private Transform body;
@@ -88,6 +107,11 @@ namespace CardsUnity.Controllers
         private bool runningRequested, sneakingRequested, walkingRequested, automaticStyleActive;
         private GaitStylePose style;
         private float poseActivity;
+        private double continuousCycle;
+        private int lastStepIndex = int.MinValue;
+
+        // Raised once per foot contact, driven by travelled distance rather than by time.
+        public event System.Action<GaitFootstep> Footstep;
 
         private void Awake()
         {
@@ -124,7 +148,9 @@ namespace CardsUnity.Controllers
             float runBlend = style.RunAmount;
             float stride = 2f * Mathf.Lerp(walkStepLength, runStepLength, runBlend);
             stride = Mathf.Max(0.1f, stride * style.StrideScale);
-            cycle = Mathf.Repeat(cycle + distance / stride, 1f);
+            float advance = distance / stride;
+            cycle = Mathf.Repeat(cycle + advance, 1f);
+            ReportFootsteps(advance, grounded, activity);
             style = GaitStylePose.Blend(styleWeights, cycle);
             float wave = Mathf.Sin(cycle * Mathf.PI * 2f);
             noiseTime += dt * noiseFrequency;
@@ -168,6 +194,24 @@ namespace CardsUnity.Controllers
             rightSwing = Mathf.SmoothDamp(rightSwing, wave * amplitude + rightArmNoise, ref rightSwingVelocity, armLag, Mathf.Infinity, dt);
             Arm(leftArm, leftForearm, -1f, leftSwing, dt);
             Arm(rightArm, rightForearm, 1f, rightSwing, dt);
+        }
+
+        // The left leg runs on `cycle` and the right one half a cycle later, and each leg plants its
+        // foot as its own phase wraps to zero. One step therefore happens every half cycle: even
+        // half-cycle indices belong to the left foot, odd ones to the right.
+        private void ReportFootsteps(float advance, bool grounded, float activity)
+        {
+            continuousCycle += advance;
+            int step = (int)System.Math.Floor(continuousCycle * 2.0);
+            if (step == lastStepIndex) return;
+            bool firstEvaluation = lastStepIndex == int.MinValue;
+            lastStepIndex = step;
+            if (firstEvaluation || !grounded || activity < 0.05f || Footstep == null) return;
+            bool isLeft = (step & 1) == 0;
+            Transform contact = isLeft ? leftFoot : rightFoot;
+            Footstep.Invoke(new GaitFootstep(isLeft, Mathf.Clamp01(intensity),
+                styleWeights[4] + styleWeights[8], styleWeights[5] + styleWeights[7],
+                contact != null ? contact.position : transform.position));
         }
 
         private void UpdateStyleWeights(float dt)

@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 7416225536138361935}
   - component: {fileID: 8566650617304526917}
   - component: {fileID: 3366110197186729732}
+  - component: {fileID: 4592892871767690858}
   m_Layer: 0
   m_Name: Shadow Knight
   m_TagString: Untagged
@@ -251,6 +252,34 @@ MonoBehaviour:
   sideBendAmount: 1
   responseTime: 0.09
   headStabilization: 0.9
+--- !u!114 &4592892871767690858
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90125876250897346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5474c9cc902074650976dc06e369f19a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.FootstepAudio
+  leftStep: {fileID: 8300000, guid: 843f76ff6379146548a1a4c030d74593, type: 3}
+  rightStep: {fileID: 8300000, guid: 773fbb8860873490cac03b817a0b425f, type: 3}
+  output: {fileID: 0}
+  masterVolume: 1
+  sneakVolume: 0.22
+  walkVolume: 0.6
+  runVolume: 1
+  speedInfluence: 0.25
+  sneakPitch: 0.93
+  walkPitch: 1
+  runPitch: 1.08
+  pitchJitter: 0.07
+  spatialBlend: 0.85
+  minDistance: 1.5
+  maxDistance: 25
+  minimumInterval: 0.06
 --- !u!1 &689539237441915602
 GameObject:
   m_ObjectHideFlags: 0
