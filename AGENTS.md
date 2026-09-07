@@ -121,3 +121,11 @@ Inspect the resulting XML and log; process exit alone does not establish test su
 ## Maintaining agent instructions
 
 Keep this file aligned with the actual repository. `CLAUDE.md` points to this shared guidance; update shared rules here instead of maintaining divergent copies.
+
+## Procedural centipede
+
+- `TorchNight` contains one `Assets/Prefabs/Centipede.prefab` instance. `ProceduralCentipede` generates a disposable preview/runtime rig using shared URP materials. Generated children are not saved; edit the root component.
+- `Segment Count` (3–48) and `Size` (0.25–3) rebuild the creature independently per instance, including in Edit Mode. Duplicate the prefab to add differently sized creatures; leave root Transform scale at one. An unassigned target resolves the scene's `ProceduralCharacter`.
+- Distance travelled drives the travelling leg wave. Body segments follow the head at fixed spacing. Sphere casts and ground probes steer around local obstacles; this is local steering, not global pathfinding, and long bodies can cut corners.
+- States are Stalking, Fleeing and Hiding. Point/spot light exposure across all segments triggers flight; shadow-casting lights respect collider occlusion. Directional moonlight is ignored. Exposure is a gameplay approximation, not a sample of rendered pixels or baked lighting. `Fear Threshold`, `Safe Light Ratio`, and `Hide Duration` tune the reaction.
+- `Tick(float dt)` supports direct deterministic checks. Verified in the editor's Play Mode: dark pursuit stops near 1.2 m, restored torch triggers flight at 4.5 m/s, darkness triggers hiding and pursuit resumes; collider occlusion blocks exposure; 3/48 segments and 0.25/3 size generate successfully. These checks are not a persistent automated test suite.
