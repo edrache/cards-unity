@@ -8,9 +8,12 @@ namespace CardsUnity.Controllers
         [SerializeField] private Transform lower, middle, chest, neck;
         [SerializeField] private MeshFilter torso;
         [Header("Spine motion")]
-        [SerializeField, Range(0f, 2f)] private float bendAmount = 1f;
-        [SerializeField, Range(0f, 2f)] private float twistAmount = 1f;
-        [SerializeField, Range(0f, 2f)] private float sideBendAmount = 1f;
+        [Tooltip("Forward/backward bend multiplier. 1 is the authored pose; 3-5 is exaggerated; 10 is extreme.")]
+        [SerializeField, Range(0f, 10f)] private float bendAmount = 1f;
+        [Tooltip("Spine twist multiplier. Values above 2 deliberately exaggerate the motion.")]
+        [SerializeField, Range(0f, 10f)] private float twistAmount = 1f;
+        [Tooltip("Sideways bend multiplier. Values above 2 deliberately exaggerate the motion.")]
+        [SerializeField, Range(0f, 10f)] private float sideBendAmount = 1f;
         [SerializeField, Range(0.02f, 0.3f)] private float responseTime = 0.09f;
         [SerializeField, Range(0f, 1f)] private float headStabilization = 0.9f;
         private Mesh source, deformed;
