@@ -18,6 +18,17 @@ namespace CardsUnity.Controllers
         [SerializeField, Min(0.1f)] private float fleeSpeed = 4.5f;
         [SerializeField, Min(0.1f)] private float stopDistance = 1.2f;
         [SerializeField, Min(1f)] private float turnSpeed = 300f;
+        [Header("Natural variation")]
+        [Tooltip("Zero restores uniform behaviour. Each instance has independent smooth noise and pauses.")]
+        [SerializeField, Range(0f, 1f)] private float behaviourVariation = 0.8f;
+        [Tooltip("Zero chooses a unique runtime seed, including for duplicated prefabs. Nonzero seeds allow repeatable checks.")]
+        [SerializeField] private int randomSeed;
+        [SerializeField, Range(0f, 60f)] private float wanderAngle = 32f;
+        [SerializeField, Range(0.05f, 2f)] private float noiseFrequency = 0.45f;
+        [SerializeField, Range(0f, 0.5f)] private float speedVariation = 0.3f;
+        [Tooltip("Average seconds of stalking between brief exploratory pauses. Flight never pauses.")]
+        [SerializeField, Min(0.5f)] private float pauseInterval = 4f;
+        [SerializeField, Range(0f, 2f)] private float pauseDuration = 0.65f;
         [Header("Fear of light")]
         [Tooltip("Approximate local light exposure that triggers flight. Moonlight is ignored.")]
         [SerializeField, Min(0.001f)] private float fearThreshold = 0.12f;
@@ -41,6 +52,33 @@ namespace CardsUnity.Controllers
         private float builtSize;
         private Material builtShell, builtLeg;
         private Vector3 escapeDirection;
+        private System.Random behaviourRandom;
+        private int initializedSeed;
+        private float behaviourTime, noiseOffset, tempo, personalitySpeed, gaitOffset;
+        private float pauseRemaining, timeUntilPause, currentHideDuration;
+
+        private float RandomRange(float min, float max) => Mathf.Lerp(min, max, (float)behaviourRandom.NextDouble());
+
+        private void InitializeBehaviour()
+        {
+            // Do not touch Unity's shared Random state: other creatures and gameplay remain independent.
+            initializedSeed = randomSeed;
+            behaviourRandom = new System.Random(randomSeed != 0 ? randomSeed : GetInstanceID());
+            noiseOffset = RandomRange(10f, 9000f);
+            tempo = RandomRange(0.7f, 1.35f);
+            personalitySpeed = RandomRange(-0.5f, 0.5f);
+            gaitOffset = RandomRange(0f, Mathf.PI * 2f);
+            behaviourTime = 0f;
+            pauseRemaining = 0f;
+            timeUntilPause = RandomRange(0.3f, 1.7f) * pauseInterval;
+            currentHideDuration = hideDuration;
+        }
+
+        private float BehaviourNoise(float channel)
+        {
+            return Mathf.Clamp(Mathf.PerlinNoise(noiseOffset + channel,
+                behaviourTime * noiseFrequency * tempo) * 2f - 1f, -1f, 1f);
+        }
 
         private void OnValidate()
         {
@@ -89,6 +127,8 @@ namespace CardsUnity.Controllers
         {
             if (dt <= 0f) return;
             if (rig == null) Rebuild();
+            if (behaviourRandom == null || initializedSeed != randomSeed) InitializeBehaviour();
+            behaviourTime += dt;
             if (target == null)
             {
                 var player = FindFirstObjectByType<ProceduralCharacter>();
@@ -106,18 +146,24 @@ namespace CardsUnity.Controllers
                 Exposure = Mathf.Max(Exposure, SampleLight(segments[i].position));
             if (Exposure >= fearThreshold)
             {
+                if (State != BehaviourState.Fleeing)
+                {
+                    pauseRemaining = 0f;
+                    timeUntilPause = pauseInterval * RandomRange(0.5f, 1.5f);
+                }
                 State = BehaviourState.Fleeing;
                 darkTime = 0f;
             }
             else if (State == BehaviourState.Fleeing && Exposure < fearThreshold * safeLightRatio)
             {
                 State = BehaviourState.Hiding;
+                currentHideDuration = hideDuration * (1f + behaviourVariation * RandomRange(-0.45f, 0.65f));
                 darkTime = 0f;
             }
             else if (State == BehaviourState.Hiding)
             {
                 darkTime += dt;
-                if (darkTime >= hideDuration) State = BehaviourState.Stalking;
+                if (darkTime >= currentHideDuration) State = BehaviourState.Stalking;
             }
 
             Vector3 desired = Vector3.zero;
@@ -142,6 +188,36 @@ namespace CardsUnity.Controllers
                 desired = target.position - transform.position;
                 desired.y = 0f;
                 if (desired.magnitude <= stopDistance * size) desired = Vector3.zero;
+            }
+
+            if (desired.sqrMagnitude > 0.001f)
+            {
+                bool fleeing = State == BehaviourState.Fleeing;
+                // Small escape deviations keep the light gradient dominant; stalking can meander more.
+                float angle = wanderAngle * behaviourVariation * BehaviourNoise(0f) * (fleeing ? 0.2f : 1f);
+                if (!fleeing) angle *= Mathf.Clamp01(desired.magnitude / (2f * size));
+                desired = Quaternion.Euler(0f, angle, 0f) * desired;
+                float variation = behaviourVariation * speedVariation
+                    * Mathf.Clamp(personalitySpeed + BehaviourNoise(37f), -1f, 1f);
+                speed *= 1f + variation * (fleeing ? 0.35f : 1f);
+                if (!fleeing && behaviourVariation > 0f)
+                {
+                    if (pauseRemaining > 0f)
+                    {
+                        pauseRemaining = Mathf.Max(0f, pauseRemaining - dt);
+                        desired = Vector3.zero;
+                    }
+                    else
+                    {
+                        timeUntilPause -= dt;
+                        if (timeUntilPause <= 0f)
+                        {
+                            pauseRemaining = pauseDuration * behaviourVariation * RandomRange(0.4f, 1.6f);
+                            timeUntilPause = pauseInterval * RandomRange(0.5f, 1.8f);
+                            if (pauseRemaining > 0f) desired = Vector3.zero;
+                        }
+                    }
+                }
             }
 
             Vector3 rigPosition = rig.position;
@@ -254,7 +330,7 @@ namespace CardsUnity.Controllers
                 for (int side = 0; side < 2; side++)
                 {
                     float sign = side == 0 ? -1f : 1f;
-                    float cycle = phase - i * 0.75f + side * Mathf.PI;
+                    float cycle = phase + gaitOffset * behaviourVariation - i * 0.75f + side * Mathf.PI;
                     Vector3 hip = new Vector3(sign * 0.15f, -0.01f, 0f);
                     Vector3 knee = new Vector3(sign * 0.34f, 0.02f + Mathf.Max(0f, Mathf.Sin(cycle)) * 0.07f, Mathf.Cos(cycle) * 0.10f);
                     Vector3 foot = new Vector3(sign * 0.48f, -0.21f + Mathf.Max(0f, Mathf.Sin(cycle)) * 0.14f, Mathf.Cos(cycle) * 0.17f - 0.10f);
