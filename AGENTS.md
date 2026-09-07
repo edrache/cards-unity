@@ -26,7 +26,7 @@ Project code currently lives in `Assets/Scripts/Controllers/`, under the `CardsU
 
 | File | Responsibility |
 | --- | --- |
-| `ProceduralCharacter.cs` | Input System keyboard/gamepad input, acceleration, braking, gravity, CharacterController movement, turning, and sprint requests |
+| `ProceduralCharacter.cs` | Rewired input (Input System fallback in scenes without a manager), acceleration, braking, gravity, CharacterController movement, turning, and sprint requests |
 | `CharacterFollowCamera.cs` | Smoothed orthographic camera following from above |
 | `CartoonCharacterGait.cs` | Rig references, IK, body motion, independent arm/forearm controls, noise, style weights, and sprint style transitions |
 | `GaitStylePose.cs` | Procedural style evaluation and blending, including foot adjustments |
@@ -37,7 +37,7 @@ There are currently no project-owned `.asmdef` files or automated test suites un
 ## Controls and animation behavior
 
 - WASD/arrows or the gamepad left stick move relative to the camera.
-- Shift or the gamepad left-stick button requests sprinting.
+- TorchNight uses Rewired Player0: MoveHorizontal/MoveVertical (WASD), held Run (left Shift), and toggled Sneak (C). Run temporarily overrides Sneak; releasing it restores Sneak, and disabling both restores the custom mix. The daytime scene retains Input System keyboard/gamepad controls.
 - Sprinting smoothly changes the visible style sliders to Run and fades the other weights. Releasing sprint restores the previous custom mix, including after rapid toggling.
 - Gait phase advances from actual horizontal distance travelled. Avoid animating a full walk when blocked by a wall.
 - Styles: Walk, Double Bounce Walk, Strut, Shuffle, Sneak, Run, Jump, Fast Run, Tip Toe, and Skip.

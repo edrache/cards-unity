@@ -1,3 +1,4 @@
+using Rewired;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -6,6 +7,9 @@ namespace CardsUnity.Controllers
     [RequireComponent(typeof(CharacterController))]
     public sealed class ProceduralCharacter : MonoBehaviour
     {
+        [Header("Rewired input")]
+        [SerializeField] private string rewiredPlayerName = "Player0";
+
         [Header("Movement")]
         [SerializeField] private float speed = 3.5f;
         [SerializeField] private float acceleration = 9f;
@@ -31,6 +35,7 @@ namespace CardsUnity.Controllers
         private float blend;
         private CartoonCharacterGait gait;
         private Vector3 previousActualVelocity;
+        private bool sneaking;
 
         private void Awake()
         {
@@ -41,24 +46,25 @@ namespace CardsUnity.Controllers
 
         private void Update()
         {
-            Vector2 input = Vector2.zero;
-            var keyboard = Keyboard.current;
-            if (keyboard != null)
+            Vector2 input;
+            bool running;
+            if (ReInput.isReady)
             {
-                input.x = (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed ? 1 : 0)
-                    - (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed ? 1 : 0);
-                input.y = (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed ? 1 : 0)
-                    - (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed ? 1 : 0);
+                Player player = ReInput.players.GetPlayer(rewiredPlayerName);
+                input = new Vector2(player.GetAxis("MoveHorizontal"), player.GetAxis("MoveVertical"));
+                running = player.GetButton("Run");
+                if (player.GetButtonDown("Sneak")) sneaking = !sneaking;
             }
-            if (Gamepad.current != null && Gamepad.current.leftStick.ReadValue().sqrMagnitude > input.sqrMagnitude)
-                input = Gamepad.current.leftStick.ReadValue();
+            else
+            {
+                // Keep the daytime playground usable without a Rewired manager.
+                ReadLegacyInput(out input, out running);
+            }
             input = Vector2.ClampMagnitude(input, 1f);
 
             Vector3 forward = movementCamera != null
                 ? Vector3.ProjectOnPlane(movementCamera.forward, Vector3.up).normalized : Vector3.forward;
             Vector3 right = Vector3.Cross(Vector3.up, forward);
-            bool running = keyboard != null && (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed);
-            running |= Gamepad.current != null && Gamepad.current.leftStickButton.isPressed;
             Vector3 desired = (forward * input.y + right * input.x) * (running ? runSpeed : speed);
             velocity = Vector3.MoveTowards(velocity, desired,
                 (input.sqrMagnitude > 0.001f ? acceleration : braking) * Time.deltaTime);
@@ -77,7 +83,7 @@ namespace CardsUnity.Controllers
             float actualSpeed = actualVelocity.magnitude;
             if (gait != null)
             {
-                gait.SetRunning(running);
+                gait.SetLocomotionStyle(running, sneaking);
                 gait.Animate(actualVelocity, (actualVelocity - previousActualVelocity) / dt,
                     displacement.magnitude, controller.isGrounded, runSpeed);
                 previousActualVelocity = actualVelocity;
@@ -96,6 +102,23 @@ namespace CardsUnity.Controllers
                 body.localPosition = bodyOrigin + Vector3.up * (Mathf.Cos(phase * 2f) * 0.035f * blend);
                 body.localRotation = Quaternion.Euler(blend * 5f, 0f, -swing * 3f);
             }
+        }
+
+        private static void ReadLegacyInput(out Vector2 input, out bool running)
+        {
+            input = Vector2.zero;
+            var keyboard = UnityEngine.InputSystem.Keyboard.current;
+            if (keyboard != null)
+            {
+                input.x = (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed ? 1 : 0)
+                    - (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed ? 1 : 0);
+                input.y = (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed ? 1 : 0)
+                    - (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed ? 1 : 0);
+            }
+            if (Gamepad.current != null && Gamepad.current.leftStick.ReadValue().sqrMagnitude > input.sqrMagnitude)
+                input = Gamepad.current.leftStick.ReadValue();
+            running = keyboard != null && (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed);
+            running |= Gamepad.current != null && Gamepad.current.leftStickButton.isPressed;
         }
 
         private static void Pose(Transform limb, float angle)

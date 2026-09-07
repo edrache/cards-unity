@@ -83,7 +83,7 @@ namespace CardsUnity.Controllers
         private float leftArmNoise, rightArmNoise;
         private readonly float[] styleWeights = new float[10];
         private readonly float[] savedWalkingWeights = new float[10];
-        private bool runningRequested, automaticStyleActive;
+        private bool runningRequested, sneakingRequested, automaticStyleActive;
         private GaitStylePose style;
         private float poseActivity;
 
@@ -154,7 +154,7 @@ namespace CardsUnity.Controllers
 
         private void UpdateStyleWeights(float dt)
         {
-            UpdateAutomaticRun(dt);
+            UpdateAutomaticStyle(dt);
             float total = walk + doubleBounceWalk + strut + shuffle + sneak + run + jump + fastRun + tipToe + skip;
             float alpha = 1f - Mathf.Exp(-dt / Mathf.Max(0.01f, styleTransitionTime));
             for (int i = 0; i < styleWeights.Length; i++)
@@ -180,29 +180,35 @@ namespace CardsUnity.Controllers
 
         public void SetRunning(bool running)
         {
-            if (running && !automaticStyleActive)
+            SetLocomotionStyle(running, false);
+        }
+
+        public void SetLocomotionStyle(bool running, bool sneaking)
+        {
+            if ((running || sneaking) && !automaticStyleActive)
             {
                 for (int i = 0; i < savedWalkingWeights.Length; i++)
                     savedWalkingWeights[i] = GetStyleWeight(i);
                 automaticStyleActive = true;
             }
             runningRequested = running;
+            sneakingRequested = sneaking;
         }
 
-        private void UpdateAutomaticRun(float dt)
+        private void UpdateAutomaticStyle(float dt)
         {
             if (!automaticStyleActive) return;
             float alpha = 1f - Mathf.Exp(-dt / Mathf.Max(0.01f, styleTransitionTime));
             bool settled = true;
             for (int i = 0; i < savedWalkingWeights.Length; i++)
             {
-                float target = runningRequested ? (i == 5 ? 1f : 0f) : savedWalkingWeights[i];
+                float target = runningRequested ? (i == 5 ? 1f : 0f) : sneakingRequested ? (i == 4 ? 1f : 0f) : savedWalkingWeights[i];
                 float value = Mathf.Lerp(GetStyleWeight(i), target, alpha);
                 if (Mathf.Abs(value - target) < 0.0001f) value = target;
                 else settled = false;
                 SetStyleWeight(i, value);
             }
-            if (!runningRequested && settled) automaticStyleActive = false;
+            if (!runningRequested && !sneakingRequested && settled) automaticStyleActive = false;
         }
 
         private float GetStyleWeight(int index)
@@ -245,6 +251,7 @@ namespace CardsUnity.Controllers
                 for (int i = 0; i < savedWalkingWeights.Length; i++)
                     SetStyleWeight(i, savedWalkingWeights[i]);
             runningRequested = false;
+            sneakingRequested = false;
             automaticStyleActive = false;
         }
 
