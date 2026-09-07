@@ -131,3 +131,11 @@ Keep this file aligned with the actual repository. `CLAUDE.md` points to this sh
 - `Tick(float dt)` supports direct deterministic checks. Verified in the editor's Play Mode: dark pursuit stops near 1.2 m, restored torch triggers flight at 4.5 m/s, darkness triggers hiding and pursuit resumes; collider occlusion blocks exposure; 3/48 segments and 0.25/3 size generate successfully. These checks are not a persistent automated test suite.
 
 - `Natural variation` controls independent Perlin steering noise, speed/tempo differences, brief stalking pauses, varied hiding duration and leg phase offsets. `Behaviour Variation = 0` restores uniform behaviour; `Random Seed = 0` chooses an instance-specific runtime seed, while equal nonzero seeds give repeatable behaviour for equal inputs. Randomness uses a private generator and a clock advanced by `Tick`, without modifying Unity's global Random state. Flight cancels pauses and limits steering/speed variation.
+
+## Procedural cave
+
+- `Assets/Scenes/ProceduralCave.unity` is a separate playable cave scene with the Shadow Knight prefab and an overhead follow camera; it uses the existing pipeline's dither effect and Input System fallback controls.
+- Select `Procedural Cave` and edit `ProceduralCave`: Room Count (1–24), Seed, Room Radius, Corridor Width, Irregularity and Wall Height. Changes rebuild the preview; `Rebuild Cave` also regenerates it. Generation uses Unity meshes rather than ProBuilder objects.
+- Chambers form a connected staggered chain with curved corridors. The triangulated floor is level, rock walls have mesh colliders, and the roof is cut away for visibility. Keep the generator transform at unit scale. Rebuilding moves the assigned player to the first chamber.
+- Generated objects/meshes are disposable and not saved; the scene stores generator settings and material/player references. Generation runs again in Play Mode. Materials live in `Assets/Materials/Cave/`.
+- Direct Play Mode checks covered 1/6/24 rooms, minimum corridor width with maximum irregularity, 4,260 controller traversal/floor samples without failures, and wall blocking. These are editor checks, not a persistent automated suite or physical keyboard input tests.
