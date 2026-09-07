@@ -33,6 +33,12 @@ namespace CardsUnity.Controllers
         private float flicker = 1f;
         private bool initialized;
 
+        public void SetGripOffset(Vector3 offset)
+        {
+            gripOffset = offset;
+            transform.localPosition = offset;
+        }
+
         private void OnEnable()
         {
             initialized = false;

@@ -14,6 +14,7 @@ namespace CardsUnity.Controllers
         [SerializeField] private float thighLength = 0.44f;
         [SerializeField] private float calfLength = 0.44f;
         [SerializeField] private float hipHeight = 0.88f;
+        [SerializeField] private float hipHalfWidth = 0.19f;
         [SerializeField] private float armLag = 0.10f;
 
         [Header("Cartoon body motion")]
@@ -91,6 +92,15 @@ namespace CardsUnity.Controllers
         {
             if (body != null) bodyOrigin = body.localPosition;
             UpdateStyleWeights(100f);
+        }
+
+        public void SetRigDimensions(float thigh, float calf, float hip, float halfWidth, Vector3 origin)
+        {
+            thighLength = thigh;
+            calfLength = calf;
+            hipHeight = hip;
+            hipHalfWidth = halfWidth;
+            bodyOrigin = origin;
         }
 
         public void Animate(Vector3 velocity, Vector3 acceleration, float distance, bool grounded, float maximumSpeed, float deltaTime = -1f)
@@ -294,8 +304,8 @@ namespace CardsUnity.Controllers
             GaitStylePose.AdjustFoot(styleWeights, cycle, side, travel, activity, ref z, ref lift, ref toePitch);
             // Keep the thigh attached to the moving pelvis as the torso rolls and bounces.
             Vector3 hip = transform.InverseTransformPoint(body.TransformPoint(
-                new Vector3(side * 0.19f, hipHeight - bodyOrigin.y, 0f)));
-            Vector3 ankle = new Vector3(side * (0.19f + intensity * 0.025f), 0.09f + lift + flightLift, z);
+                new Vector3(side * hipHalfWidth, hipHeight - bodyOrigin.y, 0f)));
+            Vector3 ankle = new Vector3(side * (hipHalfWidth + intensity * 0.025f), 0.09f + lift + flightLift, z);
             Vector3 delta = ankle - hip;
             float reach = Mathf.Clamp(delta.magnitude, 0.05f, thighLength + calfLength - 0.002f);
             Vector3 direction = delta.normalized;

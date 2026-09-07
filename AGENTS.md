@@ -31,6 +31,7 @@ Project code currently lives in `Assets/Scripts/Controllers/`, under the `CardsU
 | `CartoonCharacterGait.cs` | Rig references, IK, body motion, independent arm/forearm controls, noise, style weights, and sprint style transitions |
 | `GaitStylePose.cs` | Procedural style evaluation and blending, including foot adjustments |
 | `HandheldTorch.cs` | LateUpdate holding pose, torch inertia, smooth light flicker, illumination controls, and particle drift |
+| `ShadowKnightProportions.cs` | Editable limb/body dimensions, rig and collider sizing, torch grip, and optional helmet |
 
 There are currently no project-owned `.asmdef` files or automated test suites under `Assets/Scripts/`. Do not assume `CardsUnity.Runtime` or `CardsUnity.Tests` assemblies exist. Add folders and assemblies only when needed; keep data-only calculations independent of scene objects where practical.
 
@@ -47,6 +48,13 @@ There are currently no project-owned `.asmdef` files or automated test suites un
 - Arm elevation controls the upper arm. Forearm controls set elbow bend relative to that arm, with separate speed and swing contributions.
 - Preserve existing Inspector tuning and serialized references. Use serialization migration attributes when renaming fields.
 - `Animate` accepts an optional delta time for deterministic pose checks. `HandheldTorch.Tick` similarly accepts explicit time values.
+
+## Shadow Knight
+
+- `TorchNight` uses `Assets/Prefabs/Shadow Knight.prefab`; the original `Procedural Character.prefab` remains available.
+- Change dimensions on the root `ShadowKnightProportions` component. Its custom Inspector records Undo and prefab overrides. Edit outside Play Mode to retain changes.
+- `Shadow Knight Helmet.prefab` is a nested accessory under `Body Pivot/Head/Helmet`; `Helmet Visible` toggles it. Meshes and materials are in `Assets/Prefabs/ShadowKnight/`.
+- Keep rig part names stable: the proportions component resolves and caches the named transforms. Limb dimensions also update gait IK and the torch grip offset.
 
 ## Torch and rendering
 
