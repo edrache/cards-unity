@@ -58,13 +58,13 @@ CharacterController:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Height: 2.148
-  m_Radius: 0.32759997
+  m_Height: 2.252
+  m_Radius: 0.37464
   m_SlopeLimit: 45
   m_StepOffset: 0.25
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 1.074, z: 0}
+  m_Center: {x: 0, y: 1.126, z: 0}
 --- !u!114 &2444056741941372767
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -80,19 +80,19 @@ MonoBehaviour:
   rewiredPlayerName: Player0
   idleThreshold: 0.08
   walkThreshold: 0.35
-  speed: 3.5
+  speed: 2
   acceleration: 9
   braking: 7
   runSpeed: 7
-  turnSpeed: 540
+  turnSpeed: 1000
   movementCamera: {fileID: 0}
   body: {fileID: 5973512483704667381}
   leftLeg: {fileID: 585720984015901772}
   rightLeg: {fileID: 5665849904011919093}
   leftArm: {fileID: 3097526879214373411}
   rightArm: {fileID: 6382968931117336918}
-  strideLength: 1.6
-  legSwing: 28
+  strideLength: 5
+  legSwing: 6
 --- !u!114 &7416225536138361935
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -120,7 +120,7 @@ MonoBehaviour:
   thighLength: 0.38
   calfLength: 0.38
   hipHeight: 0.8
-  hipHalfWidth: 0.24959998
+  hipHalfWidth: 0.28544
   armLag: 0.1
   sideLeanAngle: 7.3
   sideSwayDistance: 0.055
@@ -133,7 +133,7 @@ MonoBehaviour:
   runStepLength: 1.3
   runHopHeight: 0.12
   armRaiseAngle: 25.2
-  armOutwardAngle: 10.1
+  armOutwardAngle: 7.7
   forearmRaiseAngle: 15
   forearmSpeedBend: 60
   forearmSwingBend: 0.388
@@ -163,15 +163,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6ba07fcfe05754293938fe0f8dca1bae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.ShadowKnightProportions
-  upperArmLength: 0.43
+  upperArmLength: 0.558
   forearmLength: 0.42
   thighLength: 0.38
   calfLength: 0.38
-  torsoHeight: 0.9
-  torsoWidth: 0.78
-  torsoDepth: 0.44
-  headSize: 0.56
-  armOutwardAngle: 10.1
+  torsoHeight: 1
+  torsoWidth: 0.892
+  torsoDepth: 0.629
+  headSize: 0.565
+  armOutwardAngle: 7.7
   helmetVisible: 1
   parts:
   - {fileID: 3466474160620811249}
@@ -266,16 +266,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.FootstepAudio
   leftStep: {fileID: 8300000, guid: 843f76ff6379146548a1a4c030d74593, type: 3}
   rightStep: {fileID: 8300000, guid: 773fbb8860873490cac03b817a0b425f, type: 3}
-  output: {fileID: 0}
+  output: {fileID: 24300002, guid: 58454d56805704896af1bdf2fd0e570f, type: 2}
   masterVolume: 1
-  sneakVolume: 0.22
-  walkVolume: 0.6
+  sneakVolume: 0.133
+  walkVolume: 0.511
   runVolume: 1
   speedInfluence: 0.25
-  sneakPitch: 0.93
-  walkPitch: 1
-  runPitch: 1.08
-  pitchJitter: 0.07
+  sneakPitch: 0.5
+  walkPitch: 0.7
+  runPitch: 0.9
+  pitchJitter: 0.248
   spatialBlend: 0.85
   minDistance: 1.5
   maxDistance: 25
@@ -436,7 +436,7 @@ MonoBehaviour:
   swayResponse: 0.18
   smokeTrail: 0.55
   gripOffset: {x: 0, y: -0.42, z: 0}
-  armOutwardAngle: 10.1
+  armOutwardAngle: 7.7
 --- !u!1 &1145974095145088243
 GameObject:
   m_ObjectHideFlags: 0
@@ -462,7 +462,7 @@ Transform:
   m_GameObject: {fileID: 1145974095145088243}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.315, z: 0}
+  m_LocalPosition: {x: 0, y: 0.35, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -652,7 +652,7 @@ Transform:
   m_GameObject: {fileID: 1559059156071750394}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.24959998, y: 0.8, z: 0}
+  m_LocalPosition: {x: 0.28544, y: 0.8, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -775,7 +775,7 @@ Transform:
   m_GameObject: {fileID: 1670203113786019898}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.43, z: 0}
+  m_LocalPosition: {x: 0, y: -0.558, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -812,8 +812,8 @@ Transform:
   m_GameObject: {fileID: 1782140489932246387}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.32, z: 0}
-  m_LocalScale: {x: 0.78, y: 0.9, z: 0.44}
+  m_LocalPosition: {x: 0, y: 0.37, z: 0}
+  m_LocalScale: {x: 0.892, y: 1, z: 0.629}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5973512483704667381}
@@ -900,7 +900,7 @@ Transform:
   m_GameObject: {fileID: 1844737026377900515}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.27, z: 0}
+  m_LocalPosition: {x: 0, y: 0.3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1054,7 +1054,7 @@ Transform:
   m_GameObject: {fileID: 2282261031581753604}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.24959998, y: 0.8, z: 0}
+  m_LocalPosition: {x: -0.28544, y: 0.8, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1269,8 +1269,8 @@ Transform:
   m_GameObject: {fileID: 2907909715289070411}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.215, z: 0}
-  m_LocalScale: {x: 0.18, y: 0.48000002, z: 0.19}
+  m_LocalPosition: {x: 0, y: -0.279, z: 0}
+  m_LocalScale: {x: 0.18, y: 0.60800004, z: 0.19}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3097526879214373411}
@@ -6466,7 +6466,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: -0.08, z: 0}
-  m_LocalScale: {x: 0.70199996, y: 0.22, z: 0.396}
+  m_LocalScale: {x: 0.8028, y: 0.22, z: 0.5661}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5973512483704667381}
@@ -6555,8 +6555,8 @@ Transform:
   m_GameObject: {fileID: 4027592523438872792}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.215, z: 0}
-  m_LocalScale: {x: 0.18, y: 0.48000002, z: 0.19}
+  m_LocalPosition: {x: 0, y: -0.279, z: 0}
+  m_LocalScale: {x: 0.18, y: 0.60800004, z: 0.19}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6382968931117336918}
@@ -11479,7 +11479,7 @@ Transform:
   m_GameObject: {fileID: 4354579337323373063}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.315, z: 0}
+  m_LocalPosition: {x: 0, y: 0.35, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -12175,7 +12175,7 @@ Transform:
   m_GameObject: {fileID: 5730815860794290826}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.43, z: 0}
+  m_LocalPosition: {x: 0, y: -0.558, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -12854,8 +12854,8 @@ Transform:
   m_GameObject: {fileID: 8151780783142671005}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.16800001, z: 0}
-  m_LocalScale: {x: 0.56, y: 0.56, z: 0.56}
+  m_LocalPosition: {x: 0, y: 0.16950001, z: 0}
+  m_LocalScale: {x: 0.565, y: 0.565, z: 0.565}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 316656218945791536}
@@ -13035,8 +13035,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8614134876798983947}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: -0.088025056, w: 0.99611825}
-  m_LocalPosition: {x: -0.42499998, y: 0.18, z: 0}
+  m_LocalRotation: {x: 0, y: 0, z: -0.06714463, w: 0.9977433}
+  m_LocalPosition: {x: -0.481, y: 0.21000001, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -13162,8 +13162,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8741450132622969393}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0.088025056, w: 0.99611825}
-  m_LocalPosition: {x: 0.42499998, y: 0.18, z: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0.06714463, w: 0.9977433}
+  m_LocalPosition: {x: 0.481, y: 0.21000001, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

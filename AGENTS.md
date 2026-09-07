@@ -34,6 +34,7 @@ Project code currently lives in `Assets/Scripts/Controllers/`, under the `CardsU
 | `ShadowKnightProportions.cs` | Editable limb/body dimensions, rig and collider sizing, torch grip, and optional helmet |
 | `ProceduralSpine.cs` | Three-joint spine, neck stabilization, and per-instance CPU torso deformation driven by gait styles |
 | `FootstepAudio.cs` | One-shot footstep playback on gait foot contacts, with per-step pitch randomization and Sneak/Walk/Run volume |
+| `MusicPlayer.cs` | Looping background music with fade-in/fade-out and an optional mixer group |
 
 There are currently no project-owned `.asmdef` files or automated test suites under `Assets/Scripts/`. Do not assume `CardsUnity.Runtime` or `CardsUnity.Tests` assemblies exist. Add folders and assemblies only when needed; keep data-only calculations independent of scene objects where practical.
 
@@ -64,6 +65,12 @@ There are currently no project-owned `.asmdef` files or automated test suites un
 - The knight has `Spine Lower -> Spine Middle -> Spine Chest -> Neck` under `Body Pivot`. Arms attach to the chest; head attaches to the neck. The 120-vertex torso uses blended procedural deformation in Play Mode, with an immutable rest mesh asset and a disposable per-instance mesh. This is a procedural rig, not an imported Humanoid Avatar.
 - `ProceduralSpine` exposes bend, twist, side bend, response time and head stabilization. All ten gait styles blend spine poses using the same weights and distance-driven phase; stopping fades to neutral.
 - Keep rig part names stable: the proportions component resolves and caches the named transforms. Limb dimensions also update gait IK and the torch grip offset.
+
+## Audio
+
+- Audio assets live in `Assets/Audio/`: `SFX/` (footstep samples), `Music/`, and `Mixers/Deep.mixer` with a single `Master` group. Footsteps and music both route to that group.
+- `TorchNight` has a `Music` object with `MusicPlayer`, playing `Assets/Audio/Music/Stereo_Color_Dark-Background_main.wav` looped and faded in. Music tracks are imported as Streaming/Vorbis; short samples stay Decompress On Load.
+- Footstep volumes, pitches and the mixer group are tuned on the `Shadow Knight` prefab asset itself. Preserve that tuning.
 
 ## Torch and rendering
 
