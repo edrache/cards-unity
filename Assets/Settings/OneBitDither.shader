@@ -22,6 +22,9 @@ Shader "CardsUnity/One Bit Dither"
         _PaperWorldSize ("Paper Tile Size (World Units)", Range(0.1, 50)) = 10
         _PaperDodgeStrength ("Paper Color Dodge Strength", Range(0, 1)) = 0
         _PaperHighlightInfluence ("Paper Influence In Light", Range(0, 1)) = 0.1
+        [NoScaleOffset] _InkEdgeTexture ("Ink Edge Texture", 2D) = "gray" {}
+        _InkEdgeDistortion ("Ink Edge Distortion (Pixels)", Range(0, 8)) = 0
+        _InkEdgeScale ("Ink Edge Scale (World Units)", Range(0.05, 5)) = 0.5
     }
     SubShader
     {
@@ -44,12 +47,23 @@ Shader "CardsUnity/One Bit Dither"
                 float _ToneCount, _PaperGrain, _BoundaryStrength, _BoundaryScale;
                 float _PaperTileSize, _PaperDodgeStrength, _PaperHighlightInfluence;
                 float _PaperMapping, _PaperWorldSize;
+                float _InkEdgeDistortion, _InkEdgeScale;
                 float4 _PaperTexture_TexelSize;
             CBUFFER_END
             TEXTURE2D(_NoiseTexture);
             SAMPLER(sampler_NoiseTexture);
             TEXTURE2D(_PaperTexture);
             SAMPLER(sampler_PaperTexture);
+            TEXTURE2D(_InkEdgeTexture);
+            SAMPLER(sampler_InkEdgeTexture);
+
+            float EdgeTexture(float3 p)
+            {
+                // Three world projections avoid a single stretched axis on walls.
+                return (SAMPLE_TEXTURE2D_LOD(_InkEdgeTexture, sampler_InkEdgeTexture, p.xy, 0).r +
+                        SAMPLE_TEXTURE2D_LOD(_InkEdgeTexture, sampler_InkEdgeTexture, p.yz, 0).r +
+                        SAMPLE_TEXTURE2D_LOD(_InkEdgeTexture, sampler_InkEdgeTexture, p.zx, 0).r) / 3.0;
+            }
 
             float Hash(float2 p)
             {
@@ -82,6 +96,32 @@ Shader "CardsUnity/One Bit Dither"
                 float2 pixel = floor(input.texcoord * size / pixelSize);
                 float2 uv = (pixel + 0.5) * pixelSize / size;
                 float2 stepUV = pixelSize / size;
+                if (_InkEdgeDistortion > 0.0)
+                {
+                    float depth = SampleSceneDepth(uv);
+                    #if !UNITY_REVERSED_Z
+                        depth = lerp(UNITY_NEAR_CLIP_VALUE, 1.0, depth);
+                    #endif
+                    float3 world = ComputeWorldSpacePosition(uv, depth, UNITY_MATRIX_I_VP);
+                    float3 p = world / max(0.001, _InkEdgeScale);
+                    float2 displacement = float2(EdgeTexture(p), EdgeTexture(p + float3(0.37, 0.71, 0.19)));
+                    displacement = clamp((displacement - 0.5) * 3.0, -1.0, 1.0);
+                    float2 radius = max(1.0, _InkEdgeDistortion) / size;
+                    float center = Luma(uv);
+                    float left = Luma(uv - float2(radius.x, 0));
+                    float right = Luma(uv + float2(radius.x, 0));
+                    float down = Luma(uv - float2(0, radius.y));
+                    float up = Luma(uv + float2(0, radius.y));
+                    float darkest = min(center, min(min(left, right), min(down, up)));
+                    float brightest = max(center, max(max(left, right), max(down, up)));
+                    float darkTone = saturate((darkest * _Exposure - 0.5) * _Contrast + 0.5);
+                    // Restrict the warp to contrast boundaries touching ink/dark tones.
+                    // Uniform interiors and bright details remain untouched.
+                    float edgeMask = smoothstep(0.005, 0.06, brightest - darkest) *
+                                     (1.0 - smoothstep(0.35, 0.75, darkTone));
+                    uv = clamp(uv + displacement * _InkEdgeDistortion * edgeMask / size,
+                               0.5 / size, 1.0 - 0.5 / size);
+                }
                 float luminance = Luma(uv);
                 float edge = max(abs(luminance - Luma(uv + float2(stepUV.x, 0))),
                                  abs(luminance - Luma(uv + float2(0, stepUV.y))));
