@@ -8,6 +8,9 @@ Shader "CardsUnity/One Bit Dither"
         _Exposure ("Exposure", Range(0.25, 4)) = 3.5
         _Contrast ("Contrast", Range(0.5, 3)) = 1
         _DitherStrength ("Dither Strength", Range(0, 1)) = 1
+        [Enum(Bayer, 0, Noise Texture, 1)] _DitherMode ("Dither Mode", Float) = 0
+        [NoScaleOffset] _NoiseTexture ("Noise Texture (Grayscale)", 2D) = "gray" {}
+        _NoiseTileSize ("Noise Tile Size (Dither Pixels)", Range(4, 1024)) = 256
         _EdgeStrength ("Edge Strength", Range(0, 2)) = 0.6
     }
     SubShader
@@ -26,7 +29,10 @@ Shader "CardsUnity/One Bit Dither"
             CBUFFER_START(UnityPerMaterial)
                 float4 _Ink, _Paper;
                 float _PixelSize, _Exposure, _Contrast, _DitherStrength, _EdgeStrength;
+                float _DitherMode, _NoiseTileSize;
             CBUFFER_END
+            TEXTURE2D(_NoiseTexture);
+            SAMPLER(sampler_NoiseTexture);
 
             float Luma(float2 uv)
             {
@@ -56,7 +62,16 @@ Shader "CardsUnity/One Bit Dither"
                     15, 7, 13, 5
                 };
                 uint2 cell = (uint2)pixel & 3;
-                float threshold = lerp(0.5, (bayer[cell.y * 4 + cell.x] + 0.5) / 16.0, _DitherStrength);
+                float pattern = (bayer[cell.y * 4 + cell.x] + 0.5) / 16.0;
+                if (_DitherMode > 0.5)
+                {
+                    // Anchor to the same screen pixel grid as Bayer; never animate the noise.
+                    float2 noiseUV = frac((pixel + 0.5) / max(1.0, _NoiseTileSize));
+                    pattern = SAMPLE_TEXTURE2D_LOD(_NoiseTexture, sampler_NoiseTexture, noiseUV, 0).r;
+                    // Keep black and white source pixels solid even with 0/1 noise texels.
+                    pattern = clamp(pattern, 0.5 / 255.0, 1.0 - 0.5 / 255.0);
+                }
+                float threshold = lerp(0.5, pattern, _DitherStrength);
                 return float4(lerp(_Ink.rgb, _Paper.rgb, step(threshold, luminance)), 1);
             }
             ENDHLSL

@@ -22,16 +22,22 @@ Material:
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs: []
+    m_TexEnvs:
+    - _NoiseTexture:
+        m_Texture: {fileID: 2800000, guid: 3d0550f4bdf8e4b8e8983d227bcecbde, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Contrast: 1
-    - _DitherStrength: 1
-    - _EdgeStrength: 0.6
-    - _Exposure: 3.5
-    - _PixelSize: 2
+    - _Contrast: 1.53
+    - _DitherMode: 1
+    - _DitherStrength: 0.327
+    - _EdgeStrength: 0.41
+    - _Exposure: 4
+    - _NoiseTileSize: 256
+    - _PixelSize: 2.42
     m_Colors:
-    - _Ink: {r: 0.025, g: 0.035, b: 0.03, a: 1}
+    - _Ink: {r: 0.0754717, g: 0.0732024, b: 0.053755786, a: 1}
     - _Paper: {r: 0.88, g: 0.85, b: 0.72, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
