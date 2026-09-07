@@ -18,6 +18,8 @@ Shader "CardsUnity/One Bit Dither"
         _BoundaryScale ("Light Boundary Size (Dither Pixels)", Range(4, 256)) = 32
         [NoScaleOffset] _PaperTexture ("Paper Texture (Color Dodge)", 2D) = "black" {}
         _PaperTileSize ("Paper Tile Size (Screen Pixels)", Range(64, 4096)) = 1024
+        [Enum(Screen, 0, World, 1)] _PaperMapping ("Paper Mapping", Float) = 0
+        _PaperWorldSize ("Paper Tile Size (World Units)", Range(0.1, 50)) = 10
         _PaperDodgeStrength ("Paper Color Dodge Strength", Range(0, 1)) = 0
         _PaperHighlightInfluence ("Paper Influence In Light", Range(0, 1)) = 0.1
     }
@@ -32,6 +34,7 @@ Shader "CardsUnity/One Bit Dither"
             #pragma vertex Vert
             #pragma fragment Frag
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
@@ -40,6 +43,7 @@ Shader "CardsUnity/One Bit Dither"
                 float _DitherMode, _NoiseTileSize;
                 float _ToneCount, _PaperGrain, _BoundaryStrength, _BoundaryScale;
                 float _PaperTileSize, _PaperDodgeStrength, _PaperHighlightInfluence;
+                float _PaperMapping, _PaperWorldSize;
                 float4 _PaperTexture_TexelSize;
             CBUFFER_END
             TEXTURE2D(_NoiseTexture);
@@ -120,6 +124,30 @@ Shader "CardsUnity/One Bit Dither"
                 float2 paperUV = input.texcoord * size / max(1.0, _PaperTileSize);
                 paperUV.y *= _PaperTexture_TexelSize.z / max(1.0, _PaperTexture_TexelSize.w);
                 float3 paperSample = SAMPLE_TEXTURE2D(_PaperTexture, sampler_PaperTexture, paperUV).rgb;
+                if (_PaperMapping > 0.5)
+                {
+                    float depth = SampleSceneDepth(input.texcoord);
+                    #if UNITY_REVERSED_Z
+                        bool hasSurface = depth > 0.00001;
+                    #else
+                        bool hasSurface = depth < 0.99999;
+                        depth = lerp(UNITY_NEAR_CLIP_VALUE, 1.0, depth);
+                    #endif
+                    float3 world = ComputeWorldSpacePosition(input.texcoord, depth, UNITY_MATRIX_I_VP);
+                    // Triplanar projection keeps paper from stretching along vertical walls.
+                    float3 normal = cross(ddx(world), ddy(world));
+                    normal *= rsqrt(max(dot(normal, normal), 1e-20));
+                    float3 weights = pow(abs(normal), 4.0);
+                    weights /= max(dot(weights, 1.0), 0.0001);
+                    float3 p = world / max(_PaperWorldSize, 0.001);
+                    float2 aspect = float2(1, _PaperTexture_TexelSize.z / max(1.0, _PaperTexture_TexelSize.w));
+                    float3 worldPaper =
+                        SAMPLE_TEXTURE2D(_PaperTexture, sampler_PaperTexture, p.zy * aspect).rgb * weights.x +
+                        SAMPLE_TEXTURE2D(_PaperTexture, sampler_PaperTexture, p.xz * aspect).rgb * weights.y +
+                        SAMPLE_TEXTURE2D(_PaperTexture, sampler_PaperTexture, p.xy * aspect).rgb * weights.z;
+                    // The sky has no world surface; retain screen mapping there.
+                    paperSample = hasSurface ? worldPaper : paperSample;
+                }
                 // Blend in perceptual space, using monochrome paper to preserve the palette.
                 float paperValue = dot(LinearToSRGB(paperSample), float3(0.2126, 0.7152, 0.0722));
                 float3 baseValue = LinearToSRGB(max(color, 0));

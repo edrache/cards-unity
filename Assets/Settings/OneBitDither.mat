@@ -44,7 +44,9 @@ Material:
     - _PaperDodgeStrength: 0.35
     - _PaperGrain: 0.199
     - _PaperHighlightInfluence: 0.05
-    - _PaperTileSize: 1024
+    - _PaperMapping: 1
+    - _PaperTileSize: 2691
+    - _PaperWorldSize: 10
     - _PixelSize: 1
     - _ToneCount: 3
     m_Colors:
