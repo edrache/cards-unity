@@ -29,15 +29,19 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Contrast: 1.53
+    - _BoundaryScale: 32
+    - _BoundaryStrength: 0.55
+    - _Contrast: 1
     - _DitherMode: 1
-    - _DitherStrength: 0.327
-    - _EdgeStrength: 0.41
+    - _DitherStrength: 0.3
+    - _EdgeStrength: 0.8
     - _Exposure: 4
-    - _NoiseTileSize: 256
-    - _PixelSize: 2.42
+    - _NoiseTileSize: 1024
+    - _PaperGrain: 0.12
+    - _PixelSize: 1
+    - _ToneCount: 6
     m_Colors:
-    - _Ink: {r: 0.0754717, g: 0.0732024, b: 0.053755786, a: 1}
-    - _Paper: {r: 0.88, g: 0.85, b: 0.72, a: 1}
+    - _Ink: {r: 0.025, g: 0.025, b: 0.025, a: 1}
+    - _Paper: {r: 0.92, g: 0.92, b: 0.92, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

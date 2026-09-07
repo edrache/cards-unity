@@ -12,6 +12,10 @@ Shader "CardsUnity/One Bit Dither"
         [NoScaleOffset] _NoiseTexture ("Noise Texture (Grayscale)", 2D) = "gray" {}
         _NoiseTileSize ("Noise Tile Size (Dither Pixels)", Range(4, 1024)) = 256
         _EdgeStrength ("Edge Strength", Range(0, 2)) = 0.6
+        [IntRange] _ToneCount ("Tone Count", Range(2, 16)) = 2
+        _PaperGrain ("Paper Grain Strength", Range(0, 0.25)) = 0
+        _BoundaryStrength ("Light Boundary Irregularity", Range(0, 1)) = 0
+        _BoundaryScale ("Light Boundary Size (Dither Pixels)", Range(4, 256)) = 32
     }
     SubShader
     {
@@ -30,9 +34,26 @@ Shader "CardsUnity/One Bit Dither"
                 float4 _Ink, _Paper;
                 float _PixelSize, _Exposure, _Contrast, _DitherStrength, _EdgeStrength;
                 float _DitherMode, _NoiseTileSize;
+                float _ToneCount, _PaperGrain, _BoundaryStrength, _BoundaryScale;
             CBUFFER_END
             TEXTURE2D(_NoiseTexture);
             SAMPLER(sampler_NoiseTexture);
+
+            float Hash(float2 p)
+            {
+                p = frac(p * float2(123.34, 456.21));
+                p += dot(p, p + 45.32);
+                return frac(p.x * p.y);
+            }
+
+            float PaperNoise(float2 p)
+            {
+                float2 cell = floor(p);
+                float2 f = frac(p);
+                f = f * f * (3.0 - 2.0 * f);
+                return lerp(lerp(Hash(cell), Hash(cell + float2(1, 0)), f.x),
+                            lerp(Hash(cell + float2(0, 1)), Hash(cell + 1), f.x), f.y);
+            }
 
             float Luma(float2 uv)
             {
@@ -54,7 +75,13 @@ Shader "CardsUnity/One Bit Dither"
                                  abs(luminance - Luma(uv + float2(0, stepUV.y))));
                 luminance = saturate((luminance * _Exposure - 0.5) * _Contrast + 0.5 - edge * _EdgeStrength);
 
-                // A fixed Bayer matrix avoids temporal noise and preserves exact two-color output.
+                // Smooth, stationary noise bends tonal boundaries without displacing geometry.
+                float2 boundaryUV = (pixel + 0.5) / max(1.0, _BoundaryScale);
+                float boundary = PaperNoise(boundaryUV) * 0.7 + PaperNoise(boundaryUV * 2.13) * 0.3;
+                float midtoneMask = 4.0 * luminance * (1.0 - luminance);
+                luminance = saturate(luminance + (boundary - 0.5) * _BoundaryStrength * midtoneMask);
+
+                // A fixed Bayer matrix avoids temporal noise.
                 const float bayer[16] = {
                     0, 8, 2, 10,
                     12, 4, 14, 6,
@@ -72,7 +99,15 @@ Shader "CardsUnity/One Bit Dither"
                     pattern = clamp(pattern, 0.5 / 255.0, 1.0 - 0.5 / 255.0);
                 }
                 float threshold = lerp(0.5, pattern, _DitherStrength);
-                return float4(lerp(_Ink.rgb, _Paper.rgb, step(threshold, luminance)), 1);
+                float intervals = max(1.0, round(_ToneCount) - 1.0);
+                float scaled = luminance * intervals;
+                float tone = min(intervals, floor(scaled) + step(threshold, frac(scaled))) / intervals;
+                // Grain adds subtle continuous variation, including on otherwise blank paper.
+                float2 grainUV = frac((pixel + 0.5) / max(1.0, _NoiseTileSize));
+                float grain = SAMPLE_TEXTURE2D_LOD(_NoiseTexture, sampler_NoiseTexture, grainUV, 0).r;
+                float3 color = lerp(_Ink.rgb, _Paper.rgb, tone);
+                color *= 1.0 - _PaperGrain * (1.0 - grain);
+                return float4(color, 1);
             }
             ENDHLSL
         }
