@@ -39,7 +39,9 @@ There are currently no project-owned `.asmdef` files or automated test suites un
 ## Controls and animation behavior
 
 - WASD/arrows or the gamepad left stick move relative to the camera.
-- TorchNight uses Rewired Player0: MoveHorizontal/MoveVertical (WASD), held Run (left Shift), and toggled Sneak (C). Run temporarily overrides Sneak; releasing it restores Sneak, and disabling both restores the custom mix. The daytime scene retains Input System keyboard/gamepad controls.
+- TorchNight uses Rewired Player0: MoveHorizontal/MoveVertical (WASD), held Run (left Shift), and toggled Sneak (C). Run temporarily overrides Sneak; releasing it restores Sneak, and disabling both restores the custom mix. Shift and C are deliberately restricted to the keyboard input source so they cannot fight the analog stick.
+- The gamepad left stick drives Sneak -> Walk -> Run from its deflection alone, and speed ramps continuously with it. `ProceduralCharacter` exposes Idle Threshold, Walk Threshold and Run Threshold for the two boundaries plus the centred-stick dead zone; `OnValidate` keeps them ordered. Below Idle Threshold the stick releases the automatic style and the manual style mixer takes over again, so a connected but centred gamepad never overwrites the Inspector sliders. The stick's Run and Sneak bindings in the Rewired maps are inactive by design.
+- The daytime scene has no Rewired manager and falls back to Input System: keyboard keeps priority, and the left stick only takes over once it is deflected past Idle Threshold. Sneak toggles on C there too.
 - Sprinting smoothly changes the visible style sliders to Run and fades the other weights. Releasing sprint restores the previous custom mix, including after rapid toggling.
 - Gait phase advances from actual horizontal distance travelled. Avoid animating a full walk when blocked by a wall.
 - Styles: Walk, Double Bounce Walk, Strut, Shuffle, Sneak, Run, Jump, Fast Run, Tip Toe, and Skip.

@@ -85,7 +85,7 @@ namespace CardsUnity.Controllers
         private float leftArmNoise, rightArmNoise;
         private readonly float[] styleWeights = new float[10];
         private readonly float[] savedWalkingWeights = new float[10];
-        private bool runningRequested, sneakingRequested, automaticStyleActive;
+        private bool runningRequested, sneakingRequested, walkingRequested, automaticStyleActive;
         private GaitStylePose style;
         private float poseActivity;
 
@@ -201,9 +201,9 @@ namespace CardsUnity.Controllers
             SetLocomotionStyle(running, false);
         }
 
-        public void SetLocomotionStyle(bool running, bool sneaking)
+        public void SetLocomotionStyle(bool running, bool sneaking, bool walking = false)
         {
-            if ((running || sneaking) && !automaticStyleActive)
+            if ((running || sneaking || walking) && !automaticStyleActive)
             {
                 for (int i = 0; i < savedWalkingWeights.Length; i++)
                     savedWalkingWeights[i] = GetStyleWeight(i);
@@ -211,6 +211,7 @@ namespace CardsUnity.Controllers
             }
             runningRequested = running;
             sneakingRequested = sneaking;
+            walkingRequested = walking;
         }
 
         private void UpdateAutomaticStyle(float dt)
@@ -220,13 +221,13 @@ namespace CardsUnity.Controllers
             bool settled = true;
             for (int i = 0; i < savedWalkingWeights.Length; i++)
             {
-                float target = runningRequested ? (i == 5 ? 1f : 0f) : sneakingRequested ? (i == 4 ? 1f : 0f) : savedWalkingWeights[i];
+                float target = runningRequested ? (i == 5 ? 1f : 0f) : sneakingRequested ? (i == 4 ? 1f : 0f) : walkingRequested ? (i == 0 ? 1f : 0f) : savedWalkingWeights[i];
                 float value = Mathf.Lerp(GetStyleWeight(i), target, alpha);
                 if (Mathf.Abs(value - target) < 0.0001f) value = target;
                 else settled = false;
                 SetStyleWeight(i, value);
             }
-            if (!runningRequested && !sneakingRequested && settled) automaticStyleActive = false;
+            if (!runningRequested && !sneakingRequested && !walkingRequested && settled) automaticStyleActive = false;
         }
 
         private float GetStyleWeight(int index)
@@ -270,6 +271,7 @@ namespace CardsUnity.Controllers
                     SetStyleWeight(i, savedWalkingWeights[i]);
             runningRequested = false;
             sneakingRequested = false;
+            walkingRequested = false;
             automaticStyleActive = false;
         }
 
