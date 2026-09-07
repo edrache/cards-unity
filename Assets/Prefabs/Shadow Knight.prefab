@@ -77,10 +77,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.ProceduralCharacter
   rewiredPlayerName: Player0
+  idleThreshold: 0.08
+  walkThreshold: 0.35
   speed: 3.5
   acceleration: 9
   braking: 7
-  runSpeed: 6
+  runSpeed: 7
   turnSpeed: 540
   movementCamera: {fileID: 0}
   body: {fileID: 5973512483704667381}
