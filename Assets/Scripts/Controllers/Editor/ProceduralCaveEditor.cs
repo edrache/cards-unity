@@ -9,7 +9,7 @@ namespace CardsUnity.Controllers.Editor
     {
         public override void OnInspectorGUI()
         {
-            EditorGUILayout.HelpBox("Branching chambers with a level floor. Room Size Variation changes chamber sizes; Extra Connections adds loops (when the layout has spare connections). The roof is cut away for the overhead camera. Changes rebuild the cave and move the player to the entrance tunnel. Corridor Winding controls bends; Branch Density adds side tunnels. Keep the root transform at unit scale.", MessageType.Info);
+            EditorGUILayout.HelpBox("Branching chambers. Enable Elevation adds gentle ramps and lowers visible walls to keep the player in view. Room Size Variation changes chamber sizes; Extra Connections adds loops (when the layout has spare connections). The roof is cut away for the overhead camera. Changes rebuild the cave and move the player to the entrance tunnel. Corridor Winding controls bends; Branch Density adds side tunnels. Keep the root transform at unit scale.", MessageType.Info);
             DrawDefaultInspector();
             if (GUILayout.Button("Rebuild Cave"))
             {

@@ -148,7 +148,7 @@ Transform:
   m_GameObject: {fileID: 990240584}
   serializedVersion: 2
   m_LocalRotation: {x: 0.5371753, y: 0, z: 0, w: 0.84347063}
-  m_LocalPosition: {x: -27.383888, y: 16.1, z: -76.38761}
+  m_LocalPosition: {x: 6.2076902, y: 18.844465, z: -71.89421}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -358,8 +358,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 660130bf8fad147c899a0e96ad4fd123, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.ProceduralCave
-  roomCount: 20
-  seed: 233
+  roomCount: 15
+  seed: 23
   roomRadius: 5.36
   roomSizeVariation: 1
   extraConnections: 0.074
@@ -367,6 +367,10 @@ MonoBehaviour:
   corridorWinding: 0.8
   branchDensity: 0.5
   entranceLength: 12
+  enableElevation: 1
+  elevationRange: 6
+  maximumSlope: 15
+  cutawayWallHeight: 1.2
   irregularity: 1
   wallHeight: 5
   floorMaterial: {fileID: 2100000, guid: 14fbd045c7f4f429a92d26e9ec18cafa, type: 2}
@@ -409,19 +413,19 @@ PrefabInstance:
       objectReference: {fileID: 990240585}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -27.383888
+      value: 6.2076902
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.1
+      value: 2.844465
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -69.38761
+      value: -64.89421
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.95216
+      value: 0.9645903
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalRotation.x
@@ -429,11 +433,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.30560002
+      value: 0.26375285
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

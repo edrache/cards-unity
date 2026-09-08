@@ -21,6 +21,14 @@ namespace CardsUnity.Controllers
         [Tooltip("Side tunnels branching from the middle of existing passages, including dead ends.")]
         [SerializeField, Range(0f, 1f)] private float branchDensity = 0.5f;
         [SerializeField, Range(8f, 20f)] private float entranceLength = 12f;
+        [Header("Elevation")]
+        [Tooltip("Continuous ramps without overlapping floors. Disable to restore the flat cave.")]
+        [SerializeField] private bool enableElevation;
+        [Tooltip("Maximum height difference between the lowest and highest parts of the height field.")]
+        [SerializeField, Range(1f, 12f)] private float elevationRange = 6f;
+        [SerializeField, Range(5f, 20f)] private float maximumSlope = 15f;
+        [Tooltip("Visible wall height in elevated caves. Collision walls retain their full height.")]
+        [SerializeField, Range(0.5f, 1.5f)] private float cutawayWallHeight = 1.2f;
         [Header("Rock")]
         [SerializeField, Range(0f, 1f)] private float irregularity = 0.65f;
         [SerializeField, Range(2f, 5f)] private float wallHeight = 3.2f;
@@ -44,7 +52,7 @@ namespace CardsUnity.Controllers
         public IReadOnlyList<Vector2> RoomCenters => rooms;
         public IReadOnlyList<Vector2[]> Corridors => corridors;
         public IReadOnlyList<float> RoomRadii => radii;
-        public Vector3 SpawnPosition => transform.TransformPoint(V(entrance, 0.1f));
+        public Vector3 SpawnPosition => transform.TransformPoint(Surface(entrance, 0.1f));
 
         private void OnEnable() { rebuildPending = true; }
         private void OnValidate()
@@ -59,6 +67,9 @@ namespace CardsUnity.Controllers
             corridorWinding = Mathf.Clamp01(corridorWinding);
             branchDensity = Mathf.Clamp01(branchDensity);
             entranceLength = Mathf.Clamp(entranceLength, 8f, 20f);
+            elevationRange = Mathf.Clamp(elevationRange, 1f, 12f);
+            maximumSlope = Mathf.Clamp(maximumSlope, 5f, 20f);
+            cutawayWallHeight = Mathf.Clamp(cutawayWallHeight, 0.5f, 1.5f);
             rebuildPending = true;
         }
         private void Update() { if (rebuildPending) Rebuild(); }
@@ -122,6 +133,11 @@ namespace CardsUnity.Controllers
             CreateSurface("Level floor", floorMesh, floorMaterial);
             wallCollisionMesh = collision.Build("Cave wall collision");
             CreateSurface("Rock walls", wallMesh, wallMaterial, wallCollisionMesh);
+            if (player == null)
+            {
+                foreach (var candidate in FindObjectsByType<ProceduralCharacter>(FindObjectsSortMode.None))
+                    if (candidate.gameObject.scene == gameObject.scene) { player = candidate.transform; break; }
+            }
             if (player != null)
             {
                 var controller = player.GetComponent<CharacterController>();
@@ -268,7 +284,7 @@ namespace CardsUnity.Controllers
             Edge(a, b, fa, fb, polygon, boundary);
             Edge(b, c, fb, fc, polygon, boundary);
             Edge(c, a, fc, fa, polygon, boundary);
-            for (int i = 1; i + 1 < polygon.Count; i++) floor.Triangle(V(polygon[0], 0f), V(polygon[i], 0f), V(polygon[i+1], 0f));
+            for (int i = 1; i + 1 < polygon.Count; i++) floor.Triangle(Surface(polygon[0], 0f), Surface(polygon[i], 0f), Surface(polygon[i+1], 0f));
             if (boundary.Count != 2) return;
             Vector2 p = boundary[0], q = boundary[1];
             Vector2 outward = Vector2.Perpendicular(q - p).normalized;
@@ -276,10 +292,10 @@ namespace CardsUnity.Controllers
             if (Field(midpoint + outward * 0.1f) > Field(midpoint - outward * 0.1f)) outward = -outward;
             // Shared noise at boundary vertices keeps neighbouring rock panels watertight.
             // Collision follows the carved boundary; decorative outer lips must not block nearby tunnels.
-            collision.Quad(V(p, 0f), V(q, 0f), V(q, wallHeight + 1f), V(p, wallHeight + 1f), -V(outward, 0f));
-            Vector3 p0 = V(p, 0f), q0 = V(q, 0f);
-            Vector3 p1 = V(p + RockOffset(p) * 0.35f, Height(p) * 0.48f), q1 = V(q + RockOffset(q) * 0.35f, Height(q) * 0.48f);
-            Vector3 p2 = V(p + RockOffset(p), Height(p)), q2 = V(q + RockOffset(q), Height(q));
+            collision.Quad(Surface(p, 0f), Surface(q, 0f), Surface(q, wallHeight + 1f), Surface(p, wallHeight + 1f), -V(outward, 0f));
+            Vector3 p0 = Surface(p, 0f), q0 = Surface(q, 0f);
+            Vector3 p1 = p0 + V(RockOffset(p) * 0.35f, VisibleHeight(p) * 0.48f), q1 = q0 + V(RockOffset(q) * 0.35f, VisibleHeight(q) * 0.48f);
+            Vector3 p2 = p0 + V(RockOffset(p), VisibleHeight(p)), q2 = q0 + V(RockOffset(q), VisibleHeight(q));
             walls.Quad(p0, q0, q1, p1, -V(outward, 0f));
             walls.Quad(p1, q1, q2, p2, -V(outward, 0f));
             Vector3 plip = V(RockOffset(p).normalized * 0.9f, 0f);
@@ -294,6 +310,18 @@ namespace CardsUnity.Controllers
                 Field(p + Vector2.up * e) - Field(p - Vector2.up * e));
             return -gradient.normalized * (0.35f + Mathf.PerlinNoise(p.x + noiseOffset, p.y) * irregularity);
         }
+        /// <summary>One height per XZ point keeps all intersections seamless and prevents stacked floors.</summary>
+        public float FloorHeight(Vector2 point)
+        {
+            if (!enableElevation) return 0f;
+            float amplitude = elevationRange * 0.5f;
+            // Analytic gradient stays below the requested slope, with margin for triangulation.
+            float frequency = Mathf.Tan(maximumSlope * Mathf.Deg2Rad) * 0.85f / amplitude;
+            return amplitude * 0.5f * (Mathf.Sin(point.x * frequency + noiseOffset)
+                + Mathf.Sin(point.y * frequency * 0.83f + noiseOffset * 0.71f));
+        }
+        private Vector3 Surface(Vector2 p, float offset) => V(p, FloorHeight(p) + offset);
+        private float VisibleHeight(Vector2 p) => enableElevation ? Mathf.Min(Height(p), cutawayWallHeight) : Height(p);
         private float Height(Vector2 p) => wallHeight + (Mathf.PerlinNoise(p.x * 0.6f + noiseOffset, p.y * 0.6f) - 0.5f) * 1.3f;
         private static Vector3 V(Vector2 p, float y) => new Vector3(p.x, y, p.y);
         private static void Edge(Vector2 a, Vector2 b, float fa, float fb, List<Vector2> polygon, List<Vector2> boundary)
