@@ -75,6 +75,7 @@ There are currently no project-owned `.asmdef` files or automated test suites un
 ## Torch and rendering
 
 - Torch settings are on `Handheld Torch` in the character's right forearm hierarchy.
+- `Assets/Prefabs/Handheld Torch.prefab` is nested in Shadow Knight, with holder references overridden on the knight. The standalone torch also burns without a character reference. `Lifetime` defaults to 180 gameplay seconds; `Burnout Fraction` (0.4) controls the final fading phase and `Dying Flicker Amount` controls stronger end-of-life flicker. Light, fire and smoke emission fade to zero; existing particles finish naturally. Disabling/re-enabling does not refill fuel. `RemainingLifetime` and `IsBurnedOut` expose runtime state. Direct Play Mode checks covered standalone burnout, holder references and no reignition on re-enable; no persistent test suite was added.
 - `Brightness` and `Light Range` control illumination; flicker and sway have separate settings.
 - Torch pose runs after gait updates. Preserve this ordering so the holding pose does not fight the walking animation.
 - Fire and smoke simulate in world space; trails should remain behind a moving torch.
