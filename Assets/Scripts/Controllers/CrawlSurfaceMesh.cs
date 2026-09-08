@@ -88,7 +88,7 @@ namespace CardsUnity.Controllers
                 Vector3 e1 = t.b - t.a, e2 = t.c - t.a;
                 Vector3 p = Vector3.Cross(ray.direction, e2);
                 float determinant = Vector3.Dot(e1, p);
-                if (Mathf.Abs(determinant) < 0.0000001f) continue;
+                if (determinant < 0.0000001f) continue; // Rendered front faces only; never wrap through a back face.
                 float inv = 1f / determinant;
                 Vector3 offset = ray.origin - t.a;
                 float u = Vector3.Dot(offset, p) * inv;

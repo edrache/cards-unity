@@ -38,10 +38,21 @@ namespace CardsUnity.Controllers
         [Tooltip("Colliders that block movement, ground probes and light. Triggers are ignored.")]
         [SerializeField] private LayerMask environmentMask = ~0;
 
-        public enum BehaviourState { Stalking, Fleeing, Hiding }
+        public enum BehaviourState { Stalking, Fleeing, Hiding, Dormant }
         public BehaviourState State { get; private set; }
         public float Exposure { get; private set; }
         public void SetTarget(Transform value) => target = value;
+        private ProceduralCave homeCave;
+        private int homeRoom = -1;
+        private bool alerted;
+        public bool IsAlerted => homeCave == null || alerted;
+        public void SetCaveHome(ProceduralCave cave, int room)
+        {
+            homeCave = cave;
+            homeRoom = room;
+            alerted = false;
+            State = BehaviourState.Dormant;
+        }
         public int SegmentCount => segmentCount;
         public float Size => size;
 
@@ -146,6 +157,14 @@ namespace CardsUnity.Controllers
                 lightRefresh = 1f;
                 RefreshVisibleSurfaces();
             }
+            if (homeCave != null && !alerted && target != null && homeCave.IsInRoom(target.position, homeRoom))
+                alerted = true;
+            if (homeCave != null && !alerted)
+            {
+                State = BehaviourState.Dormant;
+                return;
+            }
+            if (State == BehaviourState.Dormant) State = BehaviourState.Stalking;
             Exposure = 0f;
             // A torch reaching the tail must frighten the whole animal too.
             for (int i = 0; i < segments.Length; i++)
@@ -199,6 +218,8 @@ namespace CardsUnity.Controllers
                 else if (desired.sqrMagnitude < 0.001f) desired = transform.forward;
             }
 
+            bool descending = homeCave != null && State != BehaviourState.Fleeing && transform.up.y < 0.65f;
+            if (descending) desired = Vector3.ProjectOnPlane(Vector3.down, transform.up).normalized;
             if (desired.sqrMagnitude > 0.001f)
             {
                 bool fleeing = State == BehaviourState.Fleeing;
@@ -209,7 +230,7 @@ namespace CardsUnity.Controllers
                 float variation = behaviourVariation * speedVariation
                     * Mathf.Clamp(personalitySpeed + BehaviourNoise(37f), -1f, 1f);
                 speed *= 1f + variation * (fleeing ? 0.35f : 1f);
-                if (!fleeing && behaviourVariation > 0f)
+                if (!fleeing && !descending && behaviourVariation > 0f)
                 {
                     if (pauseRemaining > 0f)
                     {
@@ -269,9 +290,19 @@ namespace CardsUnity.Controllers
                 Vector3 direction = Quaternion.AngleAxis(i * 22.5f, transform.up) * desired;
                 if (!TrySurfaceStep(transform.position, Quaternion.LookRotation(direction, transform.up),
                     Mathf.Min(step, 0.06f * size), out var next)) continue;
+                // Look far enough ahead to steer around walls instead of repeatedly facing a rejected step.
+                Pose ahead = next;
+                bool clear = true;
+                for (int j = 0; j < 5; j++)
+                {
+                    if (!TrySurfaceStep(ahead.position, ahead.rotation, 0.06f * size, out var probe)) { clear = false; break; }
+                    ahead = probe;
+                }
                 float score = Vector3.Dot(direction, desired) + 0.2f * Vector3.Dot(direction, transform.forward);
+                if (!clear) score -= 3f;
+                if (homeCave != null) score += Mathf.Clamp01((ahead.rotation * Vector3.up).y) * 1.5f;
                 if (State == BehaviourState.Fleeing)
-                    score -= SampleLight(next.position + next.rotation * Vector3.up * 0.22f * size) * 4f;
+                    score -= SampleLight(ahead.position + ahead.rotation * Vector3.up * 0.22f * size) * 4f;
                 if (score > bestScore) { bestScore = score; best = direction; }
             }
             return best;
@@ -311,6 +342,20 @@ namespace CardsUnity.Controllers
             foreach (var cave in FindObjectsByType<ProceduralCave>(FindObjectsSortMode.None))
             {
                 if (cave.gameObject.scene != gameObject.scene) continue;
+                if (homeCave == null && cave.RoomCenters.Count > 0)
+                {
+                    Vector3 local = cave.transform.InverseTransformPoint(transform.position);
+                    int nearestRoom = 0;
+                    float nearestDistance = float.PositiveInfinity;
+                    for (int i = 0; i < cave.RoomCenters.Count; i++)
+                    {
+                        float distance = Vector2.SqrMagnitude(cave.RoomCenters[i] - new Vector2(local.x, local.z));
+                        if (distance >= nearestDistance) continue;
+                        nearestRoom = i;
+                        nearestDistance = distance;
+                    }
+                    SetCaveHome(cave, nearestRoom);
+                }
                 foreach (var collider in cave.GetComponentsInChildren<MeshCollider>())
                 {
                     var filter = collider.GetComponent<MeshFilter>();
@@ -337,7 +382,7 @@ namespace CardsUnity.Controllers
             {
                 Vector3 heading = Quaternion.FromToRotation(up, hit.normal) * forward;
                 pose = new Pose(hit.point, Quaternion.LookRotation(heading, hit.normal));
-                return true;
+                return AllowedSurface(pose);
             }
             // Follow the current plane, including slopes and curved mesh triangles.
             if (SurfaceRay(destination + up * (0.12f * size), -up, 0.24f * size, out hit))
@@ -345,16 +390,25 @@ namespace CardsUnity.Controllers
                 Vector3 heading = Vector3.ProjectOnPlane(forward, hit.normal).normalized;
                 if (heading.sqrMagnitude < 0.001f) return false;
                 pose = new Pose(hit.point, Quaternion.LookRotation(heading, hit.normal));
-                return true;
+                return AllowedSurface(pose);
             }
             // Convex edge: look back underneath the lip for the adjoining surface.
             if (SurfaceRay(destination - up * skin + forward * skin, -forward, distance + skin * 3f, out hit))
             {
                 Vector3 heading = Quaternion.FromToRotation(up, hit.normal) * forward;
                 pose = new Pose(hit.point, Quaternion.LookRotation(heading, hit.normal));
-                return true;
+                return AllowedSurface(pose);
             }
             return false;
+        }
+
+        private bool AllowedSurface(Pose pose)
+        {
+            if (homeCave == null) return true;
+            Vector3 normal = pose.rotation * Vector3.up;
+            if (!homeCave.IsInteriorCrawlSurface(pose.position, normal, out bool boundary)) return false;
+            // A creature already on an inner wall may descend after the danger passes.
+            return !boundary || normal.y > 0.65f || State == BehaviourState.Fleeing || transform.up.y < 0.65f;
         }
 
         private void RecordContact()

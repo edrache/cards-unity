@@ -41,7 +41,7 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0.5f, 1.5f)] private float cutawayWallHeight = 1.2f;
         [Header("Rock")]
         [SerializeField, Range(0f, 1f)] private float irregularity = 0.65f;
-        [SerializeField, Range(2f, 5f)] private float wallHeight = 3.2f;
+        [SerializeField, Range(2f, 20f)] private float wallHeight = 3.2f;
         [SerializeField] private Material floorMaterial;
         [SerializeField] private Material wallMaterial;
         [Header("Player")]
@@ -73,7 +73,7 @@ namespace CardsUnity.Controllers
             extraConnections = Mathf.Clamp01(extraConnections);
             corridorWidth = Mathf.Clamp(corridorWidth, 2.5f, 5f);
             irregularity = Mathf.Clamp01(irregularity);
-            wallHeight = Mathf.Clamp(wallHeight, 2f, 5f);
+            wallHeight = Mathf.Clamp(wallHeight, 2f, 20f);
             corridorWinding = Mathf.Clamp01(corridorWinding);
             branchDensity = Mathf.Clamp01(branchDensity);
             entranceLength = Mathf.Clamp(entranceLength, 8f, 20f);
@@ -195,7 +195,38 @@ namespace CardsUnity.Controllers
                 creature.transform.localPosition = Surface(centre, 0f);
                 creature.transform.localRotation = Quaternion.FromToRotation(Vector3.up, normal) * Quaternion.Euler(0f, yaw, 0f);
                 creature.SetTarget(player);
+                creature.SetCaveHome(this, room);
             }
+        }
+
+        public bool IsInRoom(Vector3 worldPoint, int room)
+        {
+            if (room < 0 || room >= rooms.Count) return false;
+            Vector3 local = transform.InverseTransformPoint(worldPoint);
+            Vector2 delta = new Vector2(local.x, local.z) - rooms[room];
+            float angle = Mathf.Atan2(delta.y, delta.x);
+            float lobes = Mathf.Sin(angle * 3f + noiseOffset + room) * 0.13f
+                + Mathf.Sin(angle * 5f - noiseOffset) * 0.07f;
+            return delta.magnitude < radii[room] * (1f + lobes * irregularity)
+                && Mathf.Abs(local.y - FloorHeight(new Vector2(local.x, local.z))) < 3f;
+        }
+
+        public bool IsInteriorCrawlSurface(Vector3 point, Vector3 normal, out bool boundaryWall)
+        {
+            Vector3 local = transform.InverseTransformPoint(point);
+            Vector3 n = transform.InverseTransformDirection(normal);
+            Vector2 p = new Vector2(local.x, local.z);
+            float clearance = Field(p);
+            boundaryWall = clearance < 0.9f;
+            if (!boundaryWall) return n.y > -0.1f; // Floors and rocks inside the carved space.
+            // Never crawl onto the cutaway rim or around to the outside of a wall.
+            if (n.y > 0.65f) return clearance > 0.15f;
+            const float e = 0.15f;
+            Vector2 inward = new Vector2(Field(p + Vector2.right * e) - Field(p - Vector2.right * e),
+                Field(p + Vector2.up * e) - Field(p - Vector2.up * e)).normalized;
+            float facing = Vector2.Dot(new Vector2(n.x, n.z).normalized, inward);
+            return clearance > -0.8f && facing > 0.5f && n.y > -0.2f
+                && local.y < FloorHeight(p) + VisibleHeight(p) - 0.18f;
         }
 
         private void ScatterRocks(Vector2 min, Vector2 max)
