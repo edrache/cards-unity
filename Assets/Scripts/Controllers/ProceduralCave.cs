@@ -21,6 +21,9 @@ namespace CardsUnity.Controllers
         [Tooltip("Side tunnels branching from the middle of existing passages, including dead ends.")]
         [SerializeField, Range(0f, 1f)] private float branchDensity = 0.5f;
         [SerializeField, Range(8f, 20f)] private float entranceLength = 12f;
+        [Header("Floor")]
+        [Tooltip("Small, smooth floor bumps. Zero preserves the original surface. Works with or without elevation.")]
+        [SerializeField, Range(0f, 1f)] private float floorIrregularity;
         [Header("Elevation")]
         [Tooltip("Continuous ramps without overlapping floors. Disable to restore the flat cave.")]
         [SerializeField] private bool enableElevation;
@@ -67,6 +70,7 @@ namespace CardsUnity.Controllers
             corridorWinding = Mathf.Clamp01(corridorWinding);
             branchDensity = Mathf.Clamp01(branchDensity);
             entranceLength = Mathf.Clamp(entranceLength, 8f, 20f);
+            floorIrregularity = Mathf.Clamp01(floorIrregularity);
             elevationRange = Mathf.Clamp(elevationRange, 1f, 12f);
             maximumSlope = Mathf.Clamp(maximumSlope, 5f, 20f);
             cutawayWallHeight = Mathf.Clamp(cutawayWallHeight, 0.5f, 1.5f);
@@ -313,11 +317,17 @@ namespace CardsUnity.Controllers
         /// <summary>One height per XZ point keeps all intersections seamless and prevents stacked floors.</summary>
         public float FloorHeight(Vector2 point)
         {
-            if (!enableElevation) return 0f;
+            // Smooth short waves add detail without steps or changes to Unity's random state.
+            float detail = floorIrregularity * (
+                0.14f * Mathf.Sin(point.x * 1.1f + noiseOffset) * Mathf.Sin(point.y * 0.9f - noiseOffset)
+                + 0.04f * Mathf.Sin(point.x * 0.7f + point.y * 1.3f + noiseOffset));
+            if (!enableElevation) return detail;
+            // Reserve the remaining slope budget for local detail on top of the broad ramps.
+            detail *= Mathf.Min(1f, Mathf.Tan(maximumSlope * Mathf.Deg2Rad) * 0.35f / 0.26f);
             float amplitude = elevationRange * 0.5f;
             // Analytic gradient stays below the requested slope, with margin for triangulation.
             float frequency = Mathf.Tan(maximumSlope * Mathf.Deg2Rad) * 0.85f / amplitude;
-            return amplitude * 0.5f * (Mathf.Sin(point.x * frequency + noiseOffset)
+            return detail + amplitude * 0.5f * (Mathf.Sin(point.x * frequency + noiseOffset)
                 + Mathf.Sin(point.y * frequency * 0.83f + noiseOffset * 0.71f));
         }
         private Vector3 Surface(Vector2 p, float offset) => V(p, FloorHeight(p) + offset);

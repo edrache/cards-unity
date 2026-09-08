@@ -358,7 +358,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 660130bf8fad147c899a0e96ad4fd123, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.ProceduralCave
-  roomCount: 15
+  roomCount: 17
   seed: 23
   roomRadius: 5.36
   roomSizeVariation: 1
@@ -367,6 +367,7 @@ MonoBehaviour:
   corridorWinding: 0.8
   branchDensity: 0.5
   entranceLength: 12
+  floorIrregularity: 0
   enableElevation: 1
   elevationRange: 6
   maximumSlope: 15
@@ -413,19 +414,19 @@ PrefabInstance:
       objectReference: {fileID: 990240585}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 6.2076902
+      value: -22.772562
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2.844465
+      value: 0.121864654
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -64.89421
+      value: -66.33275
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.9645903
+      value: 0.9331516
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalRotation.x
@@ -433,7 +434,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.26375285
+      value: 0.35948318
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalRotation.z
