@@ -553,9 +553,11 @@ MonoBehaviour:
   - {fileID: 6776167583924526275, guid: 2aba132793ce1420291c6828e4fbbfdc, type: 3}
   - {fileID: 5178868028192936276, guid: bba41afb890d54399acf39d4b311c247, type: 3}
   - {fileID: 4078306108158509581, guid: 7aeaecc88c3034a059e5ab84ae353ebf, type: 3}
-  rockDensity: 0.45
+  rockDensity: 0.838
   minimumRockSize: 1.2
   maximumRockSize: 2.6
+  centipedePrefab: {fileID: 8402668057444636402, guid: b4f4b46d9a579409ba14a9d3563f22e8, type: 3}
+  centipedeRoomPercentage: 25
   enableElevation: 1
   elevationRange: 6
   maximumSlope: 15

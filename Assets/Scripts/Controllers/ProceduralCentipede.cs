@@ -41,6 +41,7 @@ namespace CardsUnity.Controllers
         public enum BehaviourState { Stalking, Fleeing, Hiding }
         public BehaviourState State { get; private set; }
         public float Exposure { get; private set; }
+        public void SetTarget(Transform value) => target = value;
         public int SegmentCount => segmentCount;
         public float Size => size;
 

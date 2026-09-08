@@ -27,6 +27,10 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0f, 1f)] private float rockDensity = 0.45f;
         [SerializeField, Range(1f, 4f)] private float minimumRockSize = 1.2f;
         [SerializeField, Range(1f, 4f)] private float maximumRockSize = 2.6f;
+        [Header("Centipedes")]
+        [SerializeField] private ProceduralCentipede centipedePrefab;
+        [Tooltip("Percentage of rooms receiving one centipede. Rounded to the nearest whole room; zero disables spawning. Selection is repeatable for Seed.")]
+        [SerializeField, Range(0f, 100f)] private float centipedeRoomPercentage = 25f;
         [Header("Elevation")]
         [Tooltip("Continuous ramps without overlapping floors. Disable to restore the flat cave.")]
         [SerializeField] private bool enableElevation;
@@ -74,6 +78,7 @@ namespace CardsUnity.Controllers
             branchDensity = Mathf.Clamp01(branchDensity);
             entranceLength = Mathf.Clamp(entranceLength, 8f, 20f);
             rockDensity = Mathf.Clamp01(rockDensity);
+            centipedeRoomPercentage = Mathf.Clamp(centipedeRoomPercentage, 0f, 100f);
             minimumRockSize = Mathf.Clamp(minimumRockSize, 1f, 4f);
             maximumRockSize = Mathf.Clamp(maximumRockSize, minimumRockSize, 4f);
             elevationRange = Mathf.Clamp(elevationRange, 1f, 12f);
@@ -156,6 +161,40 @@ namespace CardsUnity.Controllers
                 player.position = SpawnPosition;
                 player.rotation = Quaternion.LookRotation(transform.TransformDirection(V(entranceForward, 0f)));
                 if (enabledBefore) controller.enabled = true;
+            }
+            SpawnCentipedes();
+        }
+
+        private void SpawnCentipedes()
+        {
+            int count = Mathf.Clamp(Mathf.FloorToInt(rooms.Count * centipedeRoomPercentage / 100f + 0.5f), 0, rooms.Count);
+            if (count == 0 || centipedePrefab == null) return;
+            // Separate stream: changing population must not rearrange rooms or rocks.
+            var random = new System.Random(unchecked(seed * 397 ^ 104729));
+            var order = new int[rooms.Count];
+            for (int i = 0; i < order.Length; i++) order[i] = i;
+            for (int i = order.Length - 1; i > 0; i--)
+            {
+                int j = random.Next(i + 1);
+                int swap = order[i]; order[i] = order[j]; order[j] = swap;
+            }
+            var population = new GameObject("Generated Centipedes") { hideFlags = HideFlags.DontSave };
+            population.transform.SetParent(generated.transform, false);
+            // Room centres are kept free of scattered rocks by the corridor clearance rules.
+            for (int i = 0; i < count; i++)
+            {
+                int room = order[i];
+                Vector2 centre = rooms[room];
+                float yaw = (float)random.NextDouble() * 360f;
+                const float e = 0.1f;
+                Vector3 normal = new Vector3(-(FloorHeight(centre + Vector2.right * e) - FloorHeight(centre - Vector2.right * e)) / (2f * e),
+                    1f, -(FloorHeight(centre + Vector2.up * e) - FloorHeight(centre - Vector2.up * e)) / (2f * e)).normalized;
+                var creature = Instantiate(centipedePrefab, population.transform);
+                creature.name = $"Centipede (Room {room + 1:00})";
+                creature.gameObject.hideFlags = HideFlags.DontSave;
+                creature.transform.localPosition = Surface(centre, 0f);
+                creature.transform.localRotation = Quaternion.FromToRotation(Vector3.up, normal) * Quaternion.Euler(0f, yaw, 0f);
+                creature.SetTarget(player);
             }
         }
 
