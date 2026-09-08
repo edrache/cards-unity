@@ -1,8 +1,9 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace CardsUnity.Controllers
 {
-    /// <summary>A ground-dwelling stalker with a generated rig and distance-driven legs.</summary>
+    /// <summary>A surface-crawling stalker with a generated rig and distance-driven legs.</summary>
     [ExecuteAlways, DisallowMultipleComponent]
     public sealed class ProceduralCentipede : MonoBehaviour
     {
@@ -43,6 +44,9 @@ namespace CardsUnity.Controllers
         public int SegmentCount => segmentCount;
         public float Size => size;
 
+        // Contact poses are recorded along the head path so the tail takes the same corners.
+        private readonly List<Pose> surfaceTrail = new List<Pose>(1024);
+        private readonly Dictionary<MeshCollider, CrawlSurfaceMesh> visibleSurfaces = new Dictionary<MeshCollider, CrawlSurfaceMesh>();
         private Transform rig;
         private Transform[] segments, upperLegs, lowerLegs;
         private readonly RaycastHit[] hits = new RaycastHit[32];
@@ -139,6 +143,7 @@ namespace CardsUnity.Controllers
             {
                 lights = FindObjectsByType<Light>(FindObjectsSortMode.None);
                 lightRefresh = 1f;
+                RefreshVisibleSurfaces();
             }
             Exposure = 0f;
             // A torch reaching the tail must frighten the whole animal too.
@@ -175,19 +180,22 @@ namespace CardsUnity.Controllers
                 {
                     if (!IsThreat(light)) continue;
                     Vector3 delta = transform.position - light.transform.position;
-                    delta.y = 0f;
-                    away += delta.normalized * SampleSingleLight(light, transform.position + Vector3.up * 0.2f * size);
+                    delta = Vector3.ProjectOnPlane(delta, transform.up);
+                    away += delta.normalized * SampleSingleLight(light, transform.position + transform.up * 0.2f * size);
                 }
                 if (away.sqrMagnitude < 0.001f)
-                    away = escapeDirection.sqrMagnitude > 0f ? escapeDirection : -transform.forward;
+                    away = Vector3.ProjectOnPlane(escapeDirection, transform.up);
+                if (away.sqrMagnitude < 0.001f) away = -transform.forward;
                 desired = away.normalized;
                 speed = fleeSpeed;
             }
             else if (State == BehaviourState.Stalking && target != null)
             {
                 desired = target.position - transform.position;
-                desired.y = 0f;
-                if (desired.magnitude <= stopDistance * size) desired = Vector3.zero;
+                float targetDistance = desired.magnitude;
+                desired = Vector3.ProjectOnPlane(desired, transform.up);
+                if (targetDistance <= stopDistance * size) desired = Vector3.zero;
+                else if (desired.sqrMagnitude < 0.001f) desired = transform.forward;
             }
 
             if (desired.sqrMagnitude > 0.001f)
@@ -196,7 +204,7 @@ namespace CardsUnity.Controllers
                 // Small escape deviations keep the light gradient dominant; stalking can meander more.
                 float angle = wanderAngle * behaviourVariation * BehaviourNoise(0f) * (fleeing ? 0.2f : 1f);
                 if (!fleeing) angle *= Mathf.Clamp01(desired.magnitude / (2f * size));
-                desired = Quaternion.Euler(0f, angle, 0f) * desired;
+                desired = Quaternion.AngleAxis(angle, transform.up) * desired;
                 float variation = behaviourVariation * speedVariation
                     * Mathf.Clamp(personalitySpeed + BehaviourNoise(37f), -1f, 1f);
                 speed *= 1f + variation * (fleeing ? 0.35f : 1f);
@@ -229,16 +237,24 @@ namespace CardsUnity.Controllers
                 if (desired.sqrMagnitude > 0f)
                 {
                     if (State == BehaviourState.Fleeing) escapeDirection = desired;
+                    Vector3 up = transform.up;
                     transform.rotation = Quaternion.RotateTowards(transform.rotation,
-                        Quaternion.LookRotation(desired), turnSpeed * (State == BehaviourState.Fleeing ? 2f : 1f) * dt);
-                    Vector3 step = transform.forward * (speed * dt);
-                    if (CanMove(transform.position, step, out Vector3 ground)) transform.position = ground;
+                        Quaternion.LookRotation(desired, up), turnSpeed * (State == BehaviourState.Fleeing ? 2f : 1f) * dt);
+                    // Bound probe distance even during a long frame; never bridge a gap in one step.
+                    int steps = Mathf.Max(1, Mathf.CeilToInt(speed * dt / (0.06f * size)));
+                    for (int j = 0; j < steps; j++)
+                    {
+                        if (!TrySurfaceStep(transform.position, transform.rotation, speed * dt / steps, out Pose next)) break;
+                        transform.SetPositionAndRotation(next.position, next.rotation);
+                        RecordContact();
+                    }
                 }
             }
             // Keep the body in world space while the head advances.
             rig.SetPositionAndRotation(rigPosition, rigRotation);
             float distance = Vector3.Distance(before, transform.position);
             phase += distance / (0.55f * size) * Mathf.PI * 2f;
+            RecordContact();
             FollowBody();
             PoseLegs();
         }
@@ -249,30 +265,111 @@ namespace CardsUnity.Controllers
             float bestScore = float.NegativeInfinity;
             for (int i = 0; i < 16; i++)
             {
-                Vector3 direction = Quaternion.Euler(0f, i * 22.5f, 0f) * desired;
-                if (!CanMove(transform.position, direction * Mathf.Max(step, 0.65f * size), out var ground)) continue;
+                Vector3 direction = Quaternion.AngleAxis(i * 22.5f, transform.up) * desired;
+                if (!TrySurfaceStep(transform.position, Quaternion.LookRotation(direction, transform.up),
+                    Mathf.Min(step, 0.06f * size), out var next)) continue;
                 float score = Vector3.Dot(direction, desired) + 0.2f * Vector3.Dot(direction, transform.forward);
                 if (State == BehaviourState.Fleeing)
-                    score -= SampleLight(ground + direction * size + Vector3.up * 0.2f * size) * 4f;
+                    score -= SampleLight(next.position + next.rotation * Vector3.up * 0.22f * size) * 4f;
                 if (score > bestScore) { bestScore = score; best = direction; }
             }
             return best;
         }
 
-        private bool CanMove(Vector3 from, Vector3 step, out Vector3 ground)
+        private bool SurfaceRay(Vector3 origin, Vector3 direction, float length, out RaycastHit nearest)
         {
-            ground = from;
-            float radius = 0.19f * size;
-            if (step.sqrMagnitude < 0.000001f) return false;
-            int count = Physics.SphereCastNonAlloc(from + Vector3.up * (radius + 0.08f * size), radius,
-                step.normalized, hits, step.magnitude, environmentMask, QueryTriggerInteraction.Ignore);
+            nearest = default;
+            int count = Physics.RaycastNonAlloc(origin, direction, hits, length, environmentMask, QueryTriggerInteraction.Ignore);
+            float closest = float.PositiveInfinity;
             for (int i = 0; i < count; i++)
-                if (!hits[i].transform.IsChildOf(transform) && hits[i].normal.y < 0.65f) return false;
-            if (!Physics.Raycast(from + step + Vector3.up * size, Vector3.down, out var hit,
-                2f * size, environmentMask, QueryTriggerInteraction.Ignore)) return false;
-            if (hit.normal.y < 0.7f || Mathf.Abs(hit.point.y - from.y) > 0.35f * size) return false;
-            ground = hit.point;
-            return true;
+            {
+                var hit = hits[i];
+                // Characters are obstacles/targets, not climbable terrain.
+                if (hit.transform.IsChildOf(transform) || hit.collider is CharacterController
+                    || hit.transform.GetComponentInParent<ProceduralCentipede>() != null) continue;
+                if (hit.collider is MeshCollider meshCollider && visibleSurfaces.ContainsKey(meshCollider)) continue;
+                if (hit.distance >= closest) continue;
+                closest = hit.distance;
+                nearest = hit;
+            }
+            foreach (var surface in visibleSurfaces.Values)
+            {
+                if (surface.Collider == null || (environmentMask.value & (1 << surface.Collider.gameObject.layer)) == 0) continue;
+                if (!surface.Raycast(origin, direction, Mathf.Min(length, closest), out var hit)) continue;
+                closest = hit.distance;
+                nearest = hit;
+            }
+            return closest < float.PositiveInfinity;
+        }
+
+        private void RefreshVisibleSurfaces()
+        {
+            // Cave cutaways deliberately keep taller collision walls for the player.
+            // Crawl on the rendered mesh instead, without adding colliders or altering physics layers.
+            var updated = new Dictionary<MeshCollider, CrawlSurfaceMesh>();
+            foreach (var cave in FindObjectsByType<ProceduralCave>(FindObjectsSortMode.None))
+            {
+                if (cave.gameObject.scene != gameObject.scene) continue;
+                foreach (var collider in cave.GetComponentsInChildren<MeshCollider>())
+                {
+                    var filter = collider.GetComponent<MeshFilter>();
+                    if (filter == null || filter.sharedMesh == null || filter.sharedMesh == collider.sharedMesh) continue;
+                    if (!visibleSurfaces.TryGetValue(collider, out var surface) || surface.Mesh != filter.sharedMesh)
+                        surface = new CrawlSurfaceMesh(collider, filter.sharedMesh);
+                    updated.Add(collider, surface);
+                }
+            }
+            visibleSurfaces.Clear();
+            foreach (var pair in updated) visibleSurfaces.Add(pair.Key, pair.Value);
+        }
+
+        private bool TrySurfaceStep(Vector3 from, Quaternion rotation, float distance, out Pose pose)
+        {
+            pose = new Pose(from, rotation);
+            Vector3 up = rotation * Vector3.up, forward = rotation * Vector3.forward;
+            float skin = 0.025f * size;
+            Vector3 destination = from + forward * distance;
+            RaycastHit hit;
+            // Concave junction: transport the heading onto the wall in front.
+            if (SurfaceRay(from + up * skin, forward, distance + skin, out hit)
+                && Vector3.Dot(hit.normal, forward) < -0.1f)
+            {
+                Vector3 heading = Quaternion.FromToRotation(up, hit.normal) * forward;
+                pose = new Pose(hit.point, Quaternion.LookRotation(heading, hit.normal));
+                return true;
+            }
+            // Follow the current plane, including slopes and curved mesh triangles.
+            if (SurfaceRay(destination + up * (0.12f * size), -up, 0.24f * size, out hit))
+            {
+                Vector3 heading = Vector3.ProjectOnPlane(forward, hit.normal).normalized;
+                if (heading.sqrMagnitude < 0.001f) return false;
+                pose = new Pose(hit.point, Quaternion.LookRotation(heading, hit.normal));
+                return true;
+            }
+            // Convex edge: look back underneath the lip for the adjoining surface.
+            if (SurfaceRay(destination - up * skin + forward * skin, -forward, distance + skin * 3f, out hit))
+            {
+                Vector3 heading = Quaternion.FromToRotation(up, hit.normal) * forward;
+                pose = new Pose(hit.point, Quaternion.LookRotation(heading, hit.normal));
+                return true;
+            }
+            return false;
+        }
+
+        private void RecordContact()
+        {
+            var pose = new Pose(transform.position, transform.rotation);
+            if (surfaceTrail.Count > 0 && Vector3.Distance(surfaceTrail[0].position, pose.position) < 0.01f * size)
+                surfaceTrail[0] = pose;
+            else surfaceTrail.Insert(0, pose);
+            float length = 0f;
+            for (int i = 1; i < surfaceTrail.Count; i++)
+            {
+                length += Vector3.Distance(surfaceTrail[i - 1].position, surfaceTrail[i].position);
+                if (length <= (segmentCount + 1) * 0.3f * size) continue;
+                if (i + 1 < surfaceTrail.Count) surfaceTrail.RemoveRange(i + 1, surfaceTrail.Count - i - 1);
+                break;
+            }
         }
 
         private static bool IsThreat(Light light) => light != null && light.isActiveAndEnabled
@@ -310,17 +407,25 @@ namespace CardsUnity.Controllers
 
         private void FollowBody()
         {
-            segments[0].position = transform.position + Vector3.up * (0.22f * size);
-            segments[0].rotation = transform.rotation;
-            for (int i = 1; i < segments.Length; i++)
+            if (surfaceTrail.Count == 0) RecordContact();
+            int cursor = 0;
+            float travelled = 0f;
+            for (int i = 0; i < segments.Length; i++)
             {
-                Vector3 delta = segments[i - 1].position - segments[i].position;
-                delta.y = 0f;
-                if (delta.sqrMagnitude < 0.00001f) delta = segments[i - 1].forward;
-                Vector3 position = segments[i - 1].position - delta.normalized * (0.3f * size);
-                if (Physics.Raycast(position + Vector3.up * size, Vector3.down, out var hit,
-                    size * 2f, environmentMask, QueryTriggerInteraction.Ignore)) position.y = hit.point.y + 0.22f * size;
-                segments[i].SetPositionAndRotation(position, Quaternion.LookRotation(delta));
+                float wanted = i * 0.3f * size;
+                while (cursor + 1 < surfaceTrail.Count)
+                {
+                    float length = Vector3.Distance(surfaceTrail[cursor].position, surfaceTrail[cursor + 1].position);
+                    if (travelled + length >= wanted) break;
+                    travelled += length;
+                    cursor++;
+                }
+                Pose a = surfaceTrail[cursor], b = surfaceTrail[Mathf.Min(cursor + 1, surfaceTrail.Count - 1)];
+                float span = Vector3.Distance(a.position, b.position);
+                float t = span > 0.00001f ? Mathf.Clamp01((wanted - travelled) / span) : 0f;
+                Quaternion orientation = Quaternion.Slerp(a.rotation, b.rotation, t);
+                Vector3 contact = Vector3.Lerp(a.position, b.position, t);
+                segments[i].SetPositionAndRotation(contact + orientation * Vector3.up * (0.22f * size), orientation);
             }
         }
 
@@ -342,6 +447,8 @@ namespace CardsUnity.Controllers
         private void Rebuild()
         {
             ClearRig();
+            surfaceTrail.Clear();
+            RefreshVisibleSurfaces();
             builtCount = segmentCount; builtSize = size; builtShell = shellMaterial; builtLeg = legMaterial;
             rig = new GameObject("Procedural Centipede Rig").transform;
             rig.SetParent(transform, false);
@@ -355,6 +462,14 @@ namespace CardsUnity.Controllers
                 segment.SetParent(rig, false);
                 segment.localPosition = new Vector3(0f, 0.22f * size, -i * 0.3f * size);
                 segments[i] = segment;
+                Vector3 contact = transform.position - transform.forward * (i * 0.3f * size);
+                Quaternion orientation = transform.rotation;
+                if (SurfaceRay(contact + transform.up * size, -transform.up, 2f * size, out var initialHit))
+                {
+                    contact = initialHit.point;
+                    orientation = Quaternion.FromToRotation(transform.up, initialHit.normal) * orientation;
+                }
+                surfaceTrail.Add(new Pose(contact, orientation));
                 float taper = Mathf.Lerp(1f, 0.55f, Mathf.Pow((float)i / (segmentCount - 1), 3f));
                 var shell = Part("Armor", segment, PrimitiveType.Sphere, shellMaterial);
                 shell.localScale = new Vector3(0.38f * taper, 0.23f * taper, i == 0 ? 0.42f : 0.34f) * size;

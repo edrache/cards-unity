@@ -164,8 +164,13 @@ namespace CardsUnity.Controllers
             if (rockDensity <= 0f || rockPrefabs == null || rockPrefabs.Length == 0) return;
             var random = new System.Random(unchecked(seed * 397 ^ 7919));
             var placed = new List<Vector3>();
+            float area = 0f;
+            foreach (float radius in radii) area += Mathf.PI * radius * radius;
+            foreach (var route in corridors)
+                for (int j = 1; j < route.Length; j++) area += Vector2.Distance(route[j - 1], route[j]) * corridorWidth;
+            int targetCount = Mathf.Min(600, Mathf.RoundToInt(area * rockDensity / 30f));
             int attempts = Mathf.Min(12000, Mathf.CeilToInt((max.x - min.x) * (max.y - min.y) / 2f));
-            for (int i = 0; i < attempts && placed.Count < 600; i++)
+            for (int i = 0; i < attempts && placed.Count < targetCount; i++)
             {
                 Vector2 p = new Vector2(Mathf.Lerp(min.x, max.x, (float)random.NextDouble()),
                     Mathf.Lerp(min.y, max.y, (float)random.NextDouble()));
