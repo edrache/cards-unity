@@ -21,9 +21,12 @@ namespace CardsUnity.Controllers
         [Tooltip("Side tunnels branching from the middle of existing passages, including dead ends.")]
         [SerializeField, Range(0f, 1f)] private float branchDensity = 0.5f;
         [SerializeField, Range(8f, 20f)] private float entranceLength = 12f;
-        [Header("Floor")]
-        [Tooltip("Visible rolling floor relief, up to about 1.76 metres peak-to-trough. Zero preserves the original surface. Local relief stays below a conservative 35-degree slope budget including elevation.")]
-        [SerializeField, Range(0f, 1f)] private float floorIrregularity;
+        [Header("Scattered rocks")]
+        [SerializeField] private GameObject[] rockPrefabs;
+        [Tooltip("Zero disables rocks; one fills available space while keeping routes clear.")]
+        [SerializeField, Range(0f, 1f)] private float rockDensity = 0.45f;
+        [SerializeField, Range(1f, 4f)] private float minimumRockSize = 1.2f;
+        [SerializeField, Range(1f, 4f)] private float maximumRockSize = 2.6f;
         [Header("Elevation")]
         [Tooltip("Continuous ramps without overlapping floors. Disable to restore the flat cave.")]
         [SerializeField] private bool enableElevation;
@@ -70,7 +73,9 @@ namespace CardsUnity.Controllers
             corridorWinding = Mathf.Clamp01(corridorWinding);
             branchDensity = Mathf.Clamp01(branchDensity);
             entranceLength = Mathf.Clamp(entranceLength, 8f, 20f);
-            floorIrregularity = Mathf.Clamp01(floorIrregularity);
+            rockDensity = Mathf.Clamp01(rockDensity);
+            minimumRockSize = Mathf.Clamp(minimumRockSize, 1f, 4f);
+            maximumRockSize = Mathf.Clamp(maximumRockSize, minimumRockSize, 4f);
             elevationRange = Mathf.Clamp(elevationRange, 1f, 12f);
             maximumSlope = Mathf.Clamp(maximumSlope, 5f, 20f);
             cutawayWallHeight = Mathf.Clamp(cutawayWallHeight, 0.5f, 1.5f);
@@ -137,6 +142,7 @@ namespace CardsUnity.Controllers
             CreateSurface("Level floor", floorMesh, floorMaterial);
             wallCollisionMesh = collision.Build("Cave wall collision");
             CreateSurface("Rock walls", wallMesh, wallMaterial, wallCollisionMesh);
+            ScatterRocks(min, max);
             if (player == null)
             {
                 foreach (var candidate in FindObjectsByType<ProceduralCharacter>(FindObjectsSortMode.None))
@@ -150,6 +156,57 @@ namespace CardsUnity.Controllers
                 player.position = SpawnPosition;
                 player.rotation = Quaternion.LookRotation(transform.TransformDirection(V(entranceForward, 0f)));
                 if (enabledBefore) controller.enabled = true;
+            }
+        }
+
+        private void ScatterRocks(Vector2 min, Vector2 max)
+        {
+            if (rockDensity <= 0f || rockPrefabs == null || rockPrefabs.Length == 0) return;
+            var random = new System.Random(unchecked(seed * 397 ^ 7919));
+            var placed = new List<Vector3>();
+            int attempts = Mathf.Min(12000, Mathf.CeilToInt((max.x - min.x) * (max.y - min.y) / 2f));
+            for (int i = 0; i < attempts && placed.Count < 600; i++)
+            {
+                Vector2 p = new Vector2(Mathf.Lerp(min.x, max.x, (float)random.NextDouble()),
+                    Mathf.Lerp(min.y, max.y, (float)random.NextDouble()));
+                float size = Mathf.Lerp(minimumRockSize, maximumRockSize, (float)random.NextDouble());
+                int variant = random.Next(rockPrefabs.Length);
+                float yaw = (float)random.NextDouble() * 360f;
+                float chance = (float)random.NextDouble();
+                if (chance > rockDensity || rockPrefabs[variant] == null) continue;
+                // Prefabs have a unit footprint. Reserve extra space for their slope-aligned silhouette.
+                float radius = size * 0.62f;
+                if (Field(p) < radius + 0.2f || Vector2.Distance(p, entrance) < radius + 3f) continue;
+                bool blocked = false;
+                foreach (var route in corridors)
+                {
+                    for (int j = 1; j < route.Length; j++)
+                    {
+                        Vector2 ab = route[j] - route[j - 1];
+                        float t = Mathf.Clamp01(Vector2.Dot(p - route[j - 1], ab) / ab.sqrMagnitude);
+                        if (Vector2.Distance(p, route[j - 1] + ab * t) < radius + 0.9f) { blocked = true; break; }
+                    }
+                    if (blocked) break;
+                }
+                foreach (var other in placed)
+                    if (Vector2.Distance(p, new Vector2(other.x, other.y)) < radius + other.z + 0.3f) { blocked = true; break; }
+                // Check the actual footprint as well as the field estimate around room lobes.
+                for (int j = 0; j < 12 && !blocked; j++)
+                {
+                    float angle = j * Mathf.PI / 6f;
+                    if (Field(p + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius) < 0.15f) blocked = true;
+                }
+                if (blocked) continue;
+                var rock = Instantiate(rockPrefabs[variant], generated.transform);
+                rock.name = rockPrefabs[variant].name;
+                rock.hideFlags = HideFlags.DontSave;
+                const float e = 0.2f;
+                Vector3 normal = new Vector3(-(FloorHeight(p + Vector2.right * e) - FloorHeight(p - Vector2.right * e)) / (2f * e),
+                    1f, -(FloorHeight(p + Vector2.up * e) - FloorHeight(p - Vector2.up * e)) / (2f * e)).normalized;
+                rock.transform.localPosition = Surface(p, -0.04f);
+                rock.transform.localRotation = Quaternion.FromToRotation(Vector3.up, normal) * Quaternion.Euler(0f, yaw, 0f);
+                rock.transform.localScale = Vector3.one * size;
+                placed.Add(new Vector3(p.x, p.y, radius));
             }
         }
 
@@ -317,19 +374,11 @@ namespace CardsUnity.Controllers
         /// <summary>One height per XZ point keeps all intersections seamless and prevents stacked floors.</summary>
         public float FloorHeight(Vector2 point)
         {
-            // Keep relief amplitude visible instead of shrinking it to a few centimetres.
-            // Broaden the bumps when necessary to reserve safe slopes for the existing ramps.
-            float broadGradient = enableElevation ? Mathf.Tan(maximumSlope * Mathf.Deg2Rad) * 0.56f : 0f;
-            float detailFrequency = Mathf.Min(1f, (Mathf.Tan(35f * Mathf.Deg2Rad) - broadGradient) / 0.64f);
-            Vector2 local = point * detailFrequency;
-            float detail = floorIrregularity * (
-                0.7f * Mathf.Sin(local.x * 0.55f + noiseOffset) * Mathf.Sin(local.y * 0.45f - noiseOffset)
-                + 0.18f * Mathf.Sin(local.x * 0.4f + local.y * 0.6f + noiseOffset));
-            if (!enableElevation) return detail;
+            if (!enableElevation) return 0f;
             float amplitude = elevationRange * 0.5f;
             // Analytic gradient stays below the requested slope, with margin for triangulation.
             float frequency = Mathf.Tan(maximumSlope * Mathf.Deg2Rad) * 0.85f / amplitude;
-            return detail + amplitude * 0.5f * (Mathf.Sin(point.x * frequency + noiseOffset)
+            return amplitude * 0.5f * (Mathf.Sin(point.x * frequency + noiseOffset)
                 + Mathf.Sin(point.y * frequency * 0.83f + noiseOffset * 0.71f));
         }
         private Vector3 Surface(Vector2 p, float offset) => V(p, FloorHeight(p) + offset);

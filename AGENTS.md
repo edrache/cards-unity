@@ -153,3 +153,9 @@ Keep this file aligned with the actual repository. `CLAUDE.md` points to this sh
 - Floor Irregularity (0–1, default 0) adds visible rolling relief independently of broad elevation, up to about +/-0.88 m. Its amplitude is no longer attenuated by elevation; wavelength is widened to keep the combined analytic slope below 35 degrees. Maximum Slope controls the broad ramps; detail may add steeper local slopes. Zero preserves the previous surface. Verified 12,794 direct Play Mode controller samples at maximum detail with elevation both off/on, without blocked movement or floor-height failures.
 
 - Strengthened floor relief verification: actual mesh displacement between slider 0/1 reached 0.875 m; 27,704 direct controller samples in both directions with elevation off/on passed without blocked movement or floor-height failures.
+
+## Stepping onto ledges
+
+- `ShadowKnightProportions.ApplyProportions` sets CharacterController stepOffset from Calf Length. `ProceduralCharacter.Move` checks steep risers against the supporting floor to prevent the rounded capsule from climbing above that limit; Update uses this same movement path.
+- Gait IK probes walkable collider surfaces under each foot and along its recovery path, adding terrain height to the foot target. Probes ignore triggers and the character hierarchy; trailing feet can sample the lower tread. Obstacles need colliders.
+- Direct Play Mode checks at the saved calf length (0.524 m) passed traversal for 0.2/0.524 m blocks and blocked 0.574/1.5 m blocks. Foot lift and a camera pose were inspected. These are direct controller checks, not keyboard input tests or a persistent automated suite.

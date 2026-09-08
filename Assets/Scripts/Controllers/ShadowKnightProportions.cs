@@ -105,6 +105,7 @@ namespace CardsUnity.Controllers
             {
                 float height = hip + torsoHeight + headSize * 0.8f;
                 controller.height = height;
+                controller.stepOffset = calfLength;
                 controller.center = Vector3.up * height * 0.5f;
                 controller.radius = Mathf.Clamp(torsoWidth * 0.42f, 0.18f, 0.45f);
             }

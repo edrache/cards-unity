@@ -109,7 +109,7 @@ namespace CardsUnity.Controllers
             if (controller.isGrounded && verticalSpeed < 0f) verticalSpeed = -2f;
             verticalSpeed += Physics.gravity.y * Time.deltaTime;
             Vector3 before = transform.position;
-            controller.Move((velocity + Vector3.up * verticalSpeed) * Time.deltaTime);
+            Move((velocity + Vector3.up * verticalSpeed) * Time.deltaTime);
             Vector3 displacement = Vector3.ProjectOnPlane(transform.position - before, Vector3.up);
             if ((controller.collisionFlags & CollisionFlags.Above) != 0) verticalSpeed = Mathf.Min(verticalSpeed, 0f);
             if (velocity.sqrMagnitude > 0.01f)
@@ -140,6 +140,45 @@ namespace CardsUnity.Controllers
                 body.localPosition = bodyOrigin + Vector3.up * (Mathf.Cos(phase * 2f) * 0.035f * blend);
                 body.localRotation = Quaternion.Euler(blend * 5f, 0f, -swing * 3f);
             }
+        }
+
+        // Unity's rounded capsule can climb higher than stepOffset. Check the riser
+        // against the supporting surface before allowing its built-in step solver.
+        public void Move(Vector3 motion)
+        {
+            if (controller == null) controller = GetComponent<CharacterController>();
+            Vector3 horizontal = Vector3.ProjectOnPlane(motion, Vector3.up);
+            float distance = horizontal.magnitude;
+            if (distance > 0f && controller.isGrounded && GetComponent<ShadowKnightProportions>() != null)
+            {
+                Vector3 center = transform.TransformPoint(controller.center);
+                float radius = controller.radius * transform.lossyScale.x;
+                float half = controller.height * transform.lossyScale.y * 0.5f - radius;
+                Vector3 direction = horizontal / distance;
+                if (Physics.CapsuleCast(center + Vector3.up * half, center - Vector3.up * half,
+                    radius, direction, out RaycastHit wall, distance + controller.skinWidth,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)
+                    && !wall.transform.IsChildOf(transform)
+                    && Vector3.Angle(wall.normal, Vector3.up) > controller.slopeLimit
+                    && Physics.Raycast(transform.position + Vector3.up * 0.2f, Vector3.down,
+                        out RaycastHit support, 0.5f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+                {
+                    float limit = controller.stepOffset * transform.lossyScale.y;
+                    Vector3 probe = wall.point + direction * 0.025f;
+                    float probeHeight = controller.height * transform.lossyScale.y + limit;
+                    probe.y = support.point.y + probeHeight;
+                    if (!Physics.Raycast(probe, Vector3.down, out RaycastHit top, probeHeight + 0.01f,
+                            Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)
+                        || top.point.y - support.point.y > limit + 0.001f
+                        || Vector3.Angle(top.normal, Vector3.up) > controller.slopeLimit)
+                    {
+                        Vector3 normal = Vector3.ProjectOnPlane(wall.normal, Vector3.up).normalized;
+                        horizontal = Vector3.ProjectOnPlane(horizontal, normal);
+                        motion = horizontal + Vector3.up * motion.y;
+                    }
+                }
+            }
+            controller.Move(motion);
         }
 
         private void OnValidate()

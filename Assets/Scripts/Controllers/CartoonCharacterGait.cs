@@ -94,6 +94,9 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0f, 100f)] private float noiseSeed = 17f;
 
         private ProceduralSpine spine;
+        private CharacterController characterController;
+        private bool terrainGrounded;
+        private readonly RaycastHit[] terrainHits = new RaycastHit[32];
         private float cycle, intensity, intensityVelocity;
         private Vector3 lean, leanVelocity;
         private Vector3 bodyOrigin;
@@ -116,6 +119,7 @@ namespace CardsUnity.Controllers
         private void Awake()
         {
             spine = GetComponent<ProceduralSpine>();
+            characterController = GetComponent<CharacterController>();
             if (body != null) bodyOrigin = body.localPosition;
             UpdateStyleWeights(100f);
         }
@@ -138,6 +142,7 @@ namespace CardsUnity.Controllers
         {
             float dt = deltaTime >= 0f ? deltaTime : Time.deltaTime;
             if (dt <= 0f || body == null) return;
+            terrainGrounded = grounded;
             float speed = velocity.magnitude;
             intensity = Mathf.SmoothDamp(intensity, grounded ? Mathf.Clamp01(speed / Mathf.Max(maximumSpeed, 0.1f)) : 0f,
                 ref intensityVelocity, 0.12f, Mathf.Infinity, dt);
@@ -335,6 +340,30 @@ namespace CardsUnity.Controllers
                 Quaternion.Euler(-elbow, 0f, 0f), 1f - Mathf.Exp(-12f * dt));
         }
 
+        private float SampleFootGround(float x, float z)
+        {
+            // Ignore the character, triggers and steep faces. Probe below root level too,
+            // so the trailing leg can remain on the lower tread after the capsule rises.
+            float extent = calfLength + 0.15f;
+            Vector3 origin = transform.TransformPoint(new Vector3(x, extent, z));
+            int count = Physics.RaycastNonAlloc(origin, Vector3.down, terrainHits,
+                extent * 2f * transform.lossyScale.y, Physics.DefaultRaycastLayers,
+                QueryTriggerInteraction.Ignore);
+            float nearest = float.PositiveInfinity;
+            float height = 0f;
+            for (int i = 0; i < count; i++)
+            {
+                var hit = terrainHits[i];
+                if (hit.transform.IsChildOf(transform) || hit.distance >= nearest
+                    || Vector3.Angle(hit.normal, Vector3.up) > characterController.slopeLimit) continue;
+                float localHeight = transform.InverseTransformPoint(hit.point).y;
+                if (localHeight > calfLength + 0.01f) continue;
+                nearest = hit.distance;
+                height = localHeight;
+            }
+            return height;
+        }
+
         private void Leg(Transform thigh, Transform calf, Transform foot, float side, float phase,
             float stride, float activity)
         {
@@ -360,6 +389,22 @@ namespace CardsUnity.Controllers
             Vector3 hip = transform.InverseTransformPoint(body.TransformPoint(
                 new Vector3(side * hipHalfWidth, hipHeight - bodyOrigin.y, 0f)));
             Vector3 ankle = new Vector3(side * (hipHalfWidth + intensity * 0.025f), 0.09f + lift + flightLift, z);
+            if (terrainGrounded && characterController != null)
+            {
+                float ground = SampleFootGround(ankle.x, z);
+                if (phase >= 0.5f && activity > 0.01f)
+                {
+                    // Look across the recovery path before the toe reaches the riser.
+                    float obstacle = ground;
+                    for (int sample = 0; sample <= 4; sample++)
+                        obstacle = Mathf.Max(obstacle, SampleFootGround(ankle.x,
+                            Mathf.Lerp(z, travel + 0.12f, sample / 4f)));
+                    float recovery = (phase - 0.5f) * 2f;
+                    float clearance = Mathf.SmoothStep(0f, 1f, Mathf.Min(recovery * 5f, 1f));
+                    ground = Mathf.Max(ground, obstacle * clearance);
+                }
+                ankle.y += ground;
+            }
             Vector3 delta = ankle - hip;
             float reach = Mathf.Clamp(delta.magnitude, 0.05f, thighLength + calfLength - 0.002f);
             Vector3 direction = delta.normalized;
