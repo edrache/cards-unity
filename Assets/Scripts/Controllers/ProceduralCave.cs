@@ -22,7 +22,7 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0f, 1f)] private float branchDensity = 0.5f;
         [SerializeField, Range(8f, 20f)] private float entranceLength = 12f;
         [Header("Floor")]
-        [Tooltip("Small, smooth floor bumps. Zero preserves the original surface. Works with or without elevation.")]
+        [Tooltip("Visible rolling floor relief, up to about 1.76 metres peak-to-trough. Zero preserves the original surface. Local relief stays below a conservative 35-degree slope budget including elevation.")]
         [SerializeField, Range(0f, 1f)] private float floorIrregularity;
         [Header("Elevation")]
         [Tooltip("Continuous ramps without overlapping floors. Disable to restore the flat cave.")]
@@ -317,13 +317,15 @@ namespace CardsUnity.Controllers
         /// <summary>One height per XZ point keeps all intersections seamless and prevents stacked floors.</summary>
         public float FloorHeight(Vector2 point)
         {
-            // Smooth short waves add detail without steps or changes to Unity's random state.
+            // Keep relief amplitude visible instead of shrinking it to a few centimetres.
+            // Broaden the bumps when necessary to reserve safe slopes for the existing ramps.
+            float broadGradient = enableElevation ? Mathf.Tan(maximumSlope * Mathf.Deg2Rad) * 0.56f : 0f;
+            float detailFrequency = Mathf.Min(1f, (Mathf.Tan(35f * Mathf.Deg2Rad) - broadGradient) / 0.64f);
+            Vector2 local = point * detailFrequency;
             float detail = floorIrregularity * (
-                0.14f * Mathf.Sin(point.x * 1.1f + noiseOffset) * Mathf.Sin(point.y * 0.9f - noiseOffset)
-                + 0.04f * Mathf.Sin(point.x * 0.7f + point.y * 1.3f + noiseOffset));
+                0.7f * Mathf.Sin(local.x * 0.55f + noiseOffset) * Mathf.Sin(local.y * 0.45f - noiseOffset)
+                + 0.18f * Mathf.Sin(local.x * 0.4f + local.y * 0.6f + noiseOffset));
             if (!enableElevation) return detail;
-            // Reserve the remaining slope budget for local detail on top of the broad ramps.
-            detail *= Mathf.Min(1f, Mathf.Tan(maximumSlope * Mathf.Deg2Rad) * 0.35f / 0.26f);
             float amplitude = elevationRange * 0.5f;
             // Analytic gradient stays below the requested slope, with margin for triangulation.
             float frequency = Mathf.Tan(maximumSlope * Mathf.Deg2Rad) * 0.85f / amplitude;
