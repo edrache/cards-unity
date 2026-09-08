@@ -17,27 +17,34 @@ namespace CardsUnity.Controllers
         [Tooltip("Fraction of spare neighbouring connections opened as loops. Zero makes a branching tree.")]
         [SerializeField, Range(0f, 1f)] private float extraConnections = 0.4f;
         [SerializeField, Range(2.5f, 5f)] private float corridorWidth = 3.5f;
+        [SerializeField, Range(0f, 1f)] private float corridorWinding = 0.8f;
+        [Tooltip("Side tunnels branching from the middle of existing passages, including dead ends.")]
+        [SerializeField, Range(0f, 1f)] private float branchDensity = 0.5f;
+        [SerializeField, Range(8f, 20f)] private float entranceLength = 12f;
         [Header("Rock")]
         [SerializeField, Range(0f, 1f)] private float irregularity = 0.65f;
         [SerializeField, Range(2f, 5f)] private float wallHeight = 3.2f;
         [SerializeField] private Material floorMaterial;
         [SerializeField] private Material wallMaterial;
         [Header("Player")]
-        [Tooltip("Moved to the first room after rebuilding, including when Play Mode starts.")]
+        [Tooltip("Moved to the entrance tunnel after rebuilding, including when Play Mode starts.")]
         [SerializeField] private Transform player;
 
         private readonly List<Vector2> rooms = new List<Vector2>();
         private readonly List<float> radii = new List<float>();
         private readonly List<Vector2[]> corridors = new List<Vector2[]>();
+        private readonly List<Rect> corridorBounds = new List<Rect>();
+        private Vector2 entrance;
+        private Vector2 entranceForward;
         private GameObject generated;
-        private Mesh floorMesh, wallMesh;
+        private Mesh floorMesh, wallMesh, wallCollisionMesh;
         private bool rebuildPending;
         private float noiseOffset;
         public int RoomCount => roomCount;
         public IReadOnlyList<Vector2> RoomCenters => rooms;
         public IReadOnlyList<Vector2[]> Corridors => corridors;
         public IReadOnlyList<float> RoomRadii => radii;
-        public Vector3 SpawnPosition => transform.TransformPoint(Vector3.up * 0.1f);
+        public Vector3 SpawnPosition => transform.TransformPoint(V(entrance, 0.1f));
 
         private void OnEnable() { rebuildPending = true; }
         private void OnValidate()
@@ -49,6 +56,9 @@ namespace CardsUnity.Controllers
             corridorWidth = Mathf.Clamp(corridorWidth, 2.5f, 5f);
             irregularity = Mathf.Clamp01(irregularity);
             wallHeight = Mathf.Clamp(wallHeight, 2f, 5f);
+            corridorWinding = Mathf.Clamp01(corridorWinding);
+            branchDensity = Mathf.Clamp01(branchDensity);
+            entranceLength = Mathf.Clamp(entranceLength, 8f, 20f);
             rebuildPending = true;
         }
         private void Update() { if (rebuildPending) Rebuild(); }
@@ -61,15 +71,15 @@ namespace CardsUnity.Controllers
         private void Clear()
         {
             if (generated != null) generated.SetActive(false);
-            Dispose(generated); Dispose(floorMesh); Dispose(wallMesh);
-            generated = null; floorMesh = null; wallMesh = null;
+            Dispose(generated); Dispose(floorMesh); Dispose(wallMesh); Dispose(wallCollisionMesh);
+            generated = null; floorMesh = null; wallMesh = null; wallCollisionMesh = null;
         }
 
         [ContextMenu("Rebuild Cave")]
         public void Rebuild()
         {
             rebuildPending = false;
-            Clear(); rooms.Clear(); radii.Clear(); corridors.Clear();
+            Clear(); rooms.Clear(); radii.Clear(); corridors.Clear(); corridorBounds.Clear();
             var random = new System.Random(seed);
             noiseOffset = (float)random.NextDouble() * 1000f;
             GenerateLayout(random);
@@ -94,7 +104,7 @@ namespace CardsUnity.Controllers
             var values = new float[nx + 1, nz + 1];
             for (int x = 0; x <= nx; x++)
                 for (int z = 0; z <= nz; z++) values[x, z] = Field(min + new Vector2(x, z) * cell);
-            var floor = new MeshData(); var walls = new MeshData();
+            var floor = new MeshData(); var walls = new MeshData(); var collision = new MeshData();
             for (int x = 0; x < nx; x++)
                 for (int z = 0; z < nz; z++)
                 {
@@ -102,52 +112,51 @@ namespace CardsUnity.Controllers
                     Vector2 b = a + Vector2.up * cell;
                     Vector2 c = a + Vector2.one * cell;
                     Vector2 d = a + Vector2.right * cell;
-                    Clip(a, b, c, values[x,z], values[x,z+1], values[x+1,z+1], floor, walls);
-                    Clip(a, c, d, values[x,z], values[x+1,z+1], values[x+1,z], floor, walls);
+                    Clip(a, b, c, values[x,z], values[x,z+1], values[x+1,z+1], floor, walls, collision);
+                    Clip(a, c, d, values[x,z], values[x+1,z+1], values[x+1,z], floor, walls, collision);
                 }
             generated = new GameObject("Generated Cave (preview)");
             generated.hideFlags = HideFlags.DontSave;
             generated.transform.SetParent(transform, false);
             floorMesh = floor.Build("Cave floor"); wallMesh = walls.Build("Cave walls");
             CreateSurface("Level floor", floorMesh, floorMaterial);
-            CreateSurface("Rock walls", wallMesh, wallMaterial);
+            wallCollisionMesh = collision.Build("Cave wall collision");
+            CreateSurface("Rock walls", wallMesh, wallMaterial, wallCollisionMesh);
             if (player != null)
             {
                 var controller = player.GetComponent<CharacterController>();
                 bool enabledBefore = controller != null && controller.enabled;
                 if (enabledBefore) controller.enabled = false;
                 player.position = SpawnPosition;
+                player.rotation = Quaternion.LookRotation(transform.TransformDirection(V(entranceForward, 0f)));
                 if (enabledBefore) controller.enabled = true;
             }
         }
 
         private void GenerateLayout(System.Random random)
         {
-            int columns = Mathf.CeilToInt(Mathf.Sqrt(roomCount));
+            // Sunflower packing avoids rows and right-angle junctions.
+            float rotation = (float)random.NextDouble() * Mathf.PI * 2f;
             float spacing = roomRadius * 4.3f;
             var edges = new List<Vector2Int>();
             for (int i = 0; i < roomCount; i++)
             {
-                int x = i % columns, z = i / columns;
-                Vector2 jitter = i == 0 ? Vector2.zero : new Vector2(
-                    (float)random.NextDouble() - 0.5f, (float)random.NextDouble() - 0.5f) * spacing * 0.16f;
-                rooms.Add(new Vector2(x, z) * spacing + jitter);
+                float angle = i * 2.399963f + rotation;
+                float distance = spacing * 0.62f * Mathf.Sqrt(i);
+                rooms.Add(new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * distance);
                 // Stratified sizes guarantee a visible spread even in small layouts.
                 float size = roomCount == 1 ? 0.5f : (i + (float)random.NextDouble()) / roomCount;
                 radii.Add(Mathf.Max(2.5f, roomRadius * (1f + (size * 2f - 1f) * 0.45f * roomSizeVariation)));
-                if (x > 0) edges.Add(new Vector2Int(i - 1, i));
-                if (z > 0) edges.Add(new Vector2Int(i - columns, i));
+
             }
             for (int i = radii.Count - 1; i > 0; i--)
             {
                 int j = random.Next(i + 1);
                 float radius = radii[i]; radii[i] = radii[j]; radii[j] = radius;
             }
-            for (int i = edges.Count - 1; i > 0; i--)
-            {
-                int j = random.Next(i + 1);
-                Vector2Int edge = edges[i]; edges[i] = edges[j]; edges[j] = edge;
-            }
+            for (int i = 0; i < roomCount; i++)
+                for (int j = i + 1; j < roomCount; j++) edges.Add(new Vector2Int(i, j));
+            edges.Sort((a, b) => (rooms[a.x] - rooms[a.y]).sqrMagnitude.CompareTo((rooms[b.x] - rooms[b.y]).sqrMagnitude));
             // Randomized spanning tree guarantees reachability; spare edges add real cycles.
             var groups = new int[roomCount];
             for (int i = 0; i < roomCount; i++) groups[i] = i;
@@ -155,29 +164,67 @@ namespace CardsUnity.Controllers
             foreach (var edge in edges)
             {
                 int from = groups[edge.x], to = groups[edge.y];
-                if (from == to) { spare.Add(edge); continue; }
+                if (from == to) { if (Vector2.Distance(rooms[edge.x], rooms[edge.y]) < spacing * 1.15f) spare.Add(edge); continue; }
                 AddCorridor(edge, random, spacing);
                 for (int i = 0; i < groups.Length; i++) if (groups[i] == to) groups[i] = from;
             }
-            int loops = Mathf.RoundToInt(spare.Count * extraConnections);
+            for (int i = spare.Count - 1; i > 0; i--)
+            {
+                int j = random.Next(i + 1);
+                Vector2Int swap = spare[i]; spare[i] = spare[j]; spare[j] = swap;
+            }
+            int loops = Mathf.RoundToInt(Mathf.Min(spare.Count, roomCount / 2f) * extraConnections);
             if (extraConnections > 0f && spare.Count > 0) loops = Mathf.Max(1, loops);
             for (int i = 0; i < loops; i++) AddCorridor(spare[i], random, spacing);
+            int mainCount = corridors.Count;
+            int branches = Mathf.RoundToInt(roomCount * branchDensity);
+            for (int i = 0; i < branches && mainCount > 0; i++)
+            {
+                var source = corridors[random.Next(mainCount)];
+                int index = random.Next(source.Length / 3, source.Length * 2 / 3);
+                Vector2 start = source[index];
+                Vector2 side = Vector2.Perpendicular((source[index + 1] - source[index - 1]).normalized);
+                if (random.Next(2) == 0) side = -side;
+                Vector2 end = start + side * Mathf.Lerp(7f, 12f, (float)random.NextDouble());
+                AddTunnel(start, end, random);
+            }
+            // Start beyond the southernmost chamber, so the entrance cannot cut across the maze.
+            int first = 0;
+            for (int i = 1; i < roomCount; i++)
+                if (rooms[i].y - radii[i] < rooms[first].y - radii[first]) first = i;
+            Vector2 mouth = rooms[first] - Vector2.up * (radii[first] * 1.2f + entranceLength);
+            AddTunnel(mouth, rooms[first], random);
+            var entryPath = corridors[corridors.Count - 1];
+            entrance = entryPath[2];
+            entranceForward = (entryPath[3] - entryPath[2]).normalized;
         }
 
         private void AddCorridor(Vector2Int edge, System.Random random, float spacing)
         {
-            Vector2 a = rooms[edge.x], b = rooms[edge.y];
+            AddTunnel(rooms[edge.x], rooms[edge.y], random);
+        }
+
+        private void AddTunnel(Vector2 a, Vector2 b, System.Random random)
+        {
             Vector2 normal = Vector2.Perpendicular((b - a).normalized);
-            float bend = ((float)random.NextDouble() - 0.5f) * spacing * 0.3f;
-            var points = new Vector2[9];
-            for (int i = 0; i < points.Length; i++)
+            float length = Vector2.Distance(a, b);
+            float sign = random.Next(2) == 0 ? -1f : 1f;
+            float amplitude = Mathf.Min(length * 0.24f, 5f) * corridorWinding;
+            float asymmetry = Mathf.Lerp(-0.4f, 0.4f, (float)random.NextDouble());
+            int steps = Mathf.Max(12, Mathf.CeilToInt(length / 0.9f));
+            var points = new Vector2[steps + 1];
+            for (int i = 0; i <= steps; i++)
             {
-                float t = i / 8f;
-                points[i] = Vector2.Lerp(a, b, t) + normal * (Mathf.Sin(t * Mathf.PI) * bend);
+                float t = i / (float)steps;
+                float wave = Mathf.Sin(t * Mathf.PI * 2f) + asymmetry * Mathf.Sin(t * Mathf.PI * 3f);
+                points[i] = Vector2.Lerp(a, b, t) + normal * (wave * amplitude * sign);
             }
-            points[0] = a;
-            points[points.Length - 1] = b;
+            points[0] = a; points[steps] = b;
             corridors.Add(points);
+            Vector2 min = a, max = a;
+            foreach (var point in points) { min = Vector2.Min(min, point); max = Vector2.Max(max, point); }
+            float padding = corridorWidth * 0.5f + 3f;
+            corridorBounds.Add(Rect.MinMaxRect(min.x - padding, min.y - padding, max.x + padding, max.y + padding));
         }
 
         private float Field(Vector2 p)
@@ -191,25 +238,29 @@ namespace CardsUnity.Controllers
                     + Mathf.Sin(angle * 5f - noiseOffset) * 0.07f;
                 value = Mathf.Max(value, radii[i] * (1f + lobes * irregularity) - delta.magnitude);
             }
-            foreach (var corridor in corridors)
+            for (int c = 0; c < corridors.Count; c++)
+            {
+            if (!corridorBounds[c].Contains(p)) continue;
+            var corridor = corridors[c];
             for (int i = 1; i < corridor.Length; i++)
             {
                 Vector2 a = corridor[i - 1], ab = corridor[i] - a;
                 float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude);
                 value = Mathf.Max(value, corridorWidth * 0.5f - Vector2.Distance(p, a + t * ab));
             }
+            }
             // Perturb only the boundary: minimum corridor clearance remains above 1.8 metres.
             return value + (Mathf.PerlinNoise(p.x * 0.42f + noiseOffset, p.y * 0.42f + noiseOffset) - 0.5f) * irregularity * 0.7f;
         }
-        private void CreateSurface(string label, Mesh mesh, Material material)
+        private void CreateSurface(string label, Mesh mesh, Material material, Mesh colliderMesh = null)
         {
             var go = new GameObject(label) { hideFlags = HideFlags.DontSave };
             go.transform.SetParent(generated.transform, false);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             go.AddComponent<MeshRenderer>().sharedMaterial = material;
-            go.AddComponent<MeshCollider>().sharedMesh = mesh;
+            go.AddComponent<MeshCollider>().sharedMesh = colliderMesh != null ? colliderMesh : mesh;
         }
-        private void Clip(Vector2 a, Vector2 b, Vector2 c, float fa, float fb, float fc, MeshData floor, MeshData walls)
+        private void Clip(Vector2 a, Vector2 b, Vector2 c, float fa, float fb, float fc, MeshData floor, MeshData walls, MeshData collision)
         {
             if (fa < 0f && fb < 0f && fc < 0f) return;
             var polygon = new List<Vector2>(4);
@@ -224,6 +275,8 @@ namespace CardsUnity.Controllers
             Vector2 midpoint = (p + q) * 0.5f;
             if (Field(midpoint + outward * 0.1f) > Field(midpoint - outward * 0.1f)) outward = -outward;
             // Shared noise at boundary vertices keeps neighbouring rock panels watertight.
+            // Collision follows the carved boundary; decorative outer lips must not block nearby tunnels.
+            collision.Quad(V(p, 0f), V(q, 0f), V(q, wallHeight + 1f), V(p, wallHeight + 1f), -V(outward, 0f));
             Vector3 p0 = V(p, 0f), q0 = V(q, 0f);
             Vector3 p1 = V(p + RockOffset(p) * 0.35f, Height(p) * 0.48f), q1 = V(q + RockOffset(q) * 0.35f, Height(q) * 0.48f);
             Vector3 p2 = V(p + RockOffset(p), Height(p)), q2 = V(q + RockOffset(q), Height(q));
