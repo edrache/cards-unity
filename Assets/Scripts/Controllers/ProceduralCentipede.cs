@@ -20,7 +20,7 @@ namespace CardsUnity.Controllers
 
     /// <summary>A surface-crawling stalker with a generated rig and distance-driven legs.</summary>
     [ExecuteAlways, DisallowMultipleComponent]
-    public sealed class ProceduralCentipede : MonoBehaviour
+    public sealed partial class ProceduralCentipede : MonoBehaviour
     {
         [Header("Shape")]
         [SerializeField, Range(3, 48)] private int segmentCount = 14;
@@ -55,7 +55,7 @@ namespace CardsUnity.Controllers
         [Tooltip("Colliders that block movement, ground probes and light. Triggers are ignored.")]
         [SerializeField] private LayerMask environmentMask = ~0;
 
-        public enum BehaviourState { Stalking, Fleeing, Hiding, Dormant }
+        public enum BehaviourState { Stalking, Fleeing, Hiding, Dormant, Enraged, WindingUp, Leaping }
         public BehaviourState State { get; private set; }
         public float Exposure { get; private set; }
         public void SetTarget(Transform value) => target = value;
@@ -145,6 +145,7 @@ namespace CardsUnity.Controllers
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.update -= UpdateEditorPreview;
 #endif
+            ResetAttack();
             ClearRig();
         }
 
@@ -198,7 +199,8 @@ namespace CardsUnity.Controllers
             }
             if (State == BehaviourState.Dormant) State = BehaviourState.Stalking;
             float headExposure = SampleLight(transform.position + transform.up * 0.22f * size);
-            if (headExposure >= reactionThreshold)
+            if (TickAttack(dt, headExposure, reactionThreshold)) return;
+            if (State != BehaviourState.Enraged && headExposure >= reactionThreshold)
             {
                 State = BehaviourState.Fleeing;
                 darkTime = 0f;
@@ -235,7 +237,10 @@ namespace CardsUnity.Controllers
             }
             else if (target != null)
             {
-                desired = ShadowPursuitDirection(reactionThreshold * safeLightRatio);
+                desired = State == BehaviourState.Enraged
+                    ? Vector3.ProjectOnPlane(target.position - transform.position, transform.up).normalized
+                    : ShadowPursuitDirection(reactionThreshold * safeLightRatio);
+                if (State == BehaviourState.Enraged) speed = fleeSpeed;
             }
 
             bool descending = homeCave != null && State != BehaviourState.Fleeing && transform.up.y < 0.65f;
@@ -278,7 +283,7 @@ namespace CardsUnity.Controllers
                     {
                         if (!TrySurfaceStep(transform.position, transform.rotation, speed * dt / steps, out Pose next)) break;
                         // Turn along the shadow edge before the next step enters frightening light.
-                        if (State != BehaviourState.Fleeing && SampleLight(next.position
+                        if (State != BehaviourState.Fleeing && State != BehaviourState.Enraged && SampleLight(next.position
                             + next.rotation * Vector3.up * 0.22f * size) > Mathf.Max(Exposure, Mathf.Min(fearThreshold, dimLightThreshold) * safeLightRatio))
                             break;
                         transform.SetPositionAndRotation(next.position, next.rotation);
@@ -372,7 +377,7 @@ namespace CardsUnity.Controllers
                 float aheadLight = SampleLight(ahead.position + ahead.rotation * Vector3.up * 0.22f * size);
                 if (State == BehaviourState.Fleeing)
                     score -= aheadLight * 4f;
-                else
+                else if (State != BehaviourState.Enraged)
                 {
                     // Normalize against the same faint-light threshold used for fear: raw exposure
                     // is too small to compete with heading scores near the torch's outer edge.

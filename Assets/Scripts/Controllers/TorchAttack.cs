@@ -129,8 +129,18 @@ namespace CardsUnity.Controllers
 
         private bool CanAttack()
         {
+            if (GetComponent<CharacterKnockdown>()?.IsDown == true) return false;
             var interaction = GetComponent<TorchInteraction>();
             return torch != null && torch.IsHeld && (interaction == null || !interaction.IsBusy);
+        }
+
+        public void CancelAttack()
+        {
+            phase = Phase.Idle;
+            weight = phaseTime = chargeTime = swing = 0f;
+            releaseRequested = false;
+            RestoreChest();
+            if (torch != null) torch.SetPoseSuppression(0f);
         }
 
         private void BeginCharge()

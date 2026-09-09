@@ -88,6 +88,11 @@ namespace CardsUnity.Controllers
                 attackHeld = UnityEngine.InputSystem.Keyboard.current?.spaceKey.isPressed == true;
                 interactPressed = UnityEngine.InputSystem.Keyboard.current?.eKey.wasPressedThisFrame == true;
             }
+            var knockdown = GetComponent<CharacterKnockdown>();
+            if (knockdown != null && knockdown.IsDown)
+            {
+                running = attackHeld = interactPressed = false;
+            }
             if (interactPressed && torchInteraction != null) torchInteraction.TryInteract();
             if (torchInteraction != null && torchInteraction.IsBusy)
             {
@@ -117,6 +122,7 @@ namespace CardsUnity.Controllers
             }
             // The input vector still carries the stick magnitude, so speed scales with deflection.
             float movementSpeed = running ? runSpeed : speed;
+            if (knockdown != null && knockdown.IsDown) movementSpeed *= 0.4f;
 
             Vector3 forward = movementCamera != null
                 ? Vector3.ProjectOnPlane(movementCamera.forward, Vector3.up).normalized : Vector3.forward;
@@ -129,6 +135,7 @@ namespace CardsUnity.Controllers
             Vector3 before = transform.position;
             Move((velocity + Vector3.up * verticalSpeed) * Time.deltaTime);
             Vector3 displacement = Vector3.ProjectOnPlane(transform.position - before, Vector3.up);
+            if (knockdown != null) knockdown.ReportMovement(displacement.magnitude);
             if ((controller.collisionFlags & CollisionFlags.Above) != 0) verticalSpeed = Mathf.Min(verticalSpeed, 0f);
             if (velocity.sqrMagnitude > 0.01f)
                 transform.rotation = Quaternion.RotateTowards(transform.rotation,

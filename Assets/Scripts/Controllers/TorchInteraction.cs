@@ -48,6 +48,7 @@ namespace CardsUnity.Controllers
 
         public bool TryInteract()
         {
+            if (GetComponent<CharacterKnockdown>()?.IsDown == true) return false;
             if (!isActiveAndEnabled || IsBusy || torch == null || arm == null || elbow == null
                 || (attack != null && attack.IsAttacking)) return false;
             pickingUp = !torch.IsHeld;
@@ -135,6 +136,8 @@ namespace CardsUnity.Controllers
             if (elapsed >= duration + recoveryDuration) Finish();
         }
 
+        public void CancelInteraction() => Finish();
+
         private void Finish()
         {
             IsBusy = false;
@@ -147,6 +150,7 @@ namespace CardsUnity.Controllers
 
         private void OnGUI()
         {
+            if (GetComponent<CharacterKnockdown>()?.IsDown == true) return;
             if (!showPrompt || torch == null || IsBusy || (attack != null && attack.IsAttacking)) return;
             if (!torch.IsHeld && !CanPickUp) return;
             GUI.Box(new Rect(Screen.width * 0.5f - 85f, Screen.height - 66f, 170f, 30f), "E  ·  " + ActionLabel);

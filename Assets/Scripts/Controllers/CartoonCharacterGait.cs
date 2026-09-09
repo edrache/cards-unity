@@ -104,6 +104,8 @@ namespace CardsUnity.Controllers
         private float cycle, intensity, intensityVelocity;
         private Vector3 lean, leanVelocity;
         public float InteractionCrouch { get; set; }
+        public float KnockdownWeight { get; set; }
+        private readonly float[] locomotionWeights = new float[12];
         private Vector3 bodyOrigin;
         private Vector3 bodyMotion, bodyMotionVelocity;
         private float sideRoll, sideRollVelocity;
@@ -155,6 +157,9 @@ namespace CardsUnity.Controllers
                 ref intensityVelocity, 0.12f, Mathf.Infinity, dt);
             float activity = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(intensity * 5f));
             UpdateStyleWeights(dt);
+            System.Array.Copy(styleWeights, locomotionWeights, styleWeights.Length);
+            for (int i = 0; i < styleWeights.Length; i++)
+                styleWeights[i] = Mathf.Lerp(styleWeights[i], i == 10 ? 1f : 0f, Mathf.Clamp01(KnockdownWeight));
             style = GaitStylePose.Blend(styleWeights, cycle);
             poseActivity = activity;
             float runBlend = style.RunAmount;
@@ -216,6 +221,7 @@ namespace CardsUnity.Controllers
             Arm(rightArm, rightForearm, 1f, rightSwing, dt);
             CrawlArm(leftArm, leftForearm, cycle, activity);
             CrawlArm(rightArm, rightForearm, Mathf.Repeat(cycle + 0.5f, 1f), activity);
+            System.Array.Copy(locomotionWeights, styleWeights, styleWeights.Length);
         }
 
         // The left leg runs on `cycle` and the right one half a cycle later, and each leg plants its
