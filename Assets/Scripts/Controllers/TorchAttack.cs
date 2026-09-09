@@ -107,7 +107,7 @@ namespace CardsUnity.Controllers
         {
             if (held)
             {
-                if (phase == Phase.Idle) BeginCharge();
+                if (phase == Phase.Idle && CanAttack()) BeginCharge();
             }
             else if (phase == Phase.Charging)
             {
@@ -121,10 +121,16 @@ namespace CardsUnity.Controllers
         /// </summary>
         public bool TryStrike()
         {
-            if (phase != Phase.Idle) return false;
+            if (phase != Phase.Idle || !CanAttack()) return false;
             BeginCharge();
             releaseRequested = true;
             return true;
+        }
+
+        private bool CanAttack()
+        {
+            var interaction = GetComponent<TorchInteraction>();
+            return torch != null && torch.IsHeld && (interaction == null || !interaction.IsBusy);
         }
 
         private void BeginCharge()

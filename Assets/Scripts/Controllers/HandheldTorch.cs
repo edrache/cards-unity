@@ -31,6 +31,75 @@ namespace CardsUnity.Controllers
         [Tooltip("Seconds of burn lifetime spent on a single strike. Zero makes hitting free.")]
         [SerializeField, Range(0f, 60f)] private float strikeLifetimeCost = 5f;
 
+        [Tooltip("Seconds of fuel lost on the first collision after each drop. Zero makes dropping free.")]
+        [SerializeField, Min(0f)] private float dropLifetimeCost = 10f;
+        private Rigidbody dropBody;
+        private CapsuleCollider dropCollider;
+        private bool impactPending;
+        public bool IsHeld => character != null;
+        public bool IsSettled => !IsHeld && !impactPending && dropBody != null
+            && (dropBody.IsSleeping() || dropBody.linearVelocity.sqrMagnitude < 0.04f);
+        public float DropLifetimeCost => dropLifetimeCost;
+        public Vector3 GripOffset => gripOffset;
+
+        public void Drop()
+        {
+            if (!IsHeld) return;
+            Transform previousHolder = character;
+            character = null;
+            transform.SetParent(null, true);
+            if (dropCollider == null)
+            {
+                dropCollider = gameObject.AddComponent<CapsuleCollider>();
+                dropCollider.center = new Vector3(0f, 0.3f, 0f);
+                dropCollider.height = 0.72f;
+                dropCollider.radius = 0.11f;
+            }
+            dropCollider.enabled = true;
+            if (dropBody == null) dropBody = gameObject.AddComponent<Rigidbody>();
+            dropBody.mass = 0.6f;
+            dropBody.linearDamping = 0.4f;
+            dropBody.angularDamping = 1.5f;
+            dropBody.isKinematic = false;
+            dropBody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            dropBody.interpolation = RigidbodyInterpolation.Interpolate;
+            dropBody.linearVelocity = previousHolder.forward * 0.65f;
+            dropBody.angularVelocity = previousHolder.right * 2.5f;
+            foreach (var collider in previousHolder.GetComponentsInChildren<Collider>())
+                if (collider != dropCollider) Physics.IgnoreCollision(dropCollider, collider);
+            impactPending = true;
+            initialized = false;
+            poseSuppression = 0f;
+        }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (!impactPending || IsHeld) return;
+            impactPending = false;
+            burnAge = Mathf.Min(Mathf.Max(0.1f, lifetime), burnAge + Mathf.Max(0f, dropLifetimeCost));
+        }
+
+        public void PickUp(Transform holder, Transform arm, Transform elbow)
+        {
+            if (holder == null || arm == null || elbow == null) return;
+            if (dropBody != null)
+            {
+                dropBody.linearVelocity = Vector3.zero;
+                dropBody.angularVelocity = Vector3.zero;
+                dropBody.collisionDetectionMode = CollisionDetectionMode.Discrete;
+                dropBody.isKinematic = true;
+            }
+            if (dropCollider != null) dropCollider.enabled = false;
+            impactPending = false;
+            character = holder;
+            upperArm = arm;
+            forearm = elbow;
+            transform.SetParent(elbow, true);
+            transform.localPosition = gripOffset;
+            transform.localRotation = restLocalRotation;
+            initialized = false;
+        }
+
         public float RemainingLifetime => Mathf.Max(0f, lifetime - burnAge);
 
         /// <summary>Seconds of burn lifetime a single strike costs.</summary>

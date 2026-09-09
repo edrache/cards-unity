@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 3366110197186729732}
   - component: {fileID: 4592892871767690858}
   - component: {fileID: 5031540644886181503}
+  - component: {fileID: 8015079483885469883}
   m_Layer: 0
   m_Name: Shadow Knight
   m_TagString: Untagged
@@ -307,6 +308,24 @@ MonoBehaviour:
   strikeElbow: 10
   swingOutwardAngle: 8
   chestTwist: 8
+--- !u!114 &8015079483885469883
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90125876250897346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 631a8b014f41e49b4a31eadb4a7b9ad3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.TorchInteraction
+  torch: {fileID: 0}
+  pickupRange: 1
+  dropDuration: 0.35
+  pickupDuration: 0.75
+  recoveryDuration: 0.45
+  showPrompt: 1
 --- !u!1 &689539237441915602
 GameObject:
   m_ObjectHideFlags: 0

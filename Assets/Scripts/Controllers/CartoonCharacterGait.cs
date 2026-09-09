@@ -99,6 +99,7 @@ namespace CardsUnity.Controllers
         private readonly RaycastHit[] terrainHits = new RaycastHit[32];
         private float cycle, intensity, intensityVelocity;
         private Vector3 lean, leanVelocity;
+        public float InteractionCrouch { get; set; }
         private Vector3 bodyOrigin;
         private Vector3 bodyMotion, bodyMotionVelocity;
         private float sideRoll, sideRollVelocity;
@@ -185,8 +186,8 @@ namespace CardsUnity.Controllers
             Vector3 targetMotion = new Vector3(wave * sideSwayDistance * motionWeight, compression + breathing, 0f);
             targetMotion += new Vector3(noise.x * 0.015f, noise.y * 0.02f, 0f);
             bodyMotion = Vector3.SmoothDamp(bodyMotion, targetMotion, ref bodyMotionVelocity, bodyMotionSmoothTime, Mathf.Infinity, dt);
-            body.localPosition = bodyOrigin + bodyMotion + Vector3.up * flightLift;
-            Vector3 bodyAngles = lean + Vector3.forward * sideRoll;
+            body.localPosition = bodyOrigin + bodyMotion + Vector3.up * (flightLift - hipHeight * 0.72f * InteractionCrouch);
+            Vector3 bodyAngles = lean + Vector3.forward * sideRoll + Vector3.right * (35f * InteractionCrouch);
             body.localRotation = Quaternion.Euler(bodyAngles);
             if (spine != null) spine.Animate(style, activity, dt);
             if (head != null && spine == null)

@@ -41,6 +41,7 @@ namespace CardsUnity.Controllers
         private float blend;
         private CartoonCharacterGait gait;
         private TorchAttack torchAttack;
+        private TorchInteraction torchInteraction;
         private Vector3 previousActualVelocity;
         private bool sneaking;
         private bool analogMovement;
@@ -50,6 +51,7 @@ namespace CardsUnity.Controllers
             controller = GetComponent<CharacterController>();
             gait = GetComponent<CartoonCharacterGait>();
             torchAttack = GetComponent<TorchAttack>();
+            torchInteraction = GetComponent<TorchInteraction>();
             if (body != null) bodyOrigin = body.localPosition;
         }
 
@@ -58,6 +60,7 @@ namespace CardsUnity.Controllers
             Vector2 input;
             bool running;
             bool attackHeld;
+            bool interactPressed;
             if (ReInput.isReady)
             {
                 Player player = ReInput.players.GetPlayer(rewiredPlayerName);
@@ -70,6 +73,7 @@ namespace CardsUnity.Controllers
                 // Run stays a held action on every controller, so it also works alongside the stick.
                 running = player.GetButton("Run");
                 attackHeld = player.GetButton("Attack");
+                interactPressed = ReInput.mapping.GetActionId("TorchInteract") >= 0 && player.GetButtonDown("TorchInteract");
                 if (player.GetButtonDown("Sneak") && player.IsCurrentInputSource("Sneak", ControllerType.Keyboard))
                 {
                     sneaking = !sneaking;
@@ -82,6 +86,13 @@ namespace CardsUnity.Controllers
                 ReadLegacyInput(out input, out running, out analogMovement);
                 if (UnityEngine.InputSystem.Keyboard.current?.cKey.wasPressedThisFrame == true) sneaking = !sneaking;
                 attackHeld = UnityEngine.InputSystem.Keyboard.current?.spaceKey.isPressed == true;
+                interactPressed = UnityEngine.InputSystem.Keyboard.current?.eKey.wasPressedThisFrame == true;
+            }
+            if (interactPressed && torchInteraction != null) torchInteraction.TryInteract();
+            if (torchInteraction != null && torchInteraction.IsBusy)
+            {
+                input = Vector2.zero;
+                velocity = Vector3.zero;
             }
             // Holding cocks the arm, releasing strikes, so the button state is fed every frame.
             if (torchAttack != null) torchAttack.SetAttackHeld(attackHeld);
