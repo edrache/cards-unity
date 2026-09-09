@@ -525,10 +525,13 @@ namespace CardsUnity.Controllers
             {
                 int count = Physics.RaycastNonAlloc(point, delta / distance, hits, distance,
                     environmentMask, QueryTriggerInteraction.Ignore);
+                var torch = light.GetComponentInParent<HandheldTorch>();
+                Transform emitter = torch != null ? torch.transform : light.transform;
                 for (int i = 0; i < count; i++)
                 {
                     Transform blocker = hits[i].transform;
-                    if (blocker.IsChildOf(transform) || light.transform.IsChildOf(blocker)) continue;
+                    // Ignore the emitter itself, not its holder: the character casts a gameplay shadow.
+                    if (blocker.IsChildOf(transform) || blocker.IsChildOf(emitter)) continue;
                     return 0f;
                 }
             }
