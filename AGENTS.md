@@ -125,6 +125,10 @@ Keep this file aligned with the actual repository. `CLAUDE.md` points to this sh
 
 ## Procedural centipede
 
+- Cave residents start Dormant and become alerted when the player enters their assigned chamber. Alert persists after leaving that chamber. Generated residents receive their exact room; manually placed cave centipedes resolve the nearest room. Standalone centipedes outside cave scenes retain immediate stalking.
+- Cave traversal is restricted to carved interior floors, rocks and inward-facing wall surfaces. Cutaway rims, outer faces and ceilings are rejected. Stalking prefers floor/rocks and cannot start climbing a boundary wall; flight may use inner walls, and safe creatures descend again. Candidate lookahead and floor preference reduce wall stalls. Visible wall raycasts are front-face only.
+- Direct Play Mode checks covered dormant immobility, activation on entering the room, 600 stalking frames without wall climbing/outside contacts, and 600 light-response frames without outside contacts followed by return to stalking on the floor. The final dedicated wall-descent/rim test could not be completed because the Unity relay stopped responding; do not treat it as verified.
+
 - `TorchNight` contains three `Assets/Prefabs/Centipede.prefab` instances. `ProceduralCentipede` generates a disposable preview/runtime rig using shared URP materials. Generated children are not saved; edit the root component.
 - `Segment Count` (3–48) and `Size` (0.25–3) rebuild the creature independently per instance, including in Edit Mode. Duplicate the prefab to add differently sized creatures; leave root Transform scale at one. An unassigned target resolves the scene's `ProceduralCharacter`.
 - Distance travelled drives the travelling leg wave. Surface-relative probes support floors, walls, ceilings and concave/convex junctions. The body follows recorded head contact poses at fixed path distances, including orientation around corners. This remains local steering, not global pathfinding; gaps without an adjoining surface stop movement.

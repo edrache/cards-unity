@@ -688,31 +688,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 660130bf8fad147c899a0e96ad4fd123, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.ProceduralCave
-  roomCount: 20
+  roomCount: 19
   seed: 23
-  roomRadius: 5.36
+  roomRadius: 6.65
   roomSizeVariation: 1
   extraConnections: 0.074
   corridorWidth: 3.12
   corridorWinding: 0.8
   branchDensity: 0.5
-  entranceLength: 12
+  entranceLength: 17.97
   rockPrefabs:
   - {fileID: 8415648801953113749, guid: 4859b83be67da4cfc94150c8d9bf7909, type: 3}
   - {fileID: 6776167583924526275, guid: 2aba132793ce1420291c6828e4fbbfdc, type: 3}
   - {fileID: 5178868028192936276, guid: bba41afb890d54399acf39d4b311c247, type: 3}
   - {fileID: 4078306108158509581, guid: 7aeaecc88c3034a059e5ab84ae353ebf, type: 3}
-  rockDensity: 0.838
+  rockDensity: 1
   minimumRockSize: 1.2
   maximumRockSize: 2.6
   centipedePrefab: {fileID: 8402668057444636402, guid: b4f4b46d9a579409ba14a9d3563f22e8, type: 3}
-  centipedeRoomPercentage: 25
+  centipedeRoomPercentage: 74.3
   enableElevation: 1
   elevationRange: 6
   maximumSlope: 15
   cutawayWallHeight: 1.5
   irregularity: 1
-  wallHeight: 5
+  wallHeight: 20
   floorMaterial: {fileID: 2100000, guid: 14fbd045c7f4f429a92d26e9ec18cafa, type: 2}
   wallMaterial: {fileID: 2100000, guid: aa05295aa904a4ff3a64f766e3627ec9, type: 2}
   player: {fileID: 1870170170}
@@ -894,19 +894,19 @@ PrefabInstance:
       objectReference: {fileID: 990240585}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 29.172926
+      value: -28.97453
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.4601818
+      value: -1.4159967
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -74.53375
+      value: -84.8174
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.9485572
+      value: 0.9188415
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalRotation.x
@@ -914,7 +914,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.31660587
+      value: 0.39462695
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalRotation.z
