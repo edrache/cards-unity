@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 9120318574035759802}
   - component: {fileID: 8402668057444636402}
+  - component: {fileID: 4082988869650895104}
   m_Layer: 0
   m_Name: Centipede
   m_TagString: Untagged
@@ -53,9 +54,40 @@ MonoBehaviour:
   fleeSpeed: 4.5
   stopDistance: 1.2
   turnSpeed: 300
+  behaviourVariation: 0.8
+  randomSeed: 0
+  wanderAngle: 32
+  noiseFrequency: 0.45
+  speedVariation: 0.3
+  stuckCheckInterval: 0.7
+  recoveryDuration: 1.5
+  dimLightThreshold: 0.005
   fearThreshold: 0.12
   safeLightRatio: 0.4
   hideDuration: 2.5
   environmentMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &4082988869650895104
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7835821560974445880}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6fbedc8c3b2d04436af21c02c8c7f360, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CentipedeLegAudio
+  legStep: {fileID: 8300000, guid: 79f045e7208fe4835baef679e6bd8162, type: 3}
+  output: {fileID: 24300002, guid: 58454d56805704896af1bdf2fd0e570f, type: 2}
+  fullVolumeDistance: 4
+  hearingDistance: 16
+  volume: 0.25
+  pitchCentre: 1
+  pitchJitter: 0.25
+  volumeJitter: 0.3
+  voiceCount: 16
+  maximumStepsPerFrame: 12
+  spatialBlend: 0.7

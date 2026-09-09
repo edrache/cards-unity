@@ -35,6 +35,7 @@ Project code currently lives in `Assets/Scripts/Controllers/`, under the `CardsU
 | `ProceduralSpine.cs` | Three-joint spine, neck stabilization, and per-instance CPU torso deformation driven by gait styles |
 | `FootstepAudio.cs` | One-shot footstep playback on gait foot contacts, with per-step pitch randomization and Sneak/Walk/Run volume |
 | `MusicPlayer.cs` | Looping background music with fade-in/fade-out and an optional mixer group |
+| `CentipedeLegAudio.cs` | Pooled leg-click voices for a centipede, gated on the distance to the player and randomized per contact |
 
 There are currently no project-owned `.asmdef` files or automated test suites under `Assets/Scripts/`. Do not assume `CardsUnity.Runtime` or `CardsUnity.Tests` assemblies exist. Add folders and assemblies only when needed; keep data-only calculations independent of scene objects where practical.
 
@@ -68,9 +69,12 @@ There are currently no project-owned `.asmdef` files or automated test suites un
 
 ## Audio
 
-- Audio assets live in `Assets/Audio/`: `SFX/` (footstep samples), `Music/`, and `Mixers/Deep.mixer` with a single `Master` group. Footsteps and music both route to that group.
+- Audio assets live in `Assets/Audio/`: `SFX/` (footstep and leg-click samples), `Music/`, and `Mixers/Deep.mixer` with a single `Master` group. Footsteps, leg clicks and music all route to that group.
 - `TorchNight` has a `Music` object with `MusicPlayer`, playing `Assets/Audio/Music/Stereo_Color_Dark-Background_main.wav` looped and faded in. Music tracks are imported as Streaming/Vorbis; short samples stay Decompress On Load.
 - Footstep volumes, pitches and the mixer group are tuned on the `Shadow Knight` prefab asset itself. Preserve that tuning.
+- `CentipedeLegAudio` on `Centipede.prefab` plays `Assets/Audio/SFX/ClickLeg.wav` for every leg contact through a pool of runtime `AudioSource` children ("Leg Click 0..n"), each with its own randomized pitch and volume. A voice is recycled on reuse, because the sample carries over a second of trailing silence after its transient.
+- Leg clicks are gated on the distance between the creature and the player: full volume within `Full Volume Distance`, a squared falloff up to `Hearing Distance`, and no voices at all beyond it, so a populated cave neither floods the mix nor spends voices out of earshot. The audible falloff is that range check, not the 3D curve, because the listener rides the overhead camera.
+- Leg clicks are dense by design: roughly 57 per second while stalking and 213 per second while fleeing for 14 segments. `Maximum Steps Per Frame` only drops the surplus of an unusually long frame.
 
 ## Torch and rendering
 
@@ -131,6 +135,7 @@ Keep this file aligned with the actual repository. `CLAUDE.md` points to this sh
 
 - `TorchNight` contains three `Assets/Prefabs/Centipede.prefab` instances. `ProceduralCentipede` generates a disposable preview/runtime rig using shared URP materials. Generated children are not saved; edit the root component.
 - `Segment Count` (3–48) and `Size` (0.25–3) rebuild the creature independently per instance, including in Edit Mode. Duplicate the prefab to add differently sized creatures; leave root Transform scale at one. An unassigned target resolves the scene's `ProceduralCharacter`.
+- `ProceduralCentipede` raises a `LegStep` event for every individual leg contact. A leg stays planted while `sin(cycle)` is negative, so its touchdown is the crossing of `cycle = pi`; all legs share the distance-driven phase and differ by a fixed offset, so the detection needs no per-leg state and a standing creature stays silent.
 - Distance travelled drives the travelling leg wave. Surface-relative probes support floors, walls, ceilings and concave/convex junctions. The body follows recorded head contact poses at fixed path distances, including orientation around corners. This remains local steering, not global pathfinding; gaps without an adjoining surface stop movement.
 - States are Stalking, Fleeing and Hiding. Point/spot light exposure across all segments triggers flight; shadow-casting lights respect collider occlusion. Directional moonlight is ignored. Exposure is a gameplay approximation, not a sample of rendered pixels or baked lighting. `Fear Threshold`, `Safe Light Ratio`, and `Hide Duration` tune the reaction.
 - `Tick(float dt)` supports direct deterministic checks. Earlier editor Play Mode checks (before continuous movement was added): dark pursuit stopped near 1.2 m, restored torch triggers flight at 4.5 m/s, darkness triggers hiding and pursuit resumes; collider occlusion blocks exposure; 3/48 segments and 0.25/3 size generate successfully. These checks are not a persistent automated test suite.

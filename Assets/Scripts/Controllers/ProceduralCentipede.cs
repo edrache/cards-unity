@@ -3,6 +3,21 @@ using System.Collections.Generic;
 
 namespace CardsUnity.Controllers
 {
+    /// <summary>A single leg planting itself on the surface, reported by <see cref="ProceduralCentipede"/>.</summary>
+    public readonly struct CentipedeLegStep
+    {
+        public readonly int Segment;
+        public readonly int Side;
+        public readonly Vector3 Position;
+
+        public CentipedeLegStep(int segment, int side, Vector3 position)
+        {
+            Segment = segment;
+            Side = side;
+            Position = position;
+        }
+    }
+
     /// <summary>A surface-crawling stalker with a generated rig and distance-driven legs.</summary>
     [ExecuteAlways, DisallowMultipleComponent]
     public sealed class ProceduralCentipede : MonoBehaviour
@@ -57,6 +72,11 @@ namespace CardsUnity.Controllers
         }
         public int SegmentCount => segmentCount;
         public float Size => size;
+        /// <summary>The hunted transform, resolved on the first tick when left empty.</summary>
+        public Transform Target => target;
+
+        /// <summary>Raised for every individual leg contact, driven by travelled distance.</summary>
+        public event System.Action<CentipedeLegStep> LegStep;
 
         // Contact poses are recorded along the head path so the tail takes the same corners.
         private readonly List<Pose> surfaceTrail = new List<Pose>(1024);
@@ -269,7 +289,9 @@ namespace CardsUnity.Controllers
             // Keep the body in world space while the head advances.
             rig.SetPositionAndRotation(rigPosition, rigRotation);
             float distance = Vector3.Distance(before, transform.position);
+            float previousPhase = phase;
             phase += distance / (0.55f * size) * Mathf.PI * 2f;
+            ReportLegSteps(previousPhase);
             RecordContact();
             FollowBody();
             PoseLegs();
@@ -502,6 +524,26 @@ namespace CardsUnity.Controllers
                 Vector3 contact = Vector3.Lerp(a.position, b.position, t);
                 segments[i].SetPositionAndRotation(contact + orientation * Vector3.up * (0.22f * size), orientation);
             }
+        }
+
+        // A leg stays planted while sin(cycle) is negative, so its touchdown is the moment its own
+        // cycle crosses pi. Every leg shares the distance-driven phase and differs by a fixed offset,
+        // so counting the crossings needs no per-leg state.
+        private void ReportLegSteps(float previousPhase)
+        {
+            if (LegStep == null || lowerLegs == null) return;
+            const float turn = Mathf.PI * 2f;
+            for (int i = 0; i < segmentCount; i++)
+                for (int side = 0; side < 2; side++)
+                {
+                    float offset = gaitOffset * behaviourVariation - i * 0.75f + side * Mathf.PI - Mathf.PI;
+                    if (Mathf.FloorToInt((previousPhase + offset) / turn)
+                        == Mathf.FloorToInt((phase + offset) / turn)) continue;
+                    int index = i * 2 + side;
+                    Transform leg = index < lowerLegs.Length ? lowerLegs[index] : null;
+                    LegStep.Invoke(new CentipedeLegStep(i, side,
+                        leg != null ? leg.position : transform.position));
+                }
         }
 
         private void PoseLegs()
