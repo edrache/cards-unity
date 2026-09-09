@@ -88,6 +88,7 @@ MonoBehaviour:
   pitchCentre: 1
   pitchJitter: 0.25
   volumeJitter: 0.3
+  maximumAudibleLegs: 8
   voiceCount: 16
   maximumStepsPerFrame: 12
   spatialBlend: 0.7

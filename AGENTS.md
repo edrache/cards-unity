@@ -35,7 +35,7 @@ Project code currently lives in `Assets/Scripts/Controllers/`, under the `CardsU
 | `ProceduralSpine.cs` | Three-joint spine, neck stabilization, and per-instance CPU torso deformation driven by gait styles |
 | `FootstepAudio.cs` | One-shot footstep playback on gait foot contacts, with per-step pitch randomization and Sneak/Walk/Run volume |
 | `MusicPlayer.cs` | Looping background music with fade-in/fade-out and an optional mixer group |
-| `CentipedeLegAudio.cs` | Pooled leg-click voices for a centipede, gated on the distance to the player and randomized per contact |
+| `CentipedeLegAudio.cs` | Pooled leg-click voices for a centipede, limited to a chosen number of legs, gated on the distance to the player and randomized per contact |
 
 There are currently no project-owned `.asmdef` files or automated test suites under `Assets/Scripts/`. Do not assume `CardsUnity.Runtime` or `CardsUnity.Tests` assemblies exist. Add folders and assemblies only when needed; keep data-only calculations independent of scene objects where practical.
 
@@ -74,7 +74,8 @@ There are currently no project-owned `.asmdef` files or automated test suites un
 - Footstep volumes, pitches and the mixer group are tuned on the `Shadow Knight` prefab asset itself. Preserve that tuning.
 - `CentipedeLegAudio` on `Centipede.prefab` plays `Assets/Audio/SFX/ClickLeg.wav` for every leg contact through a pool of runtime `AudioSource` children ("Leg Click 0..n"), each with its own randomized pitch and volume. A voice is recycled on reuse, because the sample carries over a second of trailing silence after its transient.
 - Leg clicks are gated on the distance between the creature and the player: full volume within `Full Volume Distance`, a squared falloff up to `Hearing Distance`, and no voices at all beyond it, so a populated cave neither floods the mix nor spends voices out of earshot. The audible falloff is that range check, not the 3D curve, because the listener rides the overhead camera.
-- Leg clicks are dense by design: roughly 57 per second while stalking and 213 per second while fleeing for 14 segments. `Maximum Steps Per Frame` only drops the surplus of an unusually long frame.
+- `Maximum Audible Legs` caps how many of the two legs per segment may click at all. The audible legs are picked evenly along the body, so lowering it thins the rattle proportionally without breaking the travelling wave; a value at or above the leg count makes every leg audible. The default 8 gives roughly 17 clicks per second while stalking and 65 while fleeing, against 57 and 213 with every leg of a 14-segment creature.
+- `Maximum Steps Per Frame` is a separate guard that only drops the surplus of an unusually long frame.
 
 ## Torch and rendering
 

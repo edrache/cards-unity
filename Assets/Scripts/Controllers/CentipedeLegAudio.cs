@@ -27,6 +27,12 @@ namespace CardsUnity.Controllers
         [Tooltip("How much a single click may drop below the current volume. Keeps the rattle uneven.")]
         [SerializeField, Range(0f, 1f)] private float volumeJitter = 0.3f;
 
+        [Header("Audible legs")]
+        [Tooltip("How many of the creature's legs may click at all. The audible legs are picked evenly "
+            + "along the body, so a lower value thins the rattle without breaking the travelling wave. "
+            + "A value at or above the leg count (two per segment) makes every leg audible.")]
+        [SerializeField, Range(1, 96)] private int maximumAudibleLegs = 8;
+
         [Header("Voices")]
         [Tooltip("Overlapping voices. Each one carries its own pitch, and a voice is recycled after "
             + "every full round, so more voices keep fast cadences from cutting each other short.")]
@@ -78,6 +84,7 @@ namespace CardsUnity.Controllers
         private void OnLegStep(CentipedeLegStep step)
         {
             if (legStep == null || voices == null) return;
+            if (!IsAudibleLeg(step)) return;
             if (countedFrame != Time.frameCount)
             {
                 countedFrame = Time.frameCount;
@@ -95,6 +102,16 @@ namespace CardsUnity.Controllers
             source.pitch = Mathf.Max(0.05f, pitchCentre + Random.Range(-pitchJitter, pitchJitter));
             float level = volume * frameFalloff * (1f - Random.Range(0f, volumeJitter));
             source.PlayOneShot(legStep, Mathf.Clamp01(level));
+        }
+
+        // Keep the selected legs spread evenly over the body: a leg is audible when it carries the next
+        // slot of the allowance, which picks exactly the wanted count out of the two legs per segment.
+        private bool IsAudibleLeg(CentipedeLegStep step)
+        {
+            int total = centipede != null ? centipede.SegmentCount * 2 : 0;
+            if (total <= 0 || maximumAudibleLegs >= total) return true;
+            int index = step.Segment * 2 + step.Side;
+            return (index + 1) * maximumAudibleLegs / total != index * maximumAudibleLegs / total;
         }
 
         private float Falloff()
