@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 8566650617304526917}
   - component: {fileID: 3366110197186729732}
   - component: {fileID: 4592892871767690858}
+  - component: {fileID: 5031540644886181503}
   m_Layer: 0
   m_Name: Shadow Knight
   m_TagString: Untagged
@@ -280,6 +281,32 @@ MonoBehaviour:
   minDistance: 1.5
   maxDistance: 25
   minimumInterval: 0.06
+--- !u!114 &5031540644886181503
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90125876250897346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 285cadb4856da4f3e8c9fb2587c04d11, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.TorchAttack
+  torch: {fileID: 2737033395986682042}
+  upperArm: {fileID: 6382968931117336918}
+  forearm: {fileID: 4537996985418629761}
+  character: {fileID: 3466474160620811249}
+  chest: {fileID: 7664271967446964823}
+  windupDuration: 0.14
+  strikeDuration: 0.1
+  recoverDuration: 0.3
+  windupPitch: -170
+  strikePitch: -40
+  windupElbow: 110
+  strikeElbow: 10
+  swingOutwardAngle: 8
+  chestTwist: 8
 --- !u!1 &689539237441915602
 GameObject:
   m_ObjectHideFlags: 0
@@ -3563,6 +3590,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6608237145275412750, guid: acfa17e2a9aaf43f6a773759c5911c1f, type: 3}
   m_PrefabInstance: {fileID: 8741581770751806387}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2737033395986682042 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6677627760092633865, guid: acfa17e2a9aaf43f6a773759c5911c1f, type: 3}
+  m_PrefabInstance: {fileID: 8741581770751806387}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef1df17f54d5b4556a9f4890a059cd46, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.HandheldTorch
 --- !u!4 &6899228862639739490 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2805366908293126609, guid: acfa17e2a9aaf43f6a773759c5911c1f, type: 3}

@@ -40,6 +40,7 @@ namespace CardsUnity.Controllers
         private float phase;
         private float blend;
         private CartoonCharacterGait gait;
+        private TorchAttack torchAttack;
         private Vector3 previousActualVelocity;
         private bool sneaking;
         private bool analogMovement;
@@ -48,6 +49,7 @@ namespace CardsUnity.Controllers
         {
             controller = GetComponent<CharacterController>();
             gait = GetComponent<CartoonCharacterGait>();
+            torchAttack = GetComponent<TorchAttack>();
             if (body != null) bodyOrigin = body.localPosition;
         }
 
@@ -55,6 +57,7 @@ namespace CardsUnity.Controllers
         {
             Vector2 input;
             bool running;
+            bool attackPressed;
             if (ReInput.isReady)
             {
                 Player player = ReInput.players.GetPlayer(rewiredPlayerName);
@@ -66,6 +69,7 @@ namespace CardsUnity.Controllers
                 if (keyboardMovement || joystickMovement) analogMovement = joystickMovement && !keyboardMovement;
                 // Run stays a held action on every controller, so it also works alongside the stick.
                 running = player.GetButton("Run");
+                attackPressed = player.GetButtonDown("Attack");
                 if (player.GetButtonDown("Sneak") && player.IsCurrentInputSource("Sneak", ControllerType.Keyboard))
                 {
                     sneaking = !sneaking;
@@ -77,7 +81,9 @@ namespace CardsUnity.Controllers
                 // Keep the daytime playground usable without a Rewired manager.
                 ReadLegacyInput(out input, out running, out analogMovement);
                 if (UnityEngine.InputSystem.Keyboard.current?.cKey.wasPressedThisFrame == true) sneaking = !sneaking;
+                attackPressed = UnityEngine.InputSystem.Keyboard.current?.spaceKey.wasPressedThisFrame == true;
             }
+            if (attackPressed && torchAttack != null) torchAttack.TryStrike();
             input = Vector2.ClampMagnitude(input, 1f);
             float stickMagnitude = input.magnitude;
             if (analogMovement && stickMagnitude < idleThreshold)

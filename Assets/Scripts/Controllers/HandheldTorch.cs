@@ -47,6 +47,21 @@ namespace CardsUnity.Controllers
         private Vector3 previousPosition, filteredVelocity, sway, swayVelocity;
         private float flicker = 1f;
         private bool initialized;
+        private float poseSuppression;
+        private Quaternion restLocalRotation = Quaternion.identity;
+
+        public Transform UpperArm => upperArm;
+        public Transform Forearm => forearm;
+        public Transform Holder => character;
+
+        /// <summary>
+        /// Fades out the holding pose and the upright torch lock, so another animation such as
+        /// <see cref="TorchAttack"/> can take the arm over and drag the torch along with the forearm.
+        /// </summary>
+        public void SetPoseSuppression(float weight)
+        {
+            poseSuppression = Mathf.Clamp01(weight);
+        }
 
         public void SetArmOutwardAngle(float angle)
         {
@@ -57,6 +72,11 @@ namespace CardsUnity.Controllers
         {
             gripOffset = offset;
             transform.localPosition = offset;
+        }
+
+        private void Awake()
+        {
+            restLocalRotation = transform.localRotation;
         }
 
         private void OnEnable()
@@ -102,18 +122,28 @@ namespace CardsUnity.Controllers
             if (character != null)
             {
                 // Retain a little gait swing, while keeping the flame clear of the face.
+                float pose = holdingPose * (1f - poseSuppression);
                 if (upperArm != null)
                     upperArm.rotation = Quaternion.Slerp(upperArm.rotation,
-                        character.rotation * Quaternion.Euler(-24f, 0f, armOutwardAngle), holdingPose);
+                        character.rotation * Quaternion.Euler(-24f, 0f, armOutwardAngle), pose);
                 if (forearm != null)
                     forearm.localRotation = Quaternion.Slerp(forearm.localRotation,
-                        Quaternion.Euler(-78f, 0f, 0f), holdingPose);
+                        Quaternion.Euler(-78f, 0f, 0f), pose);
                 transform.localPosition = gripOffset;
                 Vector3 targetSway = new Vector3(-localVelocity.z, 0f, localVelocity.x) * (swayAngle / 6f);
                 targetSway += new Vector3(Mathf.Sin(time * 2.1f), 0f, Mathf.Sin(time * 1.7f + 2f)) * motion * 2f;
                 sway = Vector3.SmoothDamp(sway, targetSway, ref swayVelocity, swayResponse, Mathf.Infinity, dt);
-                transform.rotation = character.rotation * Quaternion.Euler(sway);
-
+                Quaternion upright = character.rotation * Quaternion.Euler(sway);
+                if (poseSuppression <= 0.0001f || transform.parent == null)
+                {
+                    transform.rotation = upright;
+                }
+                else
+                {
+                    // A suppressed pose lets the torch ride the forearm instead of staying upright.
+                    Quaternion carried = transform.parent.rotation * restLocalRotation;
+                    transform.rotation = Quaternion.Slerp(carried, upright, 1f - poseSuppression);
+                }
             }
 
             float effectiveSpeed = flickerSpeed * (1f + 3f * dying);

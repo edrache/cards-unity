@@ -30,7 +30,8 @@ Project code currently lives in `Assets/Scripts/Controllers/`, under the `CardsU
 | `CharacterFollowCamera.cs` | Smoothed orthographic camera following from above |
 | `CartoonCharacterGait.cs` | Rig references, IK, body motion, independent arm/forearm controls, noise, style weights, and sprint style transitions |
 | `GaitStylePose.cs` | Procedural style evaluation and blending, including foot adjustments |
-| `HandheldTorch.cs` | LateUpdate holding pose, torch inertia, smooth light flicker, illumination controls, and particle drift |
+| `HandheldTorch.cs` | LateUpdate holding pose, torch inertia, smooth light flicker, illumination controls, particle drift, and pose suppression during an attack |
+| `TorchAttack.cs` | Procedural overhead torch swing on the right arm: three-phase timeline, pose blending over the holding pose, optional chest twist, and a strike event |
 | `ShadowKnightProportions.cs` | Editable limb/body dimensions, rig and collider sizing, torch grip, and optional helmet |
 | `ProceduralSpine.cs` | Three-joint spine, neck stabilization, and per-instance CPU torso deformation driven by gait styles |
 | `FootstepAudio.cs` | One-shot footstep playback on gait foot contacts, with per-step pitch randomization and Sneak/Walk/Run volume |
@@ -42,10 +43,10 @@ There are currently no project-owned `.asmdef` files or automated test suites un
 ## Controls and animation behavior
 
 - WASD/arrows or the gamepad left stick move relative to the camera.
-- TorchNight uses Rewired Player0: MoveHorizontal/MoveVertical (WASD or left stick), held Run (left Shift or the mapped pad button), and toggled Sneak (C). Run is read from every controller type and overrides Sneak and Walk; releasing it returns to whatever the stick or the Sneak toggle asks for. Sneak stays restricted to the keyboard input source, because toggling it also hands control back from the stick.
+- TorchNight uses Rewired Player0: MoveHorizontal/MoveVertical (WASD or left stick), held Run (left Shift or the mapped pad button), toggled Sneak (C), and Attack (Space). Run is read from every controller type and overrides Sneak and Walk; releasing it returns to whatever the stick or the Sneak toggle asks for. Sneak stays restricted to the keyboard input source, because toggling it also hands control back from the stick.
 - The gamepad left stick chooses between Sneak and Walk by deflection: below Walk Threshold it sneaks, above it walks. Running is never derived from deflection. `ProceduralCharacter` exposes Idle Threshold and Walk Threshold, kept ordered by `OnValidate`. Movement speed scales with deflection because the input vector keeps its magnitude.
 - Below Idle Threshold the stick releases the automatic style and the manual style mixer takes over again, so a connected but centred gamepad never overwrites the Inspector sliders.
-- The daytime scene has no Rewired manager and falls back to Input System: keyboard movement keeps priority, the left stick takes over once deflected past Idle Threshold, Run is left Shift or left stick click, and Sneak toggles on C.
+- The daytime scene has no Rewired manager and falls back to Input System: keyboard movement keeps priority, the left stick takes over once deflected past Idle Threshold, Run is left Shift or left stick click, Sneak toggles on C, and Attack is Space.
 - Sprinting smoothly changes the visible style sliders to Run and fades the other weights. Releasing sprint restores the previous custom mix, including after rapid toggling.
 - Gait phase advances from actual horizontal distance travelled. Avoid animating a full walk when blocked by a wall.
 - Styles: Walk, Double Bounce Walk, Strut, Shuffle, Sneak, Run, Jump, Fast Run, Tip Toe, and Skip.
@@ -83,6 +84,7 @@ There are currently no project-owned `.asmdef` files or automated test suites un
 - `Assets/Prefabs/Handheld Torch.prefab` is nested in Shadow Knight, with holder references overridden on the knight. The standalone torch also burns without a character reference. `Lifetime` defaults to 180 gameplay seconds; `Burnout Fraction` (0.4) controls the final fading phase and `Dying Flicker Amount` controls stronger end-of-life flicker. Light, fire and smoke emission fade to zero; existing particles finish naturally. Disabling/re-enabling does not refill fuel. `RemainingLifetime` and `IsBurnedOut` expose runtime state. Direct Play Mode checks covered standalone burnout, holder references and no reignition on re-enable; no persistent test suite was added.
 - `Brightness` and `Light Range` control illumination; flicker and sway have separate settings.
 - Torch pose runs after gait updates. Preserve this ordering so the holding pose does not fight the walking animation.
+- `SetPoseSuppression` fades out both the holding pose and the upright torch lock, so another animation can take the right arm and carry the torch with the forearm. Anything using it must push a value every frame; the torch keeps the last one.
 - Fire and smoke simulate in world space; trails should remain behind a moving torch.
 - URP assets are in `Assets/Settings/`. Check the active quality/pipeline asset before diagnosing lights or shadows.
 - Use URP-compatible shaders and volume effects. Preserve the daytime scene when changing the night scene.
@@ -127,6 +129,18 @@ Inspect the resulting XML and log; process exit alone does not establish test su
 ## Maintaining agent instructions
 
 Keep this file aligned with the actual repository. `CLAUDE.md` points to this shared guidance; update shared rules here instead of maintaining divergent copies.
+
+## Torch attack
+
+- `Attack` is Rewired action id 4 in `Assets/Prefabs/Rewired Input Manager.prefab`, a button in the Default category, bound to Space on the keyboard. No gamepad binding is authored; add one in the Rewired inspector, because joystick element ids depend on the hardware GUID.
+- `ProceduralCharacter` reads the button on both input paths and calls `TorchAttack.TryStrike()`. Presses during a swing are ignored rather than buffered.
+- `TorchAttack` sits on the `Shadow Knight` root with `[DefaultExecutionOrder(150)]`, so its `LateUpdate` runs after `HandheldTorch` (100) and wins over the holding pose. It drives `SetPoseSuppression` from `Update`, so the torch reads the weight in the same frame.
+- The timeline is Windup (0.14 s), Strike (0.10 s) and Recover (0.30 s). The pose weight ramps in with `SmoothStep`, holds at one, then fades out, and that fade is what hands the arm back to the torch; there is no separate return pose. Only the strike phase uses an ease-out curve.
+- Angles are tuned for this rig: `Windup Pitch` -170 puts the hand above and behind the head, `Strike Pitch` -40 puts it low and in front. Increasing pitch rotates the arm backwards, so a positive windup would swing the wrong way. Re-measure both if limb proportions change substantially.
+- Movement, turning and the gait keep running during a swing; only the right arm, the torch and optionally the chest are overridden.
+- The optional `Chest` overlay is multiplied onto whatever `ProceduralSpine` wrote. `TorchAttack` remembers its own last write and undoes it first, because otherwise the twist accumulates whenever nothing else rewrites that joint, dragging the shoulder forward.
+- `Strike`, `HitWindowOpen`, `IsAttacking` and `NormalizedTime` exist for future hit detection. Nothing detects hits or applies damage yet.
+- Direct Edit Mode checks stepping `Tick`/`ApplyPose` against `HandheldTorch.Tick`: the pose returns exactly to the holding pose (hand 0.80 m forward, 1.56 m up) after three consecutive swings with 0.000 degrees of chest drift; the hand reaches 2.86 m up and 0.22 m behind at the apex and 1.16 m up, 0.83 m forward at the lowest strike frame, against a 1.98 m shoulder; the strike event fires once and the hit window lasts six frames at 60 Hz; a second `TryStrike` during a swing is rejected. Torch tilt against character up peaks near 70 degrees, so the torch follows the forearm. These are direct method checks, not an automated suite, and physical Space presses were not tested, because the relay assembly cannot reference Rewired.
 
 ## Procedural centipede
 
