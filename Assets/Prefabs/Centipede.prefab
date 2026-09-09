@@ -51,6 +51,8 @@ MonoBehaviour:
   leapDuration: 0.45
   leapHeight: 0.8
   attackCooldown: 4
+  darknessAttackThreshold: 0.02
+  darknessPatience: 0.75
   segmentCount: 14
   size: 1
   shellMaterial: {fileID: 2100000, guid: 815285d7b1572435aaa7598357710521, type: 2}

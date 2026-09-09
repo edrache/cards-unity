@@ -511,15 +511,15 @@ namespace CardsUnity.Controllers
         private static bool IsThreat(Light light) => light != null && light.isActiveAndEnabled
             && light.intensity > 0f && light.range > 0f && (light.type == LightType.Point || light.type == LightType.Spot);
 
-        public float SampleLight(Vector3 point)
+        public float SampleLight(Vector3 point, Transform ignoredOccluder = null)
         {
             float exposure = 0f;
             if (lights == null) lights = FindObjectsByType<Light>(FindObjectsSortMode.None);
-            foreach (var light in lights) exposure += SampleSingleLight(light, point);
+            foreach (var light in lights) exposure += SampleSingleLight(light, point, ignoredOccluder);
             return exposure;
         }
 
-        private float SampleSingleLight(Light light, Vector3 point)
+        private float SampleSingleLight(Light light, Vector3 point, Transform ignoredOccluder = null)
         {
             if (!IsThreat(light) || (light.cullingMask & (1 << gameObject.layer)) == 0) return 0f;
             Vector3 delta = light.transform.position - point;
@@ -536,7 +536,8 @@ namespace CardsUnity.Controllers
                 {
                     Transform blocker = hits[i].transform;
                     // Ignore the emitter itself, not its holder: the character casts a gameplay shadow.
-                    if (blocker.IsChildOf(transform) || blocker.IsChildOf(emitter)) continue;
+                    if (blocker.IsChildOf(transform) || blocker.IsChildOf(emitter)
+                        || (ignoredOccluder != null && blocker.IsChildOf(ignoredOccluder))) continue;
                     return 0f;
                 }
             }

@@ -11,6 +11,13 @@ namespace CardsUnity.Controllers
         [SerializeField, Min(0.1f)] private float leapDuration = 0.45f;
         [SerializeField, Min(0f)] private float leapHeight = 0.8f;
         [SerializeField, Min(0.1f)] private float attackCooldown = 4f;
+        [Header("Attack in darkness")]
+        [Tooltip("Maximum exposure around the player that permits a darkness attack. Uses the brightest of four surrounding samples.")]
+        [SerializeField, Min(0f)] private float darknessAttackThreshold = 0.02f;
+        [Tooltip("Low light must persist this long, so a momentary torch flicker does not trigger an attack.")]
+        [SerializeField, Min(0.1f)] private float darknessPatience = 0.75f;
+        private float darknessTime;
+        public float TargetLightExposure { get; private set; }
         private float lightTime, attackTime, cooldown, leapDistance;
         private bool attackHit;
         public float LightExposureTime => lightTime;
@@ -18,14 +25,14 @@ namespace CardsUnity.Controllers
 
         private void ResetAttack()
         {
-            lightTime = attackTime = cooldown = 0f;
+            lightTime = attackTime = cooldown = darknessTime = 0f;
             if (IsAttacking || State == BehaviourState.Enraged) State = BehaviourState.Stalking;
         }
 
         private void FinishAttack()
         {
             State = BehaviourState.Hiding;
-            darkTime = lightTime = attackTime = 0f;
+            darkTime = lightTime = attackTime = darknessTime = 0f;
             cooldown = Mathf.Max(0.1f, attackCooldown);
             currentHideDuration = hideDuration;
             progressOrigin = transform.position;
@@ -40,14 +47,25 @@ namespace CardsUnity.Controllers
             if (target == null || !target.gameObject.activeInHierarchy)
             {
                 if (IsAttacking || State == BehaviourState.Enraged) FinishAttack();
-                lightTime = 0f;
+                lightTime = darknessTime = 0f;
                 return false;
             }
             if (!IsAttacking)
             {
                 // Brief shadows dissipate frustration rather than resetting it every frame.
                 lightTime = exposure >= threshold ? lightTime + dt : Mathf.Max(0f, lightTime - dt);
-                if (cooldown <= 0f && lightTime >= Mathf.Max(0.1f, lightPatience)) State = BehaviourState.Enraged;
+                // Sample around the player rather than inside their shadow-casting capsule.
+                // A bright torch on either side still protects them from the darkness trigger.
+                Vector3 centre = target.position + Vector3.up * 0.8f;
+                TargetLightExposure = 0f;
+                for (int i = 0; i < 4; i++)
+                {
+                    Vector3 offset = Quaternion.AngleAxis(i * 90f, Vector3.up) * target.forward * 0.8f;
+                    TargetLightExposure = Mathf.Max(TargetLightExposure, SampleLight(centre + offset, target));
+                }
+                darknessTime = TargetLightExposure <= darknessAttackThreshold ? darknessTime + dt : 0f;
+                if (cooldown <= 0f && (lightTime >= Mathf.Max(0.1f, lightPatience)
+                    || darknessTime >= Mathf.Max(0.1f, darknessPatience))) State = BehaviourState.Enraged;
                 if (State != BehaviourState.Enraged) return false;
                 var victim = target.GetComponent<CharacterKnockdown>();
                 if (victim != null && !victim.CanBeHit) return false;
