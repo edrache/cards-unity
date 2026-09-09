@@ -212,6 +212,8 @@ Keep this file aligned with the actual repository. `CLAUDE.md` points to this sh
 - `Drop Lifetime Cost` on `Handheld Torch.prefab` defaults to 10 seconds. Only the first collision after each drop consumes it; subsequent bounces do not. Zero disables the penalty. The detached torch continues its regular light, fire, smoke and burnout updates, using its own movement for particle drift.
 - Direct Play Mode checks covered two drop/pickup cycles, a 10-second impact penalty and zero-cost boundary, continued ground burning, complete burnout with zero light/emission, no refill on re-enable, pickup of an extinguished torch at 0.95 m, distance/wall rejection, and attack blocking/restoration. A camera capture confirmed the crouched reach; grip error at 0.65 m was below 0.2 mm. These are direct Tick/physics checks, not a persistent automated suite or physical keyboard input tests. All temporary Play Mode objects were discarded and the editor returned to Edit Mode.
 
+- Moving-pickup follow-up: direct Play Mode physics checks on an 8-degree slope accepted a torch moving at 0.35 m/s and attached it while still moving at 0.67 m/s. Facing and reach tracked the rolling grip; a torch that rolled beyond pickup range was rejected. A camera capture confirmed the grip pose. The test used a temporary character and a separate physics scene, which were removed afterward; no physical E-key test was performed.
+
 ## Exhausted locomotion styles
 
 - `CartoonCharacterGait` adds `Knee Walk` and `Crawl` to the normalized style mixer (indices 10 and 11). Set the desired slider to one and the other eleven to zero for a pure style. Both default to zero, preserving existing tuning. Automatic Run/Sneak/Walk overrides and restoration include all twelve weights.
