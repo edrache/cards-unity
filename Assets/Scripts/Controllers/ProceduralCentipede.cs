@@ -232,7 +232,7 @@ namespace CardsUnity.Controllers
                 desired = away.normalized;
                 speed = fleeSpeed;
             }
-            else if (State == BehaviourState.Stalking && target != null)
+            else if (target != null)
             {
                 desired = target.position - transform.position;
                 float targetDistance = desired.magnitude;
@@ -281,6 +281,10 @@ namespace CardsUnity.Controllers
                     for (int j = 0; j < steps; j++)
                     {
                         if (!TrySurfaceStep(transform.position, transform.rotation, speed * dt / steps, out Pose next)) break;
+                        // Turn along the shadow edge before the next step enters frightening light.
+                        if (State != BehaviourState.Fleeing && SampleLight(next.position
+                            + next.rotation * Vector3.up * 0.22f * size) > Mathf.Max(Exposure, Mathf.Min(fearThreshold, dimLightThreshold) * safeLightRatio))
+                            break;
                         transform.SetPositionAndRotation(next.position, next.rotation);
                         RecordContact();
                     }
@@ -343,8 +347,16 @@ namespace CardsUnity.Controllers
                 float score = Vector3.Dot(direction, desired) + 0.2f * Vector3.Dot(direction, transform.forward);
                 if (!clear) score -= 3f;
                 if (homeCave != null) score += Mathf.Clamp01((ahead.rotation * Vector3.up).y) * 1.5f;
+                float aheadLight = SampleLight(ahead.position + ahead.rotation * Vector3.up * 0.22f * size);
                 if (State == BehaviourState.Fleeing)
-                    score -= SampleLight(ahead.position + ahead.rotation * Vector3.up * 0.22f * size) * 4f;
+                    score -= aheadLight * 4f;
+                else
+                {
+                    // Normalize against the same faint-light threshold used for fear: raw exposure
+                    // is too small to compete with heading scores near the torch's outer edge.
+                    float safeExposure = Mathf.Max(0.00001f, Mathf.Min(fearThreshold, dimLightThreshold) * safeLightRatio);
+                    score -= Mathf.Clamp(aheadLight / safeExposure, 0f, 4f) * 4f;
+                }
                 if (score > bestScore) { bestScore = score; best = direction; }
             }
             return best;

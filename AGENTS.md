@@ -147,6 +147,8 @@ Keep this file aligned with the actual repository. `CLAUDE.md` points to this sh
 
 ## Procedural centipede
 
+- After escaping light, the Hiding cooldown immediately tracks the player like Stalking. Both states score candidate light exposure relative to the safe faint-light threshold and reject steps into brighter unsafe light, favouring close pursuit along shadow edges. Recovery and cave surface restrictions still apply. This remains local steering; the latest shadow-following change has not been verified in Play Mode because relay discovery was unavailable.
+
 - Cave residents start Dormant and become alerted when the player enters their assigned chamber or faint local light reaches any segment. Alert persists after leaving that chamber. Generated residents receive their exact room; manually placed cave centipedes resolve the nearest room. Standalone centipedes outside cave scenes retain immediate stalking.
 - Cave traversal is restricted to carved interior floors, rocks and inward-facing wall surfaces. Cutaway rims, outer faces and ceilings are rejected. Stalking prefers floor/rocks and cannot start climbing a boundary wall; flight may use inner walls, and safe creatures descend again. Candidate lookahead and floor preference reduce wall stalls. Visible wall raycasts are front-face only.
 - Direct Play Mode checks covered dormant immobility, activation on entering the room, 600 stalking frames without wall climbing/outside contacts, and 600 light-response frames without outside contacts followed by return to stalking on the floor. The final dedicated wall-descent/rim test could not be completed because the Unity relay stopped responding; do not treat it as verified.
