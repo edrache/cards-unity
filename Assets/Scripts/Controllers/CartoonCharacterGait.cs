@@ -170,8 +170,10 @@ namespace CardsUnity.Controllers
             ReportFootsteps(advance, grounded, activity);
             style = GaitStylePose.Blend(styleWeights, cycle);
             float wave = Mathf.Sin(cycle * Mathf.PI * 2f);
-            noiseTime += dt * noiseFrequency;
-            float irregularity = noiseAmount * activity;
+            var stressState = GetComponent<CharacterStress>();
+            float chaos = stressState != null ? stressState.Chaos : 0f;
+            noiseTime += dt * noiseFrequency * (1f + chaos * 1.5f);
+            float irregularity = noiseAmount * activity + chaos * 0.65f;
             Vector3 noise = new Vector3(Noise(0f), Noise(11f), Noise(23f)) * irregularity;
             leftArmNoise = Noise(37f) * irregularity * 10f;
             rightArmNoise = Noise(53f) * irregularity * 10f;

@@ -43,17 +43,21 @@ namespace CardsUnity.Controllers
         {
             if (!configured || !isActiveAndEnabled) return;
             float alpha = 1f - Mathf.Exp(-dt / Mathf.Max(0.02f, responseTime));
+            var stressState = GetComponent<CharacterStress>();
+            float hunch = stressState != null ? stressState.Hunch : 0f;
             for (int i = 0; i < 3; i++)
             {
                 // Opposing chest/hip rotation; each joint contributes to the curved silhouette.
                 float twistShare = i == 0 ? -0.25f : (i == 1 ? 0.45f : 0.8f);
                 Vector3 angles = new Vector3(pose.SpinePitch[i] * bendAmount,
                     pose.SpineTwist * twistShare * twistAmount, pose.SpineRoll[i] * sideBendAmount) * activity;
+                angles.x += hunch * (i == 1 ? 0.45f : 0.275f);
                 bones[i].localRotation = Quaternion.Slerp(bones[i].localRotation, Quaternion.Euler(angles), alpha);
             }
             Quaternion level = Quaternion.Inverse(chest.rotation) * transform.rotation;
             neck.localRotation = Quaternion.Slerp(neck.localRotation,
-                Quaternion.Slerp(Quaternion.identity, level, headStabilization), alpha);
+                Quaternion.Slerp(Quaternion.identity, level, headStabilization)
+                    * (stressState != null ? stressState.HeadLook : Quaternion.identity), alpha);
             if (Application.isPlaying) Deform(bones);
         }
 

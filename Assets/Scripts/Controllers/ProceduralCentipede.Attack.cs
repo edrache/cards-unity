@@ -126,7 +126,8 @@ namespace CardsUnity.Controllers
                         && Vector3.Distance(controller.ClosestPoint(head), head) <= 0.3f * size)
                     {
                         attackHit = true;
-                        target.GetComponent<CharacterKnockdown>()?.TryKnockDown();
+                        if (target.GetComponent<CharacterKnockdown>()?.TryKnockDown() == true)
+                            target.GetComponent<CharacterStress>()?.RegisterHit();
                     }
                     if (attackTime >= Mathf.Max(0.1f, leapDuration)) FinishAttack();
                 }

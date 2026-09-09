@@ -178,6 +178,7 @@ namespace CardsUnity.Controllers
                 var player = FindFirstObjectByType<ProceduralCharacter>();
                 if (player != null) target = player.transform;
             }
+            if (target != null) target.GetComponent<CharacterStress>()?.Observe(this);
             lightRefresh -= dt;
             if (lights == null || lightRefresh <= 0f)
             {

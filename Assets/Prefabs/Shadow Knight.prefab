@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 5031540644886181503}
   - component: {fileID: 8015079483885469883}
   - component: {fileID: 2261660506157653080}
+  - component: {fileID: 7236042496580281235}
   m_Layer: 0
   m_Name: Shadow Knight
   m_TagString: Untagged
@@ -345,6 +346,28 @@ MonoBehaviour:
   kneelDuration: 1.4
   standDuration: 0.65
   immunityAfterStanding: 1.5
+--- !u!114 &7236042496580281235
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90125876250897346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dfa35d8412bc4a13b945544993f81e4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterStress
+  stress: 0
+  encounterStress: 8
+  hitStress: 25
+  encounterRange: 7
+  encounterResetTime: 10
+  recoveryPerSecond: 0
+  recoveryDelay: 10
+  hunchAngle: 24
+  headLookAngle: 60
+  motionChaos: 1
 --- !u!1 &689539237441915602
 GameObject:
   m_ObjectHideFlags: 0
