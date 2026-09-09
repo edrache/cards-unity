@@ -22,7 +22,7 @@ namespace CardsUnity.Controllers
         private Vector3 reachTarget;
         private Quaternion pickupRotation, groundRotation;
         public bool IsBusy { get; private set; }
-        public bool CanPickUp => torch != null && !torch.IsHeld && torch.IsSettled
+        public bool CanPickUp => torch != null && !torch.IsHeld
             && Vector3.Distance(transform.position, torch.transform.position) <= pickupRange && HasClearReach();
         public string ActionLabel => torch != null && torch.IsHeld ? "Upuść" : "Podnieś";
 
@@ -77,6 +77,8 @@ namespace CardsUnity.Controllers
             if (pickingUp && !transferred)
             {
                 reachTarget = torch.transform.position;
+                Vector3 direction = Vector3.ProjectOnPlane(reachTarget - transform.position, Vector3.up);
+                if (direction.sqrMagnitude > 0.001f) pickupRotation = Quaternion.LookRotation(direction);
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, pickupRotation, 360f * dt);
             }
             if (gait != null) gait.InteractionCrouch = pickingUp ? weight : 0f;
@@ -90,6 +92,8 @@ namespace CardsUnity.Controllers
             if (!IsBusy || torch == null) return;
             if (pickingUp)
             {
+                // Refresh after Update as Rigidbody interpolation may have moved the visible grip.
+                if (!transferred) reachTarget = torch.transform.position;
                 // Two-bone reach keeps the hand on the physical grip until it is attached.
                 Vector3 shoulder = arm.position;
                 float upper = Vector3.Distance(shoulder, elbow.position);

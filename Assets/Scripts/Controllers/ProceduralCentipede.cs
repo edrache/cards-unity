@@ -197,12 +197,13 @@ namespace CardsUnity.Controllers
                 return;
             }
             if (State == BehaviourState.Dormant) State = BehaviourState.Stalking;
-            if (Exposure >= reactionThreshold)
+            float headExposure = SampleLight(transform.position + transform.up * 0.22f * size);
+            if (headExposure >= reactionThreshold)
             {
                 State = BehaviourState.Fleeing;
                 darkTime = 0f;
             }
-            else if (State == BehaviourState.Fleeing && Exposure < reactionThreshold * safeLightRatio)
+            else if (State == BehaviourState.Fleeing && headExposure < reactionThreshold * safeLightRatio)
             {
                 State = BehaviourState.Hiding;
                 currentHideDuration = hideDuration * (1f + behaviourVariation * RandomRange(-0.45f, 0.65f));
@@ -234,12 +235,7 @@ namespace CardsUnity.Controllers
             }
             else if (target != null)
             {
-                desired = target.position - transform.position;
-                float targetDistance = desired.magnitude;
-                desired = Vector3.ProjectOnPlane(desired, transform.up);
-                if (targetDistance <= stopDistance * size)
-                    desired = Vector3.Cross(transform.up, desired.sqrMagnitude > 0.001f ? desired : transform.forward).normalized;
-                else if (desired.sqrMagnitude < 0.001f) desired = transform.forward;
+                desired = ShadowPursuitDirection(reactionThreshold * safeLightRatio);
             }
 
             bool descending = homeCave != null && State != BehaviourState.Fleeing && transform.up.y < 0.65f;
@@ -299,6 +295,32 @@ namespace CardsUnity.Controllers
             RecordContact();
             FollowBody();
             PoseLegs();
+        }
+
+        private Vector3 ShadowPursuitDirection(float safeExposure)
+        {
+            Vector3 up = transform.up;
+            Vector3 outward = Vector3.ProjectOnPlane(transform.position - target.position, up);
+            float distance = outward.magnitude;
+            outward = distance > 0.001f ? outward / distance : transform.forward;
+            // Search from the prey outward for the nearest dark point on this radial line.
+            // Recompute against the moving torch, including collider shadows.
+            Vector3 centre = transform.position - outward * distance + up * 0.22f * size;
+            float limit = stopDistance * size + 2f;
+            foreach (var light in lights)
+                if (IsThreat(light) && Vector3.Distance(centre, light.transform.position) < light.range + stopDistance * size)
+                    limit = Mathf.Max(limit, Vector3.Distance(centre, light.transform.position) + light.range);
+            float radius = stopDistance * size;
+            float spacing = Mathf.Max(0.2f, (limit - radius) / 48f);
+            for (; radius < limit; radius += spacing)
+                if (SampleLight(centre + outward * radius) < safeExposure * 0.75f) break;
+            radius += 0.2f * size;
+            float error = distance - radius;
+            float side = personalitySpeed < 0f ? -1f : 1f;
+            Vector3 tangent = Vector3.Cross(up, outward) * side;
+            // Approach decisively from far away, then orbit instead of running into the light.
+            return (-outward * Mathf.Clamp(error / Mathf.Max(size, 0.5f), -1.5f, 1.5f)
+                + tangent * Mathf.Clamp01(1.5f - Mathf.Abs(error) / Mathf.Max(size, 0.5f))).normalized;
         }
 
         private void UpdateRecovery(float dt)
