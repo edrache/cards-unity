@@ -28,8 +28,23 @@ namespace CardsUnity.Controllers
         [Tooltip("Fraction of lifetime spent gradually fading out.")]
         [SerializeField, Range(0.05f, 1f)] private float burnoutFraction = 0.4f;
         [SerializeField, Range(0f, 2f)] private float dyingFlickerAmount = 1.4f;
+        [Tooltip("Seconds of burn lifetime spent on a single strike. Zero makes hitting free.")]
+        [SerializeField, Range(0f, 60f)] private float strikeLifetimeCost = 5f;
 
         public float RemainingLifetime => Mathf.Max(0f, lifetime - burnAge);
+
+        /// <summary>Seconds of burn lifetime a single strike costs.</summary>
+        public float StrikeLifetimeCost => strikeLifetimeCost;
+
+        /// <summary>
+        /// Charges one strike against the remaining fuel. Ages the torch exactly as burning for
+        /// <see cref="StrikeLifetimeCost"/> seconds would, so it can also burn out mid-swing.
+        /// </summary>
+        public void ConsumeStrikeFuel()
+        {
+            if (strikeLifetimeCost <= 0f) return;
+            burnAge = Mathf.Min(Mathf.Max(0.1f, lifetime), burnAge + strikeLifetimeCost);
+        }
         public bool IsBurnedOut => RemainingLifetime <= 0f;
         private float burnAge;
         private float smokeEmission;

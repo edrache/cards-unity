@@ -10043,6 +10043,7 @@ MonoBehaviour:
   lifetime: 180
   burnoutFraction: 0.4
   dyingFlickerAmount: 1.4
+  strikeLifetimeCost: 5
   holdingPose: 0.707
   swayAngle: 8.2
   swayResponse: 0.267

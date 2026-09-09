@@ -4,8 +4,9 @@ Date: 2026-09-09
 
 ## Goal
 
-Add a Rewired `Attack` action and a procedural right-arm swing with the handheld torch:
-an overhead chop. Animation only; hit detection and damage are out of scope.
+Add a Rewired `Attack` action and a procedural right-arm swing with the handheld torch: an overhead
+chop, cocked by holding the button and released as the strike. Each strike costs torch fuel.
+Animation only; hit detection and damage are out of scope.
 
 ## Constraint that shapes the design
 
@@ -26,16 +27,19 @@ blend weights, not timed events, and it would not resolve the torch conflict), a
 
 - **Rewired**: action `Attack`, id 4, button, Default category, bound to Space. Gamepad binding left
   to the editor, because joystick element ids depend on the hardware GUID.
-- **`ProceduralCharacter`**: stays the single input reader. Reads the button on the Rewired path and
-  the Input System fallback, then calls `TorchAttack.TryStrike()`.
-- **`TorchAttack`**: three-phase timeline (windup, strike, recover) with per-phase durations. The
-  pose weight ramps in, holds, and fades out; the fade is what returns the arm to the holding pose.
-  Only the strike uses an ease-out curve. Angles interpolate the upper arm pitch and elbow bend.
-  Exposes `Strike`, `HitWindowOpen`, `IsAttacking`, `NormalizedTime`, and a `Tick(float)` overload
-  for deterministic checks. Optional chest twist layered over `ProceduralSpine`, self-undoing so it
-  cannot accumulate.
+- **`ProceduralCharacter`**: stays the single input reader. Reads the held button state on the
+  Rewired path and the Input System fallback, then feeds `TorchAttack.SetAttackHeld` every frame.
+- **`TorchAttack`**: three phases (charging, striking, recovering) with per-phase durations. Holding
+  the button ramps the pose weight in and then parks the arm in the cocked pose; releasing strikes.
+  A release is deferred until the windup finishes, so a tap still swings from the top. Only the
+  strike uses an ease-out curve, and the recovery merely fades the weight out, which is what returns
+  the arm to the holding pose. Exposes `Strike`, `HitWindowOpen`, `IsAttacking`, `IsCharging`,
+  `ChargeTime`, `SwingProgress`, and a `Tick(float)` overload for deterministic checks. Optional
+  chest twist layered over `ProceduralSpine`, self-undoing so it cannot accumulate.
 - **`HandheldTorch`**: `SetPoseSuppression(float)` fades out the holding pose and the upright lock,
-  so the torch rides the forearm. Getters `UpperArm`, `Forearm`, `Holder` let `TorchAttack`
+  so the torch rides the forearm. `Strike Lifetime Cost` (seconds, default 5, authored on
+  `Handheld Torch.prefab`) is charged by `ConsumeStrikeFuel()` when a strike begins, ageing the torch
+  exactly as burning for that long would. Getters `UpperArm`, `Forearm`, `Holder` let `TorchAttack`
   auto-resolve its rig.
 
 ## Behaviour

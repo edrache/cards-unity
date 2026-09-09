@@ -23,7 +23,7 @@ namespace CardsUnity.Controllers
         [SerializeField] private Transform chest;
 
         [Header("Timing")]
-        [Tooltip("Seconds spent raising the torch behind the head.")]
+        [Tooltip("Seconds spent raising the torch behind the head. The arm then stays cocked for as long as the button is held.")]
         [SerializeField, Range(0.02f, 1f)] private float windupDuration = 0.14f;
         [Tooltip("Seconds of the downward strike. The hit window is open for exactly this long.")]
         [SerializeField, Range(0.02f, 1f)] private float strikeDuration = 0.10f;
@@ -47,26 +47,33 @@ namespace CardsUnity.Controllers
         /// <summary>Raised once, when the strike phase begins. Intended as the future hit window opening.</summary>
         public event System.Action Strike;
 
-        /// <summary>True while a swing is playing, including the recovery that blocks the next one.</summary>
-        public bool IsAttacking => active;
+        /// <summary>True while the arm is cocked, from the button going down until it is released.</summary>
+        public bool IsCharging => phase == Phase.Charging;
 
-        /// <summary>True only during the strike phase, between windup and recovery.</summary>
-        public bool HitWindowOpen => active && elapsed >= windupDuration && elapsed < windupDuration + strikeDuration;
+        /// <summary>True from the button going down until the recovery ends.</summary>
+        public bool IsAttacking => phase != Phase.Idle;
 
-        /// <summary>Progress through the whole swing, from zero at the first frame to one when it ends.</summary>
-        public float NormalizedTime => active ? Mathf.Clamp01(elapsed / TotalDuration) : 0f;
+        /// <summary>True only during the strike phase, between the release and the recovery.</summary>
+        public bool HitWindowOpen => phase == Phase.Striking;
+
+        /// <summary>Seconds the button has been held. Keeps its final value until the swing ends.</summary>
+        public float ChargeTime => chargeTime;
+
+        /// <summary>Zero while the arm is cocked, one once the strike has landed.</summary>
+        public float SwingProgress => swing;
 
         /// <summary>Blend weight of the attack pose over the torch holding pose.</summary>
         public float PoseWeight => weight;
 
-        private float TotalDuration => windupDuration + strikeDuration + recoverDuration;
+        private enum Phase { Idle, Charging, Striking, Recovering }
 
-        private bool active;
-        private bool strikeRaised;
+        private Phase phase;
+        private bool releaseRequested;
         private bool chestWritten;
         private Quaternion chestBase = Quaternion.identity;
         private Quaternion chestApplied = Quaternion.identity;
-        private float elapsed;
+        private float phaseTime;
+        private float chargeTime;
         private float weight;
         private float swing;
 
@@ -93,17 +100,41 @@ namespace CardsUnity.Controllers
         }
 
         /// <summary>
-        /// Starts a swing. Presses during an ongoing swing are ignored rather than buffered.
+        /// Feeds the held state of the attack button. Pressing cocks the arm, releasing strikes.
+        /// Call it every frame; the edges are detected here.
+        /// </summary>
+        public void SetAttackHeld(bool held)
+        {
+            if (held)
+            {
+                if (phase == Phase.Idle) BeginCharge();
+            }
+            else if (phase == Phase.Charging)
+            {
+                releaseRequested = true;
+            }
+        }
+
+        /// <summary>
+        /// Plays a whole swing without holding the button, as a tap would. Calls during an ongoing
+        /// swing are ignored rather than buffered.
         /// </summary>
         public bool TryStrike()
         {
-            if (active) return false;
-            active = true;
-            strikeRaised = false;
-            elapsed = 0f;
+            if (phase != Phase.Idle) return false;
+            BeginCharge();
+            releaseRequested = true;
+            return true;
+        }
+
+        private void BeginCharge()
+        {
+            phase = Phase.Charging;
+            releaseRequested = false;
+            phaseTime = 0f;
+            chargeTime = 0f;
             weight = 0f;
             swing = 0f;
-            return true;
         }
 
         private void Update()
@@ -117,51 +148,62 @@ namespace CardsUnity.Controllers
         /// </summary>
         public void Tick(float dt)
         {
-            if (active && dt > 0f)
+            if (phase != Phase.Idle && dt > 0f)
             {
-                elapsed += dt;
-                if (!strikeRaised && elapsed >= windupDuration)
+                phaseTime += dt;
+                switch (phase)
                 {
-                    strikeRaised = true;
-                    Strike?.Invoke();
-                }
-                if (elapsed >= TotalDuration)
-                {
-                    active = false;
-                    elapsed = 0f;
-                    weight = 0f;
-                    swing = 0f;
-                }
-                else
-                {
-                    Evaluate();
+                    case Phase.Charging: AdvanceCharge(); break;
+                    case Phase.Striking: AdvanceStrike(); break;
+                    default: AdvanceRecovery(); break;
                 }
             }
             if (torch != null) torch.SetPoseSuppression(weight);
         }
 
-        private void Evaluate()
+        private void AdvanceCharge()
         {
-            if (elapsed < windupDuration)
+            chargeTime = phaseTime;
+            // The weight ramp itself carries the arm from the holding pose up into the cocked pose,
+            // which then holds until the button is released.
+            weight = Mathf.SmoothStep(0f, 1f, phaseTime / Mathf.Max(0.0001f, windupDuration));
+            swing = 0f;
+            // A quick tap still swings from the top: the release waits for the windup to finish.
+            if (releaseRequested && phaseTime >= windupDuration)
             {
-                // The weight ramp itself carries the arm from the holding pose up into the windup.
-                weight = Mathf.SmoothStep(0f, 1f, elapsed / Mathf.Max(0.0001f, windupDuration));
-                swing = 0f;
-                return;
-            }
-            float sinceWindup = elapsed - windupDuration;
-            if (sinceWindup < strikeDuration)
-            {
+                phase = Phase.Striking;
+                phaseTime = 0f;
                 weight = 1f;
-                float u = sinceWindup / Mathf.Max(0.0001f, strikeDuration);
-                // Ease out, so the torch leaves the top fast and settles into the follow-through.
-                float remaining = 1f - u;
-                swing = 1f - remaining * remaining * remaining;
+                if (torch != null) torch.ConsumeStrikeFuel();
+                Strike?.Invoke();
+            }
+        }
+
+        private void AdvanceStrike()
+        {
+            weight = 1f;
+            float u = Mathf.Clamp01(phaseTime / Mathf.Max(0.0001f, strikeDuration));
+            // Ease out, so the torch leaves the top fast and settles into the follow-through.
+            float remaining = 1f - u;
+            swing = 1f - remaining * remaining * remaining;
+            if (phaseTime >= strikeDuration)
+            {
+                phase = Phase.Recovering;
+                phaseTime = 0f;
+            }
+        }
+
+        private void AdvanceRecovery()
+        {
+            swing = 1f;
+            if (phaseTime >= recoverDuration)
+            {
+                phase = Phase.Idle;
+                phaseTime = 0f;
+                weight = 0f;
                 return;
             }
-            float recovery = (sinceWindup - strikeDuration) / Mathf.Max(0.0001f, recoverDuration);
-            weight = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(recovery));
-            swing = 1f;
+            weight = 1f - Mathf.SmoothStep(0f, 1f, phaseTime / Mathf.Max(0.0001f, recoverDuration));
         }
 
         private void LateUpdate()

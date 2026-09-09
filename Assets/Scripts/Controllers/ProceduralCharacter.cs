@@ -57,7 +57,7 @@ namespace CardsUnity.Controllers
         {
             Vector2 input;
             bool running;
-            bool attackPressed;
+            bool attackHeld;
             if (ReInput.isReady)
             {
                 Player player = ReInput.players.GetPlayer(rewiredPlayerName);
@@ -69,7 +69,7 @@ namespace CardsUnity.Controllers
                 if (keyboardMovement || joystickMovement) analogMovement = joystickMovement && !keyboardMovement;
                 // Run stays a held action on every controller, so it also works alongside the stick.
                 running = player.GetButton("Run");
-                attackPressed = player.GetButtonDown("Attack");
+                attackHeld = player.GetButton("Attack");
                 if (player.GetButtonDown("Sneak") && player.IsCurrentInputSource("Sneak", ControllerType.Keyboard))
                 {
                     sneaking = !sneaking;
@@ -81,9 +81,10 @@ namespace CardsUnity.Controllers
                 // Keep the daytime playground usable without a Rewired manager.
                 ReadLegacyInput(out input, out running, out analogMovement);
                 if (UnityEngine.InputSystem.Keyboard.current?.cKey.wasPressedThisFrame == true) sneaking = !sneaking;
-                attackPressed = UnityEngine.InputSystem.Keyboard.current?.spaceKey.wasPressedThisFrame == true;
+                attackHeld = UnityEngine.InputSystem.Keyboard.current?.spaceKey.isPressed == true;
             }
-            if (attackPressed && torchAttack != null) torchAttack.TryStrike();
+            // Holding cocks the arm, releasing strikes, so the button state is fed every frame.
+            if (torchAttack != null) torchAttack.SetAttackHeld(attackHeld);
             input = Vector2.ClampMagnitude(input, 1f);
             float stickMagnitude = input.magnitude;
             if (analogMovement && stickMagnitude < idleThreshold)
