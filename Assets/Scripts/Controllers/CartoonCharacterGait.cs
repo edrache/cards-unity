@@ -84,6 +84,10 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0f, 1f)] private float fastRun;
         [SerializeField, Range(0f, 1f)] private float tipToe;
         [SerializeField, Range(0f, 1f)] private float skip;
+        [Tooltip("Exhausted knee walking; posture remains low while stationary.")]
+        [SerializeField, Range(0f, 1f)] private float kneeWalk;
+        [Tooltip("Prone crawling with alternating pulls; leaves the torch arm available.")]
+        [SerializeField, Range(0f, 1f)] private float crawl;
         [SerializeField, Range(0.05f, 1f)] private float styleTransitionTime = 0.2f;
 
         [Header("Movement irregularity")]
@@ -106,11 +110,13 @@ namespace CardsUnity.Controllers
         private float leftSwing, rightSwing, leftSwingVelocity, rightSwingVelocity;
         private float noiseTime, flightLift, flightVelocity;
         private float leftArmNoise, rightArmNoise;
-        private readonly float[] styleWeights = new float[10];
-        private readonly float[] savedWalkingWeights = new float[10];
+        private readonly float[] styleWeights = new float[12];
+        private readonly float[] savedWalkingWeights = new float[12];
         private bool runningRequested, sneakingRequested, walkingRequested, automaticStyleActive;
         private GaitStylePose style;
         private float poseActivity;
+        public float LowPostureWeight => styleWeights[10] + styleWeights[11];
+        public float CrawlWeight => styleWeights[11];
         private double continuousCycle;
         private int lastStepIndex = int.MinValue;
 
@@ -186,8 +192,16 @@ namespace CardsUnity.Controllers
             Vector3 targetMotion = new Vector3(wave * sideSwayDistance * motionWeight, compression + breathing, 0f);
             targetMotion += new Vector3(noise.x * 0.015f, noise.y * 0.02f, 0f);
             bodyMotion = Vector3.SmoothDamp(bodyMotion, targetMotion, ref bodyMotionVelocity, bodyMotionSmoothTime, Mathf.Infinity, dt);
-            body.localPosition = bodyOrigin + bodyMotion + Vector3.up * (flightLift - hipHeight * 0.72f * InteractionCrouch);
-            Vector3 bodyAngles = lean + Vector3.forward * sideRoll + Vector3.right * (35f * InteractionCrouch);
+            // Persistent posture is independent of movement activity. Interaction adds only
+            // the remaining crouch, so a prone character never sinks through the floor.
+            float low = Mathf.Clamp01(LowPostureWeight);
+            float crouch = InteractionCrouch * (1f - low + 0.35f * styleWeights[10]);
+            float loweredHip = styleWeights[10] * (hipHeight - thighLength * 0.92f - 0.12f)
+                + styleWeights[11] * (hipHeight - 0.32f);
+            body.localPosition = bodyOrigin + bodyMotion * (1f - low * 0.8f)
+                + Vector3.up * (flightLift * (1f - low) - loweredHip - hipHeight * 0.72f * crouch);
+            Vector3 bodyAngles = lean * (1f - low) + Vector3.forward * sideRoll
+                + Vector3.right * (35f * crouch + (12f + 28f * InteractionCrouch) * styleWeights[10] + 78f * styleWeights[11]);
             body.localRotation = Quaternion.Euler(bodyAngles);
             if (spine != null) spine.Animate(style, activity, dt);
             if (head != null && spine == null)
@@ -200,6 +214,8 @@ namespace CardsUnity.Controllers
             rightSwing = Mathf.SmoothDamp(rightSwing, wave * amplitude + rightArmNoise, ref rightSwingVelocity, armLag, Mathf.Infinity, dt);
             Arm(leftArm, leftForearm, -1f, leftSwing, dt);
             Arm(rightArm, rightForearm, 1f, rightSwing, dt);
+            CrawlArm(leftArm, leftForearm, cycle, activity);
+            CrawlArm(rightArm, rightForearm, Mathf.Repeat(cycle + 0.5f, 1f), activity);
         }
 
         // The left leg runs on `cycle` and the right one half a cycle later, and each leg plants its
@@ -212,7 +228,7 @@ namespace CardsUnity.Controllers
             if (step == lastStepIndex) return;
             bool firstEvaluation = lastStepIndex == int.MinValue;
             lastStepIndex = step;
-            if (firstEvaluation || !grounded || activity < 0.05f || Footstep == null) return;
+            if (LowPostureWeight > 0.5f || firstEvaluation || !grounded || activity < 0.05f || Footstep == null) return;
             bool isLeft = (step & 1) == 0;
             Transform contact = isLeft ? leftFoot : rightFoot;
             Footstep.Invoke(new GaitFootstep(isLeft, Mathf.Clamp01(intensity),
@@ -223,7 +239,7 @@ namespace CardsUnity.Controllers
         private void UpdateStyleWeights(float dt)
         {
             UpdateAutomaticStyle(dt);
-            float total = walk + doubleBounceWalk + strut + shuffle + sneak + run + jump + fastRun + tipToe + skip;
+            float total = walk + doubleBounceWalk + strut + shuffle + sneak + run + jump + fastRun + tipToe + skip + kneeWalk + crawl;
             float alpha = 1f - Mathf.Exp(-dt / Mathf.Max(0.01f, styleTransitionTime));
             for (int i = 0; i < styleWeights.Length; i++)
             {
@@ -239,7 +255,9 @@ namespace CardsUnity.Controllers
                     case 6: value = jump; break;
                     case 7: value = fastRun; break;
                     case 8: value = tipToe; break;
-                    default: value = skip; break;
+                    case 9: value = skip; break;
+                    case 10: value = kneeWalk; break;
+                    default: value = crawl; break;
                 }
                 float target = total > 0.0001f ? value / total : (i == 0 ? 1f : 0f);
                 styleWeights[i] = Mathf.Lerp(styleWeights[i], target, alpha);
@@ -293,7 +311,9 @@ namespace CardsUnity.Controllers
                 case 6: return jump;
                 case 7: return fastRun;
                 case 8: return tipToe;
-                default: return skip;
+                case 9: return skip;
+                case 10: return kneeWalk;
+                default: return crawl;
             }
         }
 
@@ -311,6 +331,8 @@ namespace CardsUnity.Controllers
                 case 7: fastRun = value; break;
                 case 8: tipToe = value; break;
                 case 9: skip = value; break;
+                case 10: kneeWalk = value; break;
+                case 11: crawl = value; break;
             }
         }
 
@@ -339,6 +361,19 @@ namespace CardsUnity.Controllers
                 + Mathf.Max(0f, -swing) * forearmSwingBend + style.Elbow * poseActivity, 0f, 145f);
             lower.localRotation = Quaternion.Slerp(lower.localRotation,
                 Quaternion.Euler(-elbow, 0f, 0f), 1f - Mathf.Exp(-12f * dt));
+        }
+
+        private void CrawlArm(Transform upper, Transform lower, float phase, float activity)
+        {
+            if (upper == null || lower == null || CrawlWeight <= 0f) return;
+            float pull = Mathf.Sin(phase * Mathf.PI * 2f) * activity;
+            // World-relative arms support the horizontal torso. The holding/reach
+            // overlays run later and can take either pose without changing the gait.
+            upper.rotation = Quaternion.Slerp(upper.rotation,
+                transform.rotation * Quaternion.Euler(-48f - 28f * pull, 0f,
+                    upper == leftArm ? -24f : 24f), CrawlWeight);
+            lower.localRotation = Quaternion.Slerp(lower.localRotation,
+                Quaternion.Euler(-65f + 25f * pull, 0f, 0f), CrawlWeight);
         }
 
         private float SampleFootGround(float x, float z)
@@ -414,6 +449,33 @@ namespace CardsUnity.Controllers
             Vector3 bend = Vector3.ProjectOnPlane(Vector3.forward, direction).normalized;
             Vector3 knee = hip + direction * along + bend * height;
             Vector3 solvedAnkle = hip + direction * reach;
+            float low = Mathf.Clamp01(LowPostureWeight);
+            if (low > 0f)
+            {
+                float crawlBlend = CrawlWeight / low;
+                Vector3 lowKnee = new Vector3(side * (hipHalfWidth + 0.03f),
+                    0.12f + lift * 0.3f, z + Mathf.Lerp(0.2f, 0.35f, crawlBlend));
+                if (terrainGrounded && characterController != null)
+                    lowKnee.y += SampleFootGround(lowKnee.x, lowKnee.z);
+                float contactHeight = lowKnee.y;
+                // The knee leads; the shin trails flat instead of solving a standing foot plant.
+                Vector3 kneeDirection = (lowKnee - hip).normalized;
+                lowKnee = hip + kneeDirection * thighLength;
+                if (lowKnee.y < contactHeight)
+                {
+                    float vertical = Mathf.Clamp(hip.y - contactHeight, -thighLength, thighLength);
+                    Vector3 horizontal = Vector3.ProjectOnPlane(kneeDirection, Vector3.up).normalized;
+                    lowKnee = hip + horizontal * Mathf.Sqrt(Mathf.Max(0f, thighLength * thighLength - vertical * vertical))
+                        - Vector3.up * vertical;
+                }
+                Vector3 lowAnkle = lowKnee + new Vector3(0f, 0.03f, -calfLength).normalized * calfLength;
+                knee = Vector3.Lerp(knee, lowKnee, low);
+                solvedAnkle = Vector3.Lerp(solvedAnkle, lowAnkle, low);
+                // Keep both bone lengths intact through standing/low-pose blends.
+                knee = hip + (knee - hip).normalized * thighLength;
+                solvedAnkle = knee + (solvedAnkle - knee).normalized * calfLength;
+                toePitch = Mathf.Lerp(toePitch, -65f, low);
+            }
             thigh.localPosition = hip;
             thigh.rotation = transform.rotation * Quaternion.FromToRotation(Vector3.down, knee - hip);
             calf.position = transform.TransformPoint(knee);

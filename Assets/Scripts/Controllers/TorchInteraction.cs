@@ -106,7 +106,8 @@ namespace CardsUnity.Controllers
             else
             {
                 // Lower and extend the arm before opening the grip.
-                arm.rotation = Quaternion.Slerp(arm.rotation, transform.rotation * Quaternion.Euler(-32f, 0f, 20f), weight);
+                arm.rotation = Quaternion.Slerp(arm.rotation, transform.rotation * Quaternion.Euler(Mathf.Lerp(-32f, -82f,
+                    gait != null ? gait.CrawlWeight : 0f), 0f, 20f), weight);
                 elbow.localRotation = Quaternion.Slerp(elbow.localRotation, Quaternion.Euler(-8f, 0f, 0f), weight);
             }
 

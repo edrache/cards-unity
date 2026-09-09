@@ -149,6 +149,8 @@ MonoBehaviour:
   fastRun: 0
   tipToe: 0
   skip: 0
+  kneeWalk: 0
+  crawl: 0
   styleTransitionTime: 0.2
   noiseAmount: 0.642
   noiseFrequency: 1.76

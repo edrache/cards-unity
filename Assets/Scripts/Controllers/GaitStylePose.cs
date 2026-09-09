@@ -63,6 +63,14 @@ namespace CardsUnity.Controllers
                         * (Mathf.Sin(phase) > 0f ? 0.24f : 0.12f);
                     p.ArmSwingScale = 1.25f; p.Elbow = 15f;
                     break;
+                case 10: // Short alternating knee shuffles beneath a tired, upright torso.
+                    p.StrideScale = 0.3f; p.BounceScale = 0.12f; p.SwayScale = 0.3f;
+                    p.FootLiftScale = 0.3f; p.ArmSwingScale = 0.12f; p.Elbow = 20f;
+                    break;
+                case 11: // Low prone pulls; the persistent body posture is applied by the rig.
+                    p.StrideScale = 0.4f; p.BounceScale = 0.05f; p.SwayScale = 0.12f;
+                    p.FootLiftScale = 0.2f; p.ArmSwingScale = 0f;
+                    break;
             }
             float wave = Mathf.Sin(phase), pulse = Mathf.Sin(step);
             p.SpinePitch = new Vector3(1f, 2f + pulse, -1f);
@@ -82,6 +90,8 @@ namespace CardsUnity.Controllers
                 case 7: p.SpinePitch = new Vector3(8f, 7f + pulse * 2f, 3f - pulse); p.SpineTwist = wave * 10f; break;
                 case 8: p.SpinePitch = new Vector3(-5f, 14f, 9f + pulse); p.SpineTwist = wave * 3f; p.SpineRoll *= 0.4f; break;
                 case 9: p.SpinePitch = new Vector3(3f * pulse, -4f + pulse * 5f, -2f - pulse * 3f); p.SpineTwist = wave * 11f; p.SpineRoll *= 1.5f; break;
+                case 10: p.SpinePitch = new Vector3(3f, 5f, 2f); p.SpineTwist = wave * 4f; p.SpineRoll *= 0.4f; break;
+                case 11: p.SpinePitch = new Vector3(-2f, 1f, -3f); p.SpineTwist = wave * 3f; p.SpineRoll *= 0.2f; break;
             }
             return p;
         }
