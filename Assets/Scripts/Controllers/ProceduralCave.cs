@@ -31,6 +31,10 @@ namespace CardsUnity.Controllers
         [SerializeField] private ProceduralCentipede centipedePrefab;
         [Tooltip("Percentage of rooms receiving one centipede. Rounded to the nearest whole room; zero disables spawning. Selection is repeatable for Seed.")]
         [SerializeField, Range(0f, 100f)] private float centipedeRoomPercentage = 25f;
+        [Header("Bodies")]
+        [SerializeField] private CaveBody bodyPrefab;
+        [Tooltip("Percentage of rooms receiving one body and burning torch. Selection and proportions repeat for Seed.")]
+        [SerializeField, Range(0f, 100f)] private float bodyRoomPercentage = 25f;
         [Header("Elevation")]
         [Tooltip("Continuous ramps without overlapping floors. Disable to restore the flat cave.")]
         [SerializeField] private bool enableElevation;
@@ -78,6 +82,7 @@ namespace CardsUnity.Controllers
             branchDensity = Mathf.Clamp01(branchDensity);
             entranceLength = Mathf.Clamp(entranceLength, 8f, 20f);
             rockDensity = Mathf.Clamp01(rockDensity);
+            bodyRoomPercentage = Mathf.Clamp(bodyRoomPercentage, 0f, 100f);
             centipedeRoomPercentage = Mathf.Clamp(centipedeRoomPercentage, 0f, 100f);
             minimumRockSize = Mathf.Clamp(minimumRockSize, 1f, 4f);
             maximumRockSize = Mathf.Clamp(maximumRockSize, minimumRockSize, 4f);
@@ -163,6 +168,36 @@ namespace CardsUnity.Controllers
                 if (enabledBefore) controller.enabled = true;
             }
             SpawnCentipedes();
+            SpawnBodies();
+        }
+
+        private void SpawnBodies()
+        {
+            int count = Mathf.Clamp(Mathf.FloorToInt(rooms.Count * bodyRoomPercentage / 100f + 0.5f), 0, rooms.Count);
+            if (count == 0 || bodyPrefab == null) return;
+            var random = new System.Random(unchecked(seed * 397 ^ 79693));
+            var order = new int[rooms.Count];
+            for (int i = 0; i < order.Length; i++) order[i] = i;
+            for (int i = order.Length - 1; i > 0; i--)
+            {
+                int j = random.Next(i + 1);
+                int swap = order[i]; order[i] = order[j]; order[j] = swap;
+            }
+            var population = new GameObject("Generated Bodies") { hideFlags = HideFlags.DontSave };
+            population.transform.SetParent(generated.transform, false);
+            for (int i = 0; i < count; i++)
+            {
+                Vector2 centre = rooms[order[i]];
+                const float e = 0.1f;
+                Vector3 normal = new Vector3(-(FloorHeight(centre + Vector2.right * e) - FloorHeight(centre - Vector2.right * e)) / (2f * e),
+                    1f, -(FloorHeight(centre + Vector2.up * e) - FloorHeight(centre - Vector2.up * e)) / (2f * e)).normalized;
+                var body = Instantiate(bodyPrefab, population.transform);
+                body.name = $"Body (Room {order[i] + 1:00})";
+                body.gameObject.hideFlags = HideFlags.DontSave;
+                body.transform.localPosition = Surface(centre, 0.03f);
+                body.transform.localRotation = Quaternion.FromToRotation(Vector3.up, normal) * Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f);
+                body.Configure(random.Next());
+            }
         }
 
         private void SpawnCentipedes()
@@ -253,6 +288,10 @@ namespace CardsUnity.Controllers
                 float radius = size * 0.62f;
                 if (Field(p) < radius + 0.2f || Vector2.Distance(p, entrance) < radius + 3f) continue;
                 bool blocked = false;
+                if (bodyPrefab != null && bodyRoomPercentage > 0f)
+                    foreach (var centre in rooms)
+                        if (Vector2.Distance(p, centre) < radius + 2.1f) { blocked = true; break; }
+
                 foreach (var route in corridors)
                 {
                     for (int j = 1; j < route.Length; j++)

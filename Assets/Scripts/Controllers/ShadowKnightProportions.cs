@@ -46,6 +46,23 @@ namespace CardsUnity.Controllers
             part.localScale = scale;
         }
 
+        /// <summary>Deterministic corpse proportions without touching Unity's global random state.</summary>
+        public void RandomizeBody(int seed)
+        {
+            var random = new System.Random(seed);
+            float Sample(float min, float max) => Mathf.Lerp(min, max, (float)random.NextDouble());
+            upperArmLength = Sample(0.34f, 0.54f);
+            forearmLength = Sample(0.32f, 0.52f);
+            thighLength = Sample(0.36f, 0.58f);
+            calfLength = Sample(0.36f, 0.58f);
+            torsoHeight = Sample(0.65f, 1.05f);
+            torsoWidth = Sample(0.52f, 0.95f);
+            torsoDepth = Sample(0.3f, 0.52f);
+            headSize = Sample(0.4f, 0.65f);
+            armOutwardAngle = Sample(12f, 32f);
+            ApplyProportions();
+        }
+
         [ContextMenu("Apply Proportions")]
         public void ApplyProportions()
         {
