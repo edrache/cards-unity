@@ -714,6 +714,8 @@ MonoBehaviour:
   - {fileID: 5495842124696547249, guid: 00fadd881a1ce4d5c9c45edf44dae640, type: 3}
   - {fileID: 1169336680343928739, guid: 335857475acd847ceb0badab6fc3f98f, type: 3}
   treasureRoomPercentage: 50
+  coinPrefab: {fileID: 8896783829075870997, guid: 2c8b82003a8a84ced8ec3dbbf43416c0, type: 3}
+  coinsPerRoom: 2
   bodyPrefab: {fileID: 21146944673533705, guid: 8f7f69103e6d3430e8de290d3fb29282, type: 3}
   bodyRoomPercentage: 25
   enableElevation: 1

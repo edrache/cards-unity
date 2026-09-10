@@ -35,6 +35,10 @@ namespace CardsUnity.Controllers
         [SerializeField] private Treasure treasurePrefab;
         [SerializeField] private Treasure[] treasureVariants;
         [SerializeField, Range(0f, 100f)] private float treasureRoomPercentage = 50f;
+        [Header("Coins")]
+        [SerializeField] private Treasure coinPrefab;
+        [Tooltip("Coins scattered independently of large treasures. Zero disables coins; crowded rooms may receive fewer.")]
+        [SerializeField, Range(0, 8)] private int coinsPerRoom = 2;
         [Header("Bodies")]
         [SerializeField] private CaveBody bodyPrefab;
         [Tooltip("Percentage of rooms receiving one body and burning torch. Selection and proportions repeat for Seed.")]
@@ -56,6 +60,7 @@ namespace CardsUnity.Controllers
         [Tooltip("Moved to the entrance tunnel after rebuilding, including when Play Mode starts.")]
         [SerializeField] private Transform player;
 
+        private readonly List<Vector3> rockFootprints = new List<Vector3>();
         private readonly List<Vector2> treasurePositions = new List<Vector2>();
         private readonly List<Vector2> rooms = new List<Vector2>();
         private readonly List<float> radii = new List<float>();
@@ -87,6 +92,7 @@ namespace CardsUnity.Controllers
             branchDensity = Mathf.Clamp01(branchDensity);
             entranceLength = Mathf.Clamp(entranceLength, 8f, 20f);
             rockDensity = Mathf.Clamp01(rockDensity);
+            coinsPerRoom = Mathf.Clamp(coinsPerRoom, 0, 8);
             treasureRoomPercentage = Mathf.Clamp(treasureRoomPercentage, 0f, 100f);
             bodyRoomPercentage = Mathf.Clamp(bodyRoomPercentage, 0f, 100f);
             centipedeRoomPercentage = Mathf.Clamp(centipedeRoomPercentage, 0f, 100f);
@@ -115,7 +121,7 @@ namespace CardsUnity.Controllers
         public void Rebuild()
         {
             rebuildPending = false;
-            Clear(); treasurePositions.Clear(); rooms.Clear(); radii.Clear(); corridors.Clear(); corridorBounds.Clear();
+            Clear(); rockFootprints.Clear(); treasurePositions.Clear(); rooms.Clear(); radii.Clear(); corridors.Clear(); corridorBounds.Clear();
             var random = new System.Random(seed);
             noiseOffset = (float)random.NextDouble() * 1000f;
             GenerateLayout(random);
@@ -160,6 +166,7 @@ namespace CardsUnity.Controllers
             CreateSurface("Rock walls", wallMesh, wallMaterial, wallCollisionMesh);
             SpawnTreasures();
             ScatterRocks(min, max);
+            SpawnCoins();
             if (player == null)
             {
                 foreach (var candidate in FindObjectsByType<ProceduralCharacter>(FindObjectsSortMode.None))
@@ -260,6 +267,61 @@ namespace CardsUnity.Controllers
             }
         }
 
+        private void SpawnCoins()
+        {
+            if (coinPrefab == null || coinsPerRoom <= 0) return;
+            // A separate stream keeps existing rooms, rocks and large treasures unchanged.
+            var random = new System.Random(unchecked(seed * 397 ^ 49979687));
+            var positions = new List<Vector2>();
+            var population = new GameObject("Generated Coins") { hideFlags = HideFlags.DontSave };
+            population.transform.SetParent(generated.transform, false);
+            for (int room = 0; room < rooms.Count; room++)
+                for (int index = 0; index < coinsPerRoom; index++)
+                    for (int attempt = 0; attempt < 128; attempt++)
+                    {
+                        float angle = (float)random.NextDouble() * Mathf.PI * 2f;
+                        float radius = Mathf.Sqrt((float)random.NextDouble()) * radii[room];
+                        Vector2 p = rooms[room] + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+                        bool blocked = Field(p) < 0.6f;
+                        for (int j = 0; j < 12 && !blocked; j++)
+                        {
+                            float a = j * Mathf.PI / 6f;
+                            if (Field(p + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * 0.25f) < 0.3f) blocked = true;
+                        }
+                        foreach (var rock in rockFootprints)
+                            if (Vector2.Distance(p, new Vector2(rock.x, rock.y)) < rock.z + 0.3f) { blocked = true; break; }
+                        foreach (var treasure in treasurePositions)
+                            if (Vector2.Distance(p, treasure) < 1f) { blocked = true; break; }
+                        foreach (var other in positions)
+                            if (Vector2.Distance(p, other) < 0.65f) { blocked = true; break; }
+                        if (bodyPrefab != null && bodyRoomPercentage > 0f)
+                            foreach (var centre in rooms)
+                                if (Vector2.Distance(p, centre) < 2.3f) { blocked = true; break; }
+                        if (blocked) continue;
+
+                        const float e = 0.1f;
+                        Vector3 normal = new Vector3(
+                            -(FloorHeight(p + Vector2.right * e) - FloorHeight(p - Vector2.right * e)) / (2f * e), 1f,
+                            -(FloorHeight(p + Vector2.up * e) - FloorHeight(p - Vector2.up * e)) / (2f * e)).normalized;
+                        var coin = Instantiate(coinPrefab, population.transform);
+                        coin.name = $"Gold Coin (Room {room + 1:00}, {index + 1})";
+                        coin.gameObject.hideFlags = HideFlags.DontSave;
+                        coin.transform.localPosition = Surface(p, 0f);
+                        coin.transform.localRotation = Quaternion.FromToRotation(Vector3.up, normal)
+                            * Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f);
+                        float lift = float.NegativeInfinity;
+                        foreach (var filter in coin.GetComponentsInChildren<MeshFilter>())
+                            foreach (var vertex in filter.sharedMesh.vertices)
+                            {
+                                Vector3 local = transform.InverseTransformPoint(filter.transform.TransformPoint(vertex));
+                                lift = Mathf.Max(lift, FloorHeight(new Vector2(local.x, local.z)) - local.y);
+                            }
+                        if (!float.IsNegativeInfinity(lift)) coin.transform.localPosition += Vector3.up * (lift + 0.008f);
+                        positions.Add(p);
+                        break;
+                    }
+        }
+
         private void SpawnBodies()
         {
             int count = Mathf.Clamp(Mathf.FloorToInt(rooms.Count * bodyRoomPercentage / 100f + 0.5f), 0, rooms.Count);
@@ -357,7 +419,7 @@ namespace CardsUnity.Controllers
         {
             if (rockDensity <= 0f || rockPrefabs == null || rockPrefabs.Length == 0) return;
             var random = new System.Random(unchecked(seed * 397 ^ 7919));
-            var placed = new List<Vector3>();
+            var placed = rockFootprints;
             float area = 0f;
             foreach (float radius in radii) area += Mathf.PI * radius * radius;
             foreach (var route in corridors)
