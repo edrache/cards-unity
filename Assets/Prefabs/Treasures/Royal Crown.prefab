@@ -162,6 +162,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6788253558169084431, guid: b931fd32a89184c268b6ab0154d103e4, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f89cc3dbafe1c4281a2822ed64f2f113, type: 2}
     - target: {fileID: 7194367297848510045, guid: b931fd32a89184c268b6ab0154d103e4, type: 3}
       propertyPath: m_Name
       value: Royal Crown

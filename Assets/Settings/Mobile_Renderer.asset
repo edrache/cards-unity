@@ -26,7 +26,8 @@ MonoBehaviour:
     probeVolumeBlendStatesCS: {fileID: 0}
   m_RendererFeatures:
   - {fileID: 1466255352044192728}
-  m_RendererFeatureMap: d8039c60792f5914
+  - {fileID: 4238046678355656440}
+  m_RendererFeatureMap: d8039c60792f5914f8bee9f4ff90d03a
   m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -67,7 +68,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b00045f12942b46c698459096c89274e, type: 3}
   m_Name: One Bit Dither
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.FullScreenPassRendererFeature
-  m_Active: 1
+  m_Active: 0
   injectionPoint: 600
   fetchColorBuffer: 1
   requirements: 1
@@ -75,3 +76,17 @@ MonoBehaviour:
   passIndex: 0
   bindDepthStencilAttachment: 0
   m_Version: 1
+--- !u!114 &4238046678355656440
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87f922bc198b1498a8a33d4ae9e18937, type: 3}
+  m_Name: One Bit Dither With Accents
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Rendering.DitherAccentRendererFeature
+  m_Active: 1
+  ditherMaterial: {fileID: 2100000, guid: a33ea537b75754b53809bea94d9e7853, type: 2}

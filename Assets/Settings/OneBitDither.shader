@@ -53,6 +53,8 @@ Shader "CardsUnity/One Bit Dither"
                 float _BackgroundInk, _BackgroundPlaneHeight;
                 float4 _PaperTexture_TexelSize;
             CBUFFER_END
+            TEXTURE2D_X(_DitherAccentTexture);
+            float _DitherAccentEnabled;
             TEXTURE2D(_NoiseTexture);
             SAMPLER(sampler_NoiseTexture);
             TEXTURE2D(_PaperTexture);
@@ -192,7 +194,12 @@ Shader "CardsUnity/One Bit Dither"
                 // Grain adds subtle continuous variation, including on otherwise blank paper.
                 float2 grainUV = frac((pixel + 0.5) / max(1.0, _NoiseTileSize));
                 float grain = SAMPLE_TEXTURE2D_LOD(_NoiseTexture, sampler_NoiseTexture, grainUV, 0).r;
-                float3 color = lerp(_Ink.rgb, _Paper.rgb, tone);
+                // Keep the mask at the visible silhouette rather than warping it across walls.
+                float4 accent = 0;
+                if (_DitherAccentEnabled > 0.5)
+                    accent = SAMPLE_TEXTURE2D_X(_DitherAccentTexture, sampler_PointClamp, input.texcoord);
+                float3 paperColor = lerp(_Paper.rgb, accent.rgb, accent.a);
+                float3 color = lerp(_Ink.rgb, paperColor, tone);
                 color *= 1.0 - _PaperGrain * (1.0 - grain);
                 // Paper has its own screen-space scale, independent of the dither pixel size.
                 // Preserve the source aspect ratio; the tile size specifies its width.
