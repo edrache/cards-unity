@@ -55,6 +55,7 @@ namespace CardsUnity.Controllers
         [Tooltip("Moved to the entrance tunnel after rebuilding, including when Play Mode starts.")]
         [SerializeField] private Transform player;
 
+        private readonly List<Vector2> treasurePositions = new List<Vector2>();
         private readonly List<Vector2> rooms = new List<Vector2>();
         private readonly List<float> radii = new List<float>();
         private readonly List<Vector2[]> corridors = new List<Vector2[]>();
@@ -113,7 +114,7 @@ namespace CardsUnity.Controllers
         public void Rebuild()
         {
             rebuildPending = false;
-            Clear(); rooms.Clear(); radii.Clear(); corridors.Clear(); corridorBounds.Clear();
+            Clear(); treasurePositions.Clear(); rooms.Clear(); radii.Clear(); corridors.Clear(); corridorBounds.Clear();
             var random = new System.Random(seed);
             noiseOffset = (float)random.NextDouble() * 1000f;
             GenerateLayout(random);
@@ -156,6 +157,7 @@ namespace CardsUnity.Controllers
             CreateSurface("Level floor", floorMesh, floorMaterial);
             wallCollisionMesh = collision.Build("Cave wall collision");
             CreateSurface("Rock walls", wallMesh, wallMaterial, wallCollisionMesh);
+            SpawnTreasures();
             ScatterRocks(min, max);
             if (player == null)
             {
@@ -173,7 +175,6 @@ namespace CardsUnity.Controllers
             }
             SpawnCentipedes();
             SpawnBodies();
-            SpawnTreasures();
         }
 
         private void SpawnTreasures()
@@ -192,16 +193,55 @@ namespace CardsUnity.Controllers
             population.transform.SetParent(generated.transform, false);
             for (int i = 0; i < count; i++)
             {
-                // A reserved spot beside the chamber centre keeps the chalice clear of bodies and rocks.
-                Vector2 p = rooms[order[i]] + Vector2.right * 1.65f;
+                int room = order[i];
+                Vector2 p = rooms[room];
+                float bestScore = float.PositiveInfinity;
+                // Most cups end up near a wall; some remain further inside the chamber.
+                float desiredClearance = random.NextDouble() < 0.8 ? 0.95f
+                    : Mathf.Lerp(1.5f, radii[room] * 0.65f, (float)random.NextDouble());
+                for (int attempt = 0; attempt < 256; attempt++)
+                {
+                    float angle = (float)random.NextDouble() * Mathf.PI * 2f;
+                    float radius = Mathf.Sqrt((float)random.NextDouble()) * radii[room] * 1.12f;
+                    Vector2 candidate = rooms[room] + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+                    bool blocked = false;
+                    foreach (var centre in rooms)
+                        if (bodyPrefab != null && bodyRoomPercentage > 0f && Vector2.Distance(candidate, centre) < 2.3f)
+                        { blocked = true; break; }
+                    foreach (var other in treasurePositions)
+                        if (Vector2.Distance(candidate, other) < 1.5f) { blocked = true; break; }
+                    // Check the whole fallen silhouette, leaving room for the wall's irregular lip.
+                    for (int j = 0; j < 16 && !blocked; j++)
+                    {
+                        float a = j * Mathf.PI / 8f;
+                        if (Field(candidate + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * 0.65f) < 0.3f) blocked = true;
+                    }
+                    if (blocked) continue;
+                    float score = Mathf.Abs(Field(candidate) - desiredClearance);
+                    if (score < bestScore) { bestScore = score; p = candidate; }
+                }
+                if (float.IsPositiveInfinity(bestScore)) continue;
+                treasurePositions.Add(p);
                 const float e = 0.1f;
                 Vector3 normal = new Vector3(-(FloorHeight(p + Vector2.right * e) - FloorHeight(p - Vector2.right * e)) / (2f * e),
                     1f, -(FloorHeight(p + Vector2.up * e) - FloorHeight(p - Vector2.up * e)) / (2f * e)).normalized;
                 var treasure = Instantiate(treasurePrefab, population.transform);
                 treasure.name = $"Golden Chalice (Room {order[i] + 1:00})";
                 treasure.gameObject.hideFlags = HideFlags.DontSave;
-                treasure.transform.localPosition = Surface(p, 0.02f);
-                treasure.transform.localRotation = Quaternion.FromToRotation(Vector3.up, normal) * Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f);
+                Quaternion rotation = Quaternion.FromToRotation(Vector3.up, normal)
+                    * Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f)
+                    * Quaternion.Euler(0f, 0f, Mathf.Lerp(82f, 98f, (float)random.NextDouble()));
+                treasure.transform.localRotation = rotation;
+                treasure.transform.localPosition = Surface(p, 0f) - rotation * new Vector3(0f, 0.405f, 0f);
+                // Rest the actual mesh on the sloping floor instead of sinking the rim or floating the base.
+                float lift = float.NegativeInfinity;
+                foreach (var filter in treasure.GetComponentsInChildren<MeshFilter>())
+                    foreach (var vertex in filter.sharedMesh.vertices)
+                    {
+                        Vector3 local = transform.InverseTransformPoint(filter.transform.TransformPoint(vertex));
+                        lift = Mathf.Max(lift, FloorHeight(new Vector2(local.x, local.z)) - local.y);
+                    }
+                if (!float.IsNegativeInfinity(lift)) treasure.transform.localPosition += Vector3.up * (lift + 0.015f);
                 treasure.SetValue(random.Next(5, 16) * 10);
             }
         }
@@ -323,9 +363,8 @@ namespace CardsUnity.Controllers
                 float radius = size * 0.62f;
                 if (Field(p) < radius + 0.2f || Vector2.Distance(p, entrance) < radius + 3f) continue;
                 bool blocked = false;
-                if (treasurePrefab != null && treasureRoomPercentage > 0f)
-                    foreach (var centre in rooms)
-                        if (Vector2.Distance(p, centre + Vector2.right * 1.65f) < radius + 0.55f) { blocked = true; break; }
+                foreach (var treasurePosition in treasurePositions)
+                    if (Vector2.Distance(p, treasurePosition) < radius + 0.75f) { blocked = true; break; }
                 if (bodyPrefab != null && bodyRoomPercentage > 0f)
                     foreach (var centre in rooms)
                         if (Vector2.Distance(p, centre) < radius + 2.1f) { blocked = true; break; }
