@@ -9,7 +9,6 @@ namespace CardsUnity.Controllers
         [SerializeField] private HandheldTorch torch;
         [Header("Interaction")]
         [SerializeField, Range(0.4f, 2f)] private float pickupRange = 1f;
-        [SerializeField, Range(0.15f, 1f)] private float dropDuration = 0.35f;
         [SerializeField, Range(0.3f, 2f)] private float pickupDuration = 0.75f;
         [SerializeField, Range(0.15f, 1f)] private float recoveryDuration = 0.45f;
         [SerializeField] private bool showPrompt = true;
@@ -21,7 +20,7 @@ namespace CardsUnity.Controllers
         private Vector3 gripOffset;
         private TorchAttack attack;
         private CartoonCharacterGait gait;
-        private bool pickingUp, transferred;
+        private bool transferred;
         private float elapsed, weight;
         private Vector3 reachTarget;
         private Quaternion pickupRotation, groundRotation;
@@ -71,7 +70,15 @@ namespace CardsUnity.Controllers
                 if (part.name == partName) return part;
             return null;
         }
-        public string ActionLabel => treasure != null ? "Podnieś " + treasure.DisplayName : HoldsTorch ? "Upuść" : "Podnieś";
+        public string ActionLabel
+        {
+            get
+            {
+                if (!IsBusy) { FindPickupTorch(); FindTreasure(); }
+                if (treasure != null) return "Podnieś: " + treasure.DisplayName;
+                return CanPickUp ? "Podnieś: pochodnię" : string.Empty;
+            }
+        }
 
         private void Awake()
         {
@@ -110,18 +117,14 @@ namespace CardsUnity.Controllers
             elbow = Part(side + " Forearm");
             var hand = Part(side + " Hand");
             if (arm == null || elbow == null || hand == null) return false;
-            gripOffset = !collecting && torch != null && HoldsTorch ? torch.GripOffset : hand.localPosition;
-            pickingUp = collecting || !HoldsTorch;
-            if (!collecting && (torch == null || (pickingUp && !CanPickUp))) return false;
+            gripOffset = hand.localPosition;
+            if (!collecting && !CanPickUp) return false;
             IsBusy = true;
             transferred = false;
             elapsed = weight = 0f;
-            if (pickingUp)
-            {
-                reachTarget = collecting ? treasure.transform.position : torch.transform.position;
-                Vector3 direction = Vector3.ProjectOnPlane(reachTarget - transform.position, Vector3.up);
-                pickupRotation = direction.sqrMagnitude > 0.001f ? Quaternion.LookRotation(direction) : transform.rotation;
-            }
+            reachTarget = collecting ? treasure.transform.position : torch.transform.position;
+            Vector3 direction = Vector3.ProjectOnPlane(reachTarget - transform.position, Vector3.up);
+            pickupRotation = direction.sqrMagnitude > 0.001f ? Quaternion.LookRotation(direction) : transform.rotation;
             return true;
         }
 
@@ -132,17 +135,17 @@ namespace CardsUnity.Controllers
             if (!IsBusy) return;
             if (collecting ? (!transferred && (treasure == null || !treasure.isActiveAndEnabled)) : torch == null) { Finish(); return; }
             elapsed += Mathf.Max(0f, dt);
-            float duration = pickingUp ? pickupDuration : dropDuration;
+            float duration = pickupDuration;
             weight = elapsed <= duration ? Mathf.SmoothStep(0f, 1f, elapsed / duration)
                 : 1f - Mathf.SmoothStep(0f, 1f, (elapsed - duration) / recoveryDuration);
-            if (pickingUp && !transferred)
+            if (!transferred)
             {
                 reachTarget = collecting ? treasure.transform.position : torch.transform.position;
                 Vector3 direction = Vector3.ProjectOnPlane(reachTarget - transform.position, Vector3.up);
                 if (direction.sqrMagnitude > 0.001f) pickupRotation = Quaternion.LookRotation(direction);
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, pickupRotation, 360f * dt);
             }
-            if (gait != null) gait.InteractionCrouch = pickingUp ? weight : 0f;
+            if (gait != null) gait.InteractionCrouch = weight;
             if (torch != null && !useLeftHand) torch.SetPoseSuppression(weight);
         }
 
@@ -152,57 +155,43 @@ namespace CardsUnity.Controllers
         {
             if (!IsBusy) return;
             if (collecting ? (!transferred && (treasure == null || !treasure.isActiveAndEnabled)) : torch == null) { Finish(); return; }
-            if (pickingUp)
-            {
-                // Refresh after Update as Rigidbody interpolation may have moved the visible grip.
-                if (!transferred) reachTarget = collecting ? treasure.transform.position : torch.transform.position;
-                // Two-bone reach keeps the hand on the physical grip until it is attached.
-                Vector3 shoulder = arm.position;
-                float upper = Vector3.Distance(shoulder, elbow.position);
-                float lower = gripOffset.magnitude;
-                Vector3 delta = reachTarget - shoulder;
-                float distance = Mathf.Clamp(delta.magnitude, Mathf.Abs(upper - lower) + 0.001f, upper + lower - 0.001f);
-                Vector3 direction = delta.normalized;
-                Vector3 bend = Vector3.ProjectOnPlane(-transform.forward + transform.right * (useLeftHand ? -0.35f : 0.35f), direction).normalized;
-                float along = (upper * upper - lower * lower + distance * distance) / (2f * distance);
-                Vector3 joint = shoulder + direction * along + bend * Mathf.Sqrt(Mathf.Max(0f, upper * upper - along * along));
-                arm.rotation = Quaternion.Slerp(arm.rotation, Quaternion.FromToRotation(Vector3.down, joint - shoulder), weight);
-                elbow.rotation = Quaternion.Slerp(elbow.rotation, Quaternion.FromToRotation(Vector3.down, reachTarget - elbow.position), weight);
-            }
-            else
-            {
-                // Lower and extend the arm before opening the grip.
-                arm.rotation = Quaternion.Slerp(arm.rotation, transform.rotation * Quaternion.Euler(Mathf.Lerp(-32f, -82f,
-                    gait != null ? gait.CrawlWeight : 0f), 0f, 20f), weight);
-                elbow.localRotation = Quaternion.Slerp(elbow.localRotation, Quaternion.Euler(-8f, 0f, 0f), weight);
-            }
+            // Refresh after Update as Rigidbody interpolation may have moved the visible grip.
+            if (!transferred) reachTarget = collecting ? treasure.transform.position : torch.transform.position;
+            // Two-bone reach keeps the hand on the physical grip until it is attached.
+            Vector3 shoulder = arm.position;
+            float upper = Vector3.Distance(shoulder, elbow.position);
+            float lower = gripOffset.magnitude;
+            Vector3 delta = reachTarget - shoulder;
+            float distance = Mathf.Clamp(delta.magnitude, Mathf.Abs(upper - lower) + 0.001f, upper + lower - 0.001f);
+            Vector3 direction = delta.normalized;
+            Vector3 bend = Vector3.ProjectOnPlane(-transform.forward + transform.right * (useLeftHand ? -0.35f : 0.35f), direction).normalized;
+            float along = (upper * upper - lower * lower + distance * distance) / (2f * distance);
+            Vector3 joint = shoulder + direction * along + bend * Mathf.Sqrt(Mathf.Max(0f, upper * upper - along * along));
+            arm.rotation = Quaternion.Slerp(arm.rotation, Quaternion.FromToRotation(Vector3.down, joint - shoulder), weight);
+            elbow.rotation = Quaternion.Slerp(elbow.rotation, Quaternion.FromToRotation(Vector3.down, reachTarget - elbow.position), weight);
 
-            float duration = pickingUp ? pickupDuration : dropDuration;
+            float duration = pickupDuration;
             if (!transferred && elapsed >= duration)
             {
-                if (pickingUp)
+                // Recheck after reaching: do not pull a moving torch through a wall or across the room.
+                if (collecting)
                 {
-                    // Recheck after reaching: do not pull a moving torch through a wall or across the room.
-                    if (collecting)
-                    {
-                        if (treasure != null && treasure.isActiveAndEnabled
-                            && Vector3.Distance(transform.position, treasure.transform.position) <= pickupRange
-                            && HasClearReach(treasure.transform)
-                            && Vector3.Distance(elbow.TransformPoint(gripOffset), reachTarget) < 0.12f)
-                            inventory.Collect(treasure);
-                    }
-                    else if (CanPickUp && Vector3.Distance(elbow.TransformPoint(gripOffset), reachTarget) < 0.08f)
-                    {
-                        groundRotation = torch.transform.rotation;
-                        torch.SetGripOffset(gripOffset);
-                        torch.PickUp(transform, arm, elbow);
-                        attack?.SetTorch(torch);
-                    }
+                    if (treasure != null && treasure.isActiveAndEnabled
+                        && Vector3.Distance(transform.position, treasure.transform.position) <= pickupRange
+                        && HasClearReach(treasure.transform)
+                        && Vector3.Distance(elbow.TransformPoint(gripOffset), reachTarget) < 0.12f)
+                        inventory.Collect(treasure);
                 }
-                else torch.Drop();
+                else if (CanPickUp && Vector3.Distance(elbow.TransformPoint(gripOffset), reachTarget) < 0.08f)
+                {
+                    groundRotation = torch.transform.rotation;
+                    torch.SetGripOffset(gripOffset);
+                    torch.PickUp(transform, arm, elbow);
+                    attack?.SetTorch(torch);
+                }
                 transferred = true;
             }
-            if (!collecting && pickingUp && transferred && torch.IsHeld)
+            if (!collecting && transferred && torch.IsHeld)
                 torch.transform.rotation = Quaternion.Slerp(groundRotation, transform.rotation, 1f - weight);
             if (elapsed >= duration + recoveryDuration) Finish();
         }
@@ -223,10 +212,10 @@ namespace CardsUnity.Controllers
         {
             if (GetComponent<CharacterKnockdown>()?.IsDown == true) return;
             if (!showPrompt || IsBusy || (attack != null && attack.IsAttacking)) return;
-            FindPickupTorch();
-            FindTreasure();
-            if (treasure == null && !HoldsTorch && !CanPickUp) return;
-            GUI.Box(new Rect(Screen.width * 0.5f - 160f, Screen.height - 66f, 320f, 30f), "E  ·  " + ActionLabel);
+            string label = ActionLabel;
+            if (string.IsNullOrEmpty(label)) return;
+            float width = Mathf.Min(420f, Screen.width - 24f);
+            GUI.Box(new Rect((Screen.width - width) * 0.5f, Screen.height - 76f, width, 40f), "[E]  " + label);
         }
     }
 }
