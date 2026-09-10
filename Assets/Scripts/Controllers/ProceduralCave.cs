@@ -31,6 +31,9 @@ namespace CardsUnity.Controllers
         [SerializeField] private ProceduralCentipede centipedePrefab;
         [Tooltip("Percentage of rooms receiving one centipede. Rounded to the nearest whole room; zero disables spawning. Selection is repeatable for Seed.")]
         [SerializeField, Range(0f, 100f)] private float centipedeRoomPercentage = 25f;
+        [Header("Treasures")]
+        [SerializeField] private Treasure treasurePrefab;
+        [SerializeField, Range(0f, 100f)] private float treasureRoomPercentage = 50f;
         [Header("Bodies")]
         [SerializeField] private CaveBody bodyPrefab;
         [Tooltip("Percentage of rooms receiving one body and burning torch. Selection and proportions repeat for Seed.")]
@@ -82,6 +85,7 @@ namespace CardsUnity.Controllers
             branchDensity = Mathf.Clamp01(branchDensity);
             entranceLength = Mathf.Clamp(entranceLength, 8f, 20f);
             rockDensity = Mathf.Clamp01(rockDensity);
+            treasureRoomPercentage = Mathf.Clamp(treasureRoomPercentage, 0f, 100f);
             bodyRoomPercentage = Mathf.Clamp(bodyRoomPercentage, 0f, 100f);
             centipedeRoomPercentage = Mathf.Clamp(centipedeRoomPercentage, 0f, 100f);
             minimumRockSize = Mathf.Clamp(minimumRockSize, 1f, 4f);
@@ -169,6 +173,37 @@ namespace CardsUnity.Controllers
             }
             SpawnCentipedes();
             SpawnBodies();
+            SpawnTreasures();
+        }
+
+        private void SpawnTreasures()
+        {
+            int count = Mathf.Clamp(Mathf.FloorToInt(rooms.Count * treasureRoomPercentage / 100f + 0.5f), 0, rooms.Count);
+            if (count == 0 || treasurePrefab == null) return;
+            var random = new System.Random(unchecked(seed * 397 ^ 15485863));
+            var order = new int[rooms.Count];
+            for (int i = 0; i < order.Length; i++) order[i] = i;
+            for (int i = order.Length - 1; i > 0; i--)
+            {
+                int j = random.Next(i + 1);
+                int swap = order[i]; order[i] = order[j]; order[j] = swap;
+            }
+            var population = new GameObject("Generated Treasures") { hideFlags = HideFlags.DontSave };
+            population.transform.SetParent(generated.transform, false);
+            for (int i = 0; i < count; i++)
+            {
+                // A reserved spot beside the chamber centre keeps the chalice clear of bodies and rocks.
+                Vector2 p = rooms[order[i]] + Vector2.right * 1.65f;
+                const float e = 0.1f;
+                Vector3 normal = new Vector3(-(FloorHeight(p + Vector2.right * e) - FloorHeight(p - Vector2.right * e)) / (2f * e),
+                    1f, -(FloorHeight(p + Vector2.up * e) - FloorHeight(p - Vector2.up * e)) / (2f * e)).normalized;
+                var treasure = Instantiate(treasurePrefab, population.transform);
+                treasure.name = $"Golden Chalice (Room {order[i] + 1:00})";
+                treasure.gameObject.hideFlags = HideFlags.DontSave;
+                treasure.transform.localPosition = Surface(p, 0.02f);
+                treasure.transform.localRotation = Quaternion.FromToRotation(Vector3.up, normal) * Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f);
+                treasure.SetValue(random.Next(5, 16) * 10);
+            }
         }
 
         private void SpawnBodies()
@@ -288,6 +323,9 @@ namespace CardsUnity.Controllers
                 float radius = size * 0.62f;
                 if (Field(p) < radius + 0.2f || Vector2.Distance(p, entrance) < radius + 3f) continue;
                 bool blocked = false;
+                if (treasurePrefab != null && treasureRoomPercentage > 0f)
+                    foreach (var centre in rooms)
+                        if (Vector2.Distance(p, centre + Vector2.right * 1.65f) < radius + 0.55f) { blocked = true; break; }
                 if (bodyPrefab != null && bodyRoomPercentage > 0f)
                     foreach (var centre in rooms)
                         if (Vector2.Distance(p, centre) < radius + 2.1f) { blocked = true; break; }

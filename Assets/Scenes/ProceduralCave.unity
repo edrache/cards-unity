@@ -707,6 +707,8 @@ MonoBehaviour:
   maximumRockSize: 2.6
   centipedePrefab: {fileID: 8402668057444636402, guid: b4f4b46d9a579409ba14a9d3563f22e8, type: 3}
   centipedeRoomPercentage: 90
+  treasurePrefab: {fileID: 5334899008198995573, guid: b931fd32a89184c268b6ab0154d103e4, type: 3}
+  treasureRoomPercentage: 50
   bodyPrefab: {fileID: 21146944673533705, guid: 8f7f69103e6d3430e8de290d3fb29282, type: 3}
   bodyRoomPercentage: 25
   enableElevation: 1
