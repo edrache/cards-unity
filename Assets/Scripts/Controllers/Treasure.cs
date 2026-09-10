@@ -8,6 +8,12 @@ namespace CardsUnity.Controllers
         [SerializeField, Min(1)] private int value = 100;
         [SerializeField, Min(0.0001f)] private float lightThreshold = 0.005f;
         [SerializeField] private ParticleSystem glints;
+        [SerializeField, Min(0.01f)] private float minimumSizeDistance = 10f;
+        [SerializeField, Range(0f, 1f)] private float distantSizeFraction = 0.01f;
+        private Transform player;
+        private float nextPlayerSearch;
+        private bool originalSizeEnabled;
+        private ParticleSystem.MinMaxCurve originalSizeX, originalSizeY, originalSizeZ;
         private MeshRenderer[] bodyRenderers;
         private static Light[] lights;
         private static float nextLightRefresh;
@@ -24,10 +30,57 @@ namespace CardsUnity.Controllers
             nextSample = 0f;
             lights = null;
             bodyRenderers = GetComponentsInChildren<MeshRenderer>();
+            if (glints != null)
+            {
+                var size = glints.sizeOverLifetime;
+                originalSizeEnabled = size.enabled;
+                originalSizeX = size.x;
+                originalSizeY = size.y;
+                originalSizeZ = size.z;
+            }
             PositionGlints();
         }
 
-        private void LateUpdate() => PositionGlints();
+        private void LateUpdate()
+        {
+            PositionGlints();
+            UpdateDistanceSize();
+        }
+
+        private void UpdateDistanceSize()
+        {
+            if (glints == null) return;
+            if (player == null && Time.time >= nextPlayerSearch)
+            {
+                nextPlayerSearch = Time.time + 1f;
+                foreach (var candidate in FindObjectsByType<ProceduralCharacter>(FindObjectsSortMode.None))
+                    if (candidate.gameObject.scene == gameObject.scene) { player = candidate.transform; break; }
+            }
+            float distance = player != null ? Vector3.Distance(player.position, transform.position) : 0f;
+            float factor = Mathf.Lerp(1f, distantSizeFraction,
+                Mathf.Clamp01(distance / Mathf.Max(0.01f, minimumSizeDistance)));
+            var size = glints.sizeOverLifetime;
+            size.enabled = true;
+            // This module affects existing particles too and leaves the authored start size intact.
+            size.x = ScaleSize(originalSizeEnabled ? originalSizeX : new ParticleSystem.MinMaxCurve(1f), factor);
+            if (size.separateAxes)
+            {
+                size.y = ScaleSize(originalSizeEnabled ? originalSizeY : new ParticleSystem.MinMaxCurve(1f), factor);
+                size.z = ScaleSize(originalSizeEnabled ? originalSizeZ : new ParticleSystem.MinMaxCurve(1f), factor);
+            }
+        }
+
+        private static ParticleSystem.MinMaxCurve ScaleSize(ParticleSystem.MinMaxCurve curve, float factor)
+        {
+            if (curve.mode == ParticleSystemCurveMode.Constant) curve.constant *= factor;
+            else if (curve.mode == ParticleSystemCurveMode.TwoConstants)
+            {
+                curve.constantMin *= factor;
+                curve.constantMax *= factor;
+            }
+            else curve.curveMultiplier *= factor;
+            return curve;
+        }
 
         private void PositionGlints()
         {
@@ -45,7 +98,14 @@ namespace CardsUnity.Controllers
         private void OnDisable()
         {
             IsIlluminated = false;
-            if (glints != null) glints.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            if (glints != null)
+            {
+                glints.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                var size = glints.sizeOverLifetime;
+                size.enabled = originalSizeEnabled;
+                size.x = originalSizeX;
+                if (size.separateAxes) { size.y = originalSizeY; size.z = originalSizeZ; }
+            }
         }
         private void Update()
         {
