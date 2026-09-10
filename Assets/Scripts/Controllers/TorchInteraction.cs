@@ -15,6 +15,7 @@ namespace CardsUnity.Controllers
         [SerializeField] private bool showPrompt = true;
 
         private Transform arm, elbow;
+        private Vector3 gripOffset;
         private TorchAttack attack;
         private CartoonCharacterGait gait;
         private bool pickingUp, transferred;
@@ -22,26 +23,49 @@ namespace CardsUnity.Controllers
         private Vector3 reachTarget;
         private Quaternion pickupRotation, groundRotation;
         public bool IsBusy { get; private set; }
-        public bool CanPickUp => torch != null && !torch.IsHeld
-            && Vector3.Distance(transform.position, torch.transform.position) <= pickupRange && HasClearReach();
+        public bool CanPickUp
+        {
+            get
+            {
+                if (!IsBusy) FindPickupTorch();
+                return torch != null && !torch.IsHeld && torch.isActiveAndEnabled
+                    && Vector3.Distance(transform.position, torch.transform.position) <= pickupRange && HasClearReach(torch);
+            }
+        }
+
+        private void FindPickupTorch()
+        {
+            if (torch != null && torch.IsHeld && torch.Holder == transform) return;
+            HandheldTorch nearest = null;
+            float distance = pickupRange;
+            foreach (var candidate in FindObjectsByType<HandheldTorch>(FindObjectsSortMode.None))
+            {
+                if (!candidate.isActiveAndEnabled || candidate.IsHeld || candidate.gameObject.scene != gameObject.scene) continue;
+                float d = Vector3.Distance(transform.position, candidate.transform.position);
+                if (d > distance || !HasClearReach(candidate)) continue;
+                nearest = candidate;
+                distance = d;
+            }
+            torch = nearest;
+        }
         public string ActionLabel => torch != null && torch.IsHeld ? "Upuść" : "Podnieś";
 
         private void Awake()
         {
             if (torch == null) torch = GetComponentInChildren<HandheldTorch>();
-            if (torch != null) { arm = torch.UpperArm; elbow = torch.Forearm; }
+            if (torch != null) { arm = torch.UpperArm; elbow = torch.Forearm; gripOffset = torch.GripOffset; }
             attack = GetComponent<TorchAttack>();
             gait = GetComponent<CartoonCharacterGait>();
         }
 
-        private bool HasClearReach()
+        private bool HasClearReach(HandheldTorch target)
         {
             Vector3 origin = transform.position + Vector3.up * 0.45f;
-            Vector3 delta = torch.transform.position - origin;
+            Vector3 delta = target.transform.position - origin;
             foreach (var hit in Physics.RaycastAll(origin, delta.normalized, delta.magnitude,
                          Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
             {
-                if (!hit.transform.IsChildOf(transform) && !hit.transform.IsChildOf(torch.transform)) return false;
+                if (!hit.transform.IsChildOf(transform) && !hit.transform.IsChildOf(target.transform)) return false;
             }
             return true;
         }
@@ -49,6 +73,7 @@ namespace CardsUnity.Controllers
         public bool TryInteract()
         {
             if (GetComponent<CharacterKnockdown>()?.IsDown == true) return false;
+            if (!IsBusy) FindPickupTorch();
             if (!isActiveAndEnabled || IsBusy || torch == null || arm == null || elbow == null
                 || (attack != null && attack.IsAttacking)) return false;
             pickingUp = !torch.IsHeld;
@@ -98,7 +123,7 @@ namespace CardsUnity.Controllers
                 // Two-bone reach keeps the hand on the physical grip until it is attached.
                 Vector3 shoulder = arm.position;
                 float upper = Vector3.Distance(shoulder, elbow.position);
-                float lower = torch.GripOffset.magnitude;
+                float lower = gripOffset.magnitude;
                 Vector3 delta = reachTarget - shoulder;
                 float distance = Mathf.Clamp(delta.magnitude, Mathf.Abs(upper - lower) + 0.001f, upper + lower - 0.001f);
                 Vector3 direction = delta.normalized;
@@ -122,10 +147,12 @@ namespace CardsUnity.Controllers
                 if (pickingUp)
                 {
                     // Recheck after reaching: do not pull a moving torch through a wall or across the room.
-                    if (CanPickUp && Vector3.Distance(elbow.TransformPoint(torch.GripOffset), reachTarget) < 0.08f)
+                    if (CanPickUp && Vector3.Distance(elbow.TransformPoint(gripOffset), reachTarget) < 0.08f)
                     {
                         groundRotation = torch.transform.rotation;
+                        torch.SetGripOffset(gripOffset);
                         torch.PickUp(transform, arm, elbow);
+                        attack?.SetTorch(torch);
                     }
                 }
                 else torch.Drop();
@@ -151,7 +178,9 @@ namespace CardsUnity.Controllers
         private void OnGUI()
         {
             if (GetComponent<CharacterKnockdown>()?.IsDown == true) return;
-            if (!showPrompt || torch == null || IsBusy || (attack != null && attack.IsAttacking)) return;
+            if (!showPrompt || IsBusy || (attack != null && attack.IsAttacking)) return;
+            FindPickupTorch();
+            if (torch == null) return;
             if (!torch.IsHeld && !CanPickUp) return;
             GUI.Box(new Rect(Screen.width * 0.5f - 85f, Screen.height - 66f, 170f, 30f), "E  ·  " + ActionLabel);
         }

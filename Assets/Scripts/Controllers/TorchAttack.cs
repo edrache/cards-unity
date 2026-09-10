@@ -10,6 +10,12 @@ namespace CardsUnity.Controllers
     [DefaultExecutionOrder(150)]
     public sealed class TorchAttack : MonoBehaviour
     {
+        public void SetTorch(HandheldTorch value)
+        {
+            CancelAttack();
+            torch = value;
+        }
+
         [Header("Rig")]
         [Tooltip("Torch whose holding pose is suppressed during a swing. Resolved from the children when empty.")]
         [SerializeField] private HandheldTorch torch;
