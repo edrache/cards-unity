@@ -8,6 +8,7 @@ namespace CardsUnity.Controllers
         [SerializeField, Min(1)] private int value = 100;
         [SerializeField, Min(0.0001f)] private float lightThreshold = 0.005f;
         [SerializeField] private ParticleSystem glints;
+        private MeshRenderer[] bodyRenderers;
         private static Light[] lights;
         private static float nextLightRefresh;
         private readonly RaycastHit[] hits = new RaycastHit[64];
@@ -18,7 +19,29 @@ namespace CardsUnity.Controllers
 
         public void SetValue(int amount) => value = Mathf.Max(1, amount);
         private void OnValidate() { value = Mathf.Max(1, value); lightThreshold = Mathf.Max(0.0001f, lightThreshold); }
-        private void OnEnable() { nextSample = 0f; lights = null; }
+        private void OnEnable()
+        {
+            nextSample = 0f;
+            lights = null;
+            bodyRenderers = GetComponentsInChildren<MeshRenderer>();
+            PositionGlints();
+        }
+
+        private void LateUpdate() => PositionGlints();
+
+        private void PositionGlints()
+        {
+            if (glints == null || bodyRenderers == null || bodyRenderers.Length == 0) return;
+            Bounds bounds = bodyRenderers[0].bounds;
+            for (int i = 1; i < bodyRenderers.Length; i++)
+                bounds.Encapsulate(bodyRenderers[i].bounds);
+            // Keep the entire emission sphere above the model, even when the cup lies on its side.
+            float radius = glints.shape.radius * Mathf.Max(glints.transform.lossyScale.x,
+                Mathf.Max(glints.transform.lossyScale.y, glints.transform.lossyScale.z));
+            glints.transform.SetPositionAndRotation(
+                new Vector3(bounds.center.x, bounds.max.y + radius + 0.08f, bounds.center.z),
+                Quaternion.identity);
+        }
         private void OnDisable()
         {
             IsIlluminated = false;
