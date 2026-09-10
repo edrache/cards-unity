@@ -702,12 +702,17 @@ MonoBehaviour:
   - {fileID: 6776167583924526275, guid: 2aba132793ce1420291c6828e4fbbfdc, type: 3}
   - {fileID: 5178868028192936276, guid: bba41afb890d54399acf39d4b311c247, type: 3}
   - {fileID: 4078306108158509581, guid: 7aeaecc88c3034a059e5ab84ae353ebf, type: 3}
-  rockDensity: 0
+  rockDensity: 0.744
   minimumRockSize: 1.2
-  maximumRockSize: 2.6
+  maximumRockSize: 1.64
   centipedePrefab: {fileID: 8402668057444636402, guid: b4f4b46d9a579409ba14a9d3563f22e8, type: 3}
-  centipedeRoomPercentage: 90
+  centipedeRoomPercentage: 30.5
   treasurePrefab: {fileID: 5334899008198995573, guid: b931fd32a89184c268b6ab0154d103e4, type: 3}
+  treasureVariants:
+  - {fileID: 7716414664649281885, guid: 48db3a9e2c0604f53b79acda53dba4f4, type: 3}
+  - {fileID: 937358445354453205, guid: 8e592f9b3d73c46778a33dadef4350ad, type: 3}
+  - {fileID: 5495842124696547249, guid: 00fadd881a1ce4d5c9c45edf44dae640, type: 3}
+  - {fileID: 1169336680343928739, guid: 335857475acd847ceb0badab6fc3f98f, type: 3}
   treasureRoomPercentage: 50
   bodyPrefab: {fileID: 21146944673533705, guid: 8f7f69103e6d3430e8de290d3fb29282, type: 3}
   bodyRoomPercentage: 25

@@ -33,6 +33,7 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0f, 100f)] private float centipedeRoomPercentage = 25f;
         [Header("Treasures")]
         [SerializeField] private Treasure treasurePrefab;
+        [SerializeField] private Treasure[] treasureVariants;
         [SerializeField, Range(0f, 100f)] private float treasureRoomPercentage = 50f;
         [Header("Bodies")]
         [SerializeField] private CaveBody bodyPrefab;
@@ -180,7 +181,19 @@ namespace CardsUnity.Controllers
         private void SpawnTreasures()
         {
             int count = Mathf.Clamp(Mathf.FloorToInt(rooms.Count * treasureRoomPercentage / 100f + 0.5f), 0, rooms.Count);
-            if (count == 0 || treasurePrefab == null) return;
+            var types = new List<Treasure>();
+            if (treasurePrefab != null) types.Add(treasurePrefab);
+            if (treasureVariants != null)
+                foreach (var variant in treasureVariants)
+                    if (variant != null && !types.Contains(variant)) types.Add(variant);
+            if (count == 0 || types.Count == 0) return;
+            // Shuffle a separate bag so every type appears before any repeats.
+            var typeRandom = new System.Random(unchecked(seed * 397 ^ 32452843));
+            for (int i = types.Count - 1; i > 0; i--)
+            {
+                int j = typeRandom.Next(i + 1);
+                var swap = types[i]; types[i] = types[j]; types[j] = swap;
+            }
             var random = new System.Random(unchecked(seed * 397 ^ 15485863));
             var order = new int[rooms.Count];
             for (int i = 0; i < order.Length; i++) order[i] = i;
@@ -225,14 +238,15 @@ namespace CardsUnity.Controllers
                 const float e = 0.1f;
                 Vector3 normal = new Vector3(-(FloorHeight(p + Vector2.right * e) - FloorHeight(p - Vector2.right * e)) / (2f * e),
                     1f, -(FloorHeight(p + Vector2.up * e) - FloorHeight(p - Vector2.up * e)) / (2f * e)).normalized;
-                var treasure = Instantiate(treasurePrefab, population.transform);
-                treasure.name = $"Golden Chalice (Room {order[i] + 1:00})";
+                var prefab = types[i % types.Count];
+                var treasure = Instantiate(prefab, population.transform);
+                treasure.name = $"{prefab.name} (Room {order[i] + 1:00})";
                 treasure.gameObject.hideFlags = HideFlags.DontSave;
                 Quaternion rotation = Quaternion.FromToRotation(Vector3.up, normal)
                     * Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f)
                     * Quaternion.Euler(0f, 0f, Mathf.Lerp(82f, 98f, (float)random.NextDouble()));
                 treasure.transform.localRotation = rotation;
-                treasure.transform.localPosition = Surface(p, 0f) - rotation * new Vector3(0f, 0.405f, 0f);
+                treasure.transform.localPosition = Surface(p, 0f) - rotation * treasure.GetComponent<MeshFilter>().sharedMesh.bounds.center;
                 // Rest the actual mesh on the sloping floor instead of sinking the rim or floating the base.
                 float lift = float.NegativeInfinity;
                 foreach (var filter in treasure.GetComponentsInChildren<MeshFilter>())
@@ -242,7 +256,7 @@ namespace CardsUnity.Controllers
                         lift = Mathf.Max(lift, FloorHeight(new Vector2(local.x, local.z)) - local.y);
                     }
                 if (!float.IsNegativeInfinity(lift)) treasure.transform.localPosition += Vector3.up * (lift + 0.015f);
-                treasure.SetValue(random.Next(5, 16) * 10);
+                // Values are authored on each prefab/variant.
             }
         }
 
