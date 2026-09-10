@@ -20,6 +20,23 @@ namespace CardsUnity.Controllers
         private readonly RaycastHit[] hits = new RaycastHit[64];
         private float nextSample;
         public int Value => value;
+        public string DisplayName
+        {
+            get
+            {
+                string itemName = name.Split('(')[0].Trim();
+                switch (itemName)
+                {
+                    case "Golden Chalice": return "Złoty kielich";
+                    case "Royal Crown": return "Królewska korona";
+                    case "Royal Orb": return "Królewskie jabłko";
+                    case "Golden Idol": return "Złoty bożek";
+                    case "Silver Flask": return "Srebrna flasza";
+                    case "Gold Coin": return "Złota moneta";
+                    default: return itemName;
+                }
+            }
+        }
         public float Exposure { get; private set; }
         public bool IsIlluminated { get; private set; }
 
