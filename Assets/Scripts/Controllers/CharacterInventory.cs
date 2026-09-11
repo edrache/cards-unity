@@ -20,9 +20,11 @@ namespace CardsUnity.Controllers
         private readonly List<Entry> items = new List<Entry>();
         private static readonly List<CharacterInventory> activeViews = new List<CharacterInventory>();
         private readonly Vector3[] panelCorners = new Vector3[4];
-        private RectTransform inventoryPanel;
-        private Canvas inventoryCanvas;
-        private Text heading, contents, total;
+        [Header("Inventory UI")]
+        [SerializeField] private Canvas inventoryCanvas;
+        [SerializeField] private RectTransform inventoryPanel;
+        [SerializeField] private Text heading, contents, total;
+        private bool ownsCanvas;
         private GameObject ownedEventSystem;
         private readonly System.Text.StringBuilder text = new System.Text.StringBuilder();
         public IReadOnlyList<Entry> Items => items;
@@ -52,7 +54,8 @@ namespace CardsUnity.Controllers
             foreach (var view in activeViews)
             {
                 if (view == null || view.inventoryPanel == null || view.inventoryCanvas == null
-                    || !view.inventoryCanvas.isActiveAndEnabled || view.inventoryCanvas.worldCamera != camera) continue;
+                    || !view.inventoryCanvas.isActiveAndEnabled || !view.inventoryPanel.gameObject.activeInHierarchy
+                    || view.inventoryCanvas.worldCamera != camera) continue;
                 view.inventoryPanel.GetWorldCorners(view.panelCorners);
                 Vector2 min = Vector2.one * float.PositiveInfinity;
                 Vector2 max = Vector2.one * float.NegativeInfinity;
@@ -71,12 +74,14 @@ namespace CardsUnity.Controllers
         {
             if (!activeViews.Contains(this)) activeViews.Add(this);
             if (inventoryCanvas == null) BuildView();
-            inventoryCanvas.gameObject.SetActive(true);
+            inventoryPanel.gameObject.SetActive(true);
             RefreshView();
         }
 
         private void LateUpdate()
         {
+            // A scene-owned Canvas retains its authored camera and settings.
+            if (!ownsCanvas) return;
             // Resolve again if the main camera is replaced or spawned after the character.
             var camera = Camera.main;
             inventoryCanvas.enabled = camera != null;
@@ -88,12 +93,12 @@ namespace CardsUnity.Controllers
         private void OnDisable()
         {
             activeViews.Remove(this);
-            if (inventoryCanvas != null) inventoryCanvas.gameObject.SetActive(false);
+            if (inventoryPanel != null) inventoryPanel.gameObject.SetActive(false);
         }
 
         private void OnDestroy()
         {
-            if (inventoryCanvas != null) Destroy(inventoryCanvas.gameObject);
+            if (ownsCanvas && inventoryCanvas != null) Destroy(inventoryCanvas.gameObject);
             if (ownedEventSystem != null) Destroy(ownedEventSystem);
         }
 
@@ -126,6 +131,8 @@ namespace CardsUnity.Controllers
 
         private void BuildView()
         {
+            if (inventoryCanvas != null) return;
+            ownsCanvas = Application.isPlaying;
             // Camera-space geometry is rendered before the camera's dither pass.
             var root = new GameObject("Inventory Canvas", typeof(RectTransform), typeof(Canvas),
                 typeof(CanvasScaler), typeof(GraphicRaycaster));
@@ -133,6 +140,8 @@ namespace CardsUnity.Controllers
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(root, gameObject.scene);
             inventoryCanvas = root.GetComponent<Canvas>();
             inventoryCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+            inventoryCanvas.worldCamera = Camera.main;
+            if (Camera.main != null) inventoryCanvas.planeDistance = Camera.main.nearClipPlane + 0.1f;
             inventoryCanvas.sortingOrder = 100;
             var scaler = root.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -168,6 +177,7 @@ namespace CardsUnity.Controllers
                     typeof(InputSystemUIInputModule));
                 UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(ownedEventSystem, gameObject.scene);
             }
+            if (!Application.isPlaying) ownedEventSystem = null;
             LateUpdate();
         }
 

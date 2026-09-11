@@ -326,7 +326,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.TorchInteraction
   torch: {fileID: 0}
   pickupRange: 1
-  dropDuration: 0.35
   pickupDuration: 0.75
   recoveryDuration: 0.45
   showPrompt: 1
