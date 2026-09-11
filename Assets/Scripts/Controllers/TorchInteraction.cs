@@ -187,7 +187,7 @@ namespace CardsUnity.Controllers
             if (collecting ? (!transferred && (treasure == null || !treasure.isActiveAndEnabled)) : torch == null) { Finish(); return; }
             elapsed += Mathf.Max(0f, dt);
             float duration = pickupDuration;
-            weight = elapsed <= duration ? Mathf.SmoothStep(0f, 1f, elapsed / duration)
+            weight = !transferred ? Mathf.SmoothStep(0f, 1f, elapsed / duration)
                 : 1f - Mathf.SmoothStep(0f, 1f, (elapsed - duration) / recoveryDuration);
             if (!transferred)
             {
@@ -224,13 +224,13 @@ namespace CardsUnity.Controllers
             float duration = pickupDuration;
             if (!transferred && elapsed >= duration)
             {
-                // Recheck after reaching: do not pull a moving torch through a wall or across the room.
+                // Gameplay collection is independent of visual IK accuracy. Keep the selected
+                // treasure locked, but recheck availability, range and obstruction at transfer.
                 if (collecting)
                 {
                     if (treasure != null && treasure.isActiveAndEnabled
                         && Vector3.Distance(transform.position, treasure.transform.position) <= pickupRange
-                        && HasClearReach(treasure.transform)
-                        && Vector3.Distance(elbow.TransformPoint(gripOffset), reachTarget) < 0.12f)
+                        && HasClearReach(treasure.transform))
                         inventory.Collect(treasure);
                 }
                 else if (HasEligiblePickupTorch() && Vector3.Distance(elbow.TransformPoint(gripOffset), reachTarget) < 0.08f)
