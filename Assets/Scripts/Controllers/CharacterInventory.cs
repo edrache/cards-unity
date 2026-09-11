@@ -18,6 +18,9 @@ namespace CardsUnity.Controllers
         }
 
         private readonly List<Entry> items = new List<Entry>();
+        private static readonly List<CharacterInventory> activeViews = new List<CharacterInventory>();
+        private readonly Vector3[] panelCorners = new Vector3[4];
+        private RectTransform inventoryPanel;
         private Canvas inventoryCanvas;
         private Text heading, contents, total;
         private GameObject ownedEventSystem;
@@ -43,8 +46,30 @@ namespace CardsUnity.Controllers
             return true;
         }
 
+        /// <summary>Opaque inventory bounds in camera UVs, exempt from empty-world masking.</summary>
+        public static Vector4 GetDitherUIRect(Camera camera)
+        {
+            foreach (var view in activeViews)
+            {
+                if (view == null || view.inventoryPanel == null || view.inventoryCanvas == null
+                    || !view.inventoryCanvas.isActiveAndEnabled || view.inventoryCanvas.worldCamera != camera) continue;
+                view.inventoryPanel.GetWorldCorners(view.panelCorners);
+                Vector2 min = Vector2.one * float.PositiveInfinity;
+                Vector2 max = Vector2.one * float.NegativeInfinity;
+                foreach (var corner in view.panelCorners)
+                {
+                    Vector2 uv = camera.WorldToViewportPoint(corner);
+                    min = Vector2.Min(min, uv);
+                    max = Vector2.Max(max, uv);
+                }
+                return new Vector4(min.x, min.y, max.x, max.y);
+            }
+            return new Vector4(-1, -1, -1, -1);
+        }
+
         private void OnEnable()
         {
+            if (!activeViews.Contains(this)) activeViews.Add(this);
             if (inventoryCanvas == null) BuildView();
             inventoryCanvas.gameObject.SetActive(true);
             RefreshView();
@@ -62,6 +87,7 @@ namespace CardsUnity.Controllers
 
         private void OnDisable()
         {
+            activeViews.Remove(this);
             if (inventoryCanvas != null) inventoryCanvas.gameObject.SetActive(false);
         }
 
@@ -114,6 +140,7 @@ namespace CardsUnity.Controllers
             scaler.matchWidthOrHeight = 0.5f;
             var panel = Rect("Inventory Panel", root.transform, new Vector2(0, 1), new Vector2(0, 1),
                 new Vector2(16, -286), new Vector2(316, -16));
+            inventoryPanel = panel;
             panel.gameObject.AddComponent<Image>().color = Color.black;
             var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             heading = Label(Rect("Heading", panel, new Vector2(0, 1), Vector2.one,

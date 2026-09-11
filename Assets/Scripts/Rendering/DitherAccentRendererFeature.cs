@@ -85,6 +85,7 @@ namespace CardsUnity.Rendering
             private static readonly int BlitTexture = Shader.PropertyToID("_BlitTexture");
             private static readonly int BlitScaleBias = Shader.PropertyToID("_BlitScaleBias");
             private static readonly int AccentTexture = Shader.PropertyToID("_DitherAccentTexture");
+            private static readonly int CameraUIRect = Shader.PropertyToID("_DitherCameraUIRect");
             private static readonly int AccentEnabled = Shader.PropertyToID("_DitherAccentEnabled");
 
             public DitherPass()
@@ -96,6 +97,7 @@ namespace CardsUnity.Rendering
             private sealed class PassData
             {
                 public TextureHandle source, accent;
+                public Vector4 cameraUIRect;
                 public Material material;
                 public MaterialPropertyBlock properties;
             }
@@ -111,6 +113,8 @@ namespace CardsUnity.Rendering
                 var destination = graph.CreateTexture(descriptor);
                 using (var builder = graph.AddRasterRenderPass<PassData>("One Bit Dither With Accents", out var data))
                 {
+                    data.cameraUIRect = CardsUnity.Controllers.CharacterInventory.GetDitherUIRect(
+                        frame.Get<UniversalCameraData>().camera);
                     data.source = resources.activeColorTexture;
                     data.accent = frame.Get<AccentData>().texture;
                     data.material = material;
@@ -125,6 +129,7 @@ namespace CardsUnity.Rendering
                         pass.properties.SetTexture(BlitTexture, (RTHandle)pass.source);
                         pass.properties.SetTexture(AccentTexture, (RTHandle)pass.accent);
                         pass.properties.SetFloat(AccentEnabled, 1f);
+                        pass.properties.SetVector(CameraUIRect, pass.cameraUIRect);
                         pass.properties.SetVector(BlitScaleBias, new Vector4(1, 1, 0, 0));
                         context.cmd.DrawProcedural(Matrix4x4.identity, pass.material, 0,
                             MeshTopology.Triangles, 3, 1, pass.properties);

@@ -55,6 +55,12 @@ Shader "CardsUnity/One Bit Dither"
             CBUFFER_END
             TEXTURE2D_X(_DitherAccentTexture);
             float _DitherAccentEnabled;
+            float4 _DitherCameraUIRect;
+
+            bool IsCameraUI(float2 uv)
+            {
+                return all(uv >= _DitherCameraUIRect.xy) && all(uv <= _DitherCameraUIRect.zw);
+            }
             TEXTURE2D(_NoiseTexture);
             SAMPLER(sampler_NoiseTexture);
             TEXTURE2D(_PaperTexture);
@@ -121,7 +127,7 @@ Shader "CardsUnity/One Bit Dither"
 
             float Luma(float2 uv)
             {
-                if (_BackgroundInk > 0.5 && !HasSurface(uv)) return 0.0;
+                if (_BackgroundInk > 0.5 && !HasSurface(uv) && !IsCameraUI(uv)) return 0.0;
                 float3 color = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_PointClamp, uv).rgb;
                 // Threshold in perceptual space so dark torch gradients stay readable.
                 return dot(LinearToSRGB(max(color, 0)), float3(0.2126, 0.7152, 0.0722));
@@ -168,7 +174,7 @@ Shader "CardsUnity/One Bit Dither"
                 float midtoneMask = 4.0 * luminance * (1.0 - luminance);
                 luminance = saturate(luminance + (boundary - 0.5) * _BoundaryStrength * midtoneMask);
 
-                if (_BackgroundInk > 0.5 && !HasSurface(uv)) luminance = 0.0;
+                if (_BackgroundInk > 0.5 && !HasSurface(uv) && !IsCameraUI(uv)) luminance = 0.0;
 
                 // A fixed Bayer matrix avoids temporal noise.
                 const float bayer[16] = {
