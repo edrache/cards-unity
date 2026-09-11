@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CardsUnity.Controllers
@@ -5,6 +6,10 @@ namespace CardsUnity.Controllers
     /// <summary>A valuable world prop whose glints reveal it only in local light.</summary>
     public sealed class Treasure : MonoBehaviour
     {
+        // Generated cave props use DontSave and are omitted by Unity's global object search.
+        private static readonly List<Treasure> activeTreasures = new List<Treasure>();
+        public static IReadOnlyList<Treasure> ActiveTreasures => activeTreasures;
+
         [SerializeField, Min(1)] private int value = 100;
         [SerializeField, Min(0.0001f)] private float lightThreshold = 0.005f;
         [SerializeField] private ParticleSystem glints;
@@ -44,6 +49,7 @@ namespace CardsUnity.Controllers
         private void OnValidate() { value = Mathf.Max(1, value); lightThreshold = Mathf.Max(0.0001f, lightThreshold); }
         private void OnEnable()
         {
+            if (!activeTreasures.Contains(this)) activeTreasures.Add(this);
             nextSample = 0f;
             lights = null;
             bodyRenderers = GetComponentsInChildren<MeshRenderer>();
@@ -114,6 +120,7 @@ namespace CardsUnity.Controllers
         }
         private void OnDisable()
         {
+            activeTreasures.Remove(this);
             IsIlluminated = false;
             if (glints != null)
             {

@@ -98,9 +98,9 @@ namespace CardsUnity.Controllers
         {
             treasure = null;
             float distance = pickupRange;
-            foreach (var candidate in FindObjectsByType<Treasure>(FindObjectsSortMode.None))
+            foreach (var candidate in Treasure.ActiveTreasures)
             {
-                if (!candidate.isActiveAndEnabled || candidate.gameObject.scene != gameObject.scene) continue;
+                if (candidate == null || !candidate.isActiveAndEnabled || candidate.gameObject.scene != gameObject.scene) continue;
                 float d = Vector3.Distance(transform.position, candidate.transform.position);
                 if (d > distance || !HasClearReach(candidate.transform)) continue;
                 treasure = candidate;
