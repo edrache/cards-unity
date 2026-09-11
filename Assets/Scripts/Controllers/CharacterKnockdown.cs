@@ -51,7 +51,7 @@ namespace CardsUnity.Controllers
             if (elapsed >= fall && movementDistance > 0.0001f) movingTime += dt;
             float holdEnd = Mathf.Max(0f, kneelDuration);
             gait.KnockdownWeight = elapsed < fall ? Mathf.SmoothStep(0f, 1f, elapsed / fall)
-                : 1f - Mathf.SmoothStep(0f, 1f, (movingTime - holdEnd) / stand);
+                : 1f - PoseEasing.SmootherStep((movingTime - holdEnd) / stand);
             if (movingTime >= holdEnd + stand)
             {
                 IsDown = false;

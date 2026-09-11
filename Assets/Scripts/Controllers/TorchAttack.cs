@@ -188,7 +188,7 @@ namespace CardsUnity.Controllers
             chargeTime = phaseTime;
             // The weight ramp itself carries the arm from the holding pose up into the cocked pose,
             // which then holds until the button is released.
-            weight = Mathf.SmoothStep(0f, 1f, phaseTime / Mathf.Max(0.0001f, windupDuration));
+            weight = PoseEasing.SmootherStep(phaseTime / Mathf.Max(0.0001f, windupDuration));
             swing = 0f;
             // A quick tap still swings from the top: the release waits for the windup to finish.
             if (releaseRequested && phaseTime >= windupDuration)
@@ -225,7 +225,7 @@ namespace CardsUnity.Controllers
                 weight = 0f;
                 return;
             }
-            weight = 1f - Mathf.SmoothStep(0f, 1f, phaseTime / Mathf.Max(0.0001f, recoverDuration));
+            weight = 1f - PoseEasing.SmootherStep(phaseTime / Mathf.Max(0.0001f, recoverDuration));
         }
 
         private void LateUpdate()

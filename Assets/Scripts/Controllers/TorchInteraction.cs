@@ -26,7 +26,7 @@ namespace CardsUnity.Controllers
         private bool transferred;
         private float elapsed, weight;
         private Vector3 reachTarget;
-        private Quaternion pickupRotation, groundRotation;
+        private Quaternion pickupRotation, groundRotation, startRotation;
         public bool IsBusy { get; private set; }
         /// <summary>The currently reachable item that E would collect, for contextual presentation.</summary>
         public Transform PickupTarget { get; private set; }
@@ -169,6 +169,7 @@ namespace CardsUnity.Controllers
             PickupTarget = null;
             transferred = false;
             elapsed = weight = 0f;
+            startRotation = transform.rotation;
             reachTarget = collecting ? treasure.transform.position : torch.transform.position;
             Vector3 direction = Vector3.ProjectOnPlane(reachTarget - transform.position, Vector3.up);
             pickupRotation = direction.sqrMagnitude > 0.001f ? Quaternion.LookRotation(direction) : transform.rotation;
@@ -186,17 +187,24 @@ namespace CardsUnity.Controllers
             if (!IsBusy) return;
             if (collecting ? (!transferred && (treasure == null || !treasure.isActiveAndEnabled)) : torch == null) { Finish(); return; }
             elapsed += Mathf.Max(0f, dt);
-            float duration = pickupDuration;
-            weight = !transferred ? Mathf.SmoothStep(0f, 1f, elapsed / duration)
-                : 1f - Mathf.SmoothStep(0f, 1f, (elapsed - duration) / recoveryDuration);
+            float duration = Mathf.Max(0.0001f, pickupDuration);
+            float progress = elapsed / duration;
+            float recovery = (elapsed - duration) / Mathf.Max(0.0001f, recoveryDuration);
+            // Prepare the body before reaching; bring the hand back before fully standing.
+            // Both tracks still reach full contact at the original transfer deadline.
+            weight = !transferred ? PoseEasing.Window(progress, 0.12f, 1f)
+                : 1f - PoseEasing.Window(recovery, 0f, 0.9f);
+            float crouch = !transferred ? PoseEasing.Window(progress, 0f, 0.85f)
+                : 1f - PoseEasing.Window(recovery, 0.12f, 1f);
             if (!transferred)
             {
                 reachTarget = collecting ? treasure.transform.position : torch.transform.position;
                 Vector3 direction = Vector3.ProjectOnPlane(reachTarget - transform.position, Vector3.up);
                 if (direction.sqrMagnitude > 0.001f) pickupRotation = Quaternion.LookRotation(direction);
-                transform.rotation = Quaternion.RotateTowards(transform.rotation, pickupRotation, 360f * dt);
+                transform.rotation = Quaternion.Slerp(startRotation, pickupRotation,
+                    PoseEasing.Window(progress, 0f, 0.85f));
             }
-            if (gait != null) gait.InteractionCrouch = weight;
+            if (gait != null) gait.InteractionCrouch = crouch;
             if (torch != null && !useLeftHand) torch.SetPoseSuppression(weight);
         }
 
