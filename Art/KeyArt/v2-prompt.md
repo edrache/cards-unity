@@ -1,0 +1,9 @@
+# Engraved key art variant
+
+Output: `cave-key-art-v2-engraving.png`.
+Tool: built-in OpenAI image generation, image edit mode.
+Inputs: `cave-key-art-v1.png` as the edit target and the user-supplied antique dark fantasy poster as the style reference. The reference lettering was not requested for transfer.
+
+## Prompt
+
+Use case: style-transfer. Edit image 1, the existing landscape cave game key art. Image 2 is the user's desired visual STYLE reference. Transform image 1 into the finely engraved, antique dark fantasy print aesthetic of image 2. Preserve image 1's core content and layout: lone closed-helmet knight with torch center-left, huge many-legged segmented centipede curving on the right, rocky cavern, distant cavern architecture and small chalice and coins in foreground. Completely replace faceted 3D polygon shading with intricate hand-drawn etching, fine irregular crosshatching, stippled ink, scratchboard contours, aged lithographic texture. Match image 2's almost-black ink background, subdued parchment cream and tarnished ochre gold, restrained warm amber torch flame, very deep dark areas with delicate gold-lit contours. Strong chiaroscuro, ominous medieval illustrated bookplate mood, tactile distressed paper, fine linework rather than broad polygon planes. Introduce a very thin distressed antique decorative frame with restrained ornamental corners as in reference 2. Keep the knight's slender silhouette, helmet, torch and empty other hand, and the centipede clearly readable and menacing. Preserve wide landscape format. The second image is a style reference, NOT a request to copy its title or lettering: do not add any words, letters, title, slogan, skull emblem, watermark or HUD. Finished premium game key art, visual storytelling, detailed but deliberate linework, no glossy 3D, no low-poly facets, no modern digital painting look.
