@@ -54,6 +54,7 @@ Shader "CardsUnity/One Bit Dither"
                 float4 _PaperTexture_TexelSize;
             CBUFFER_END
             TEXTURE2D_X(_DitherAccentTexture);
+            TEXTURE2D_X(_PickupOutlineTexture);
             float _DitherAccentEnabled;
             float4 _DitherCameraUIRect;
 
@@ -205,6 +206,22 @@ Shader "CardsUnity/One Bit Dither"
                 if (_DitherAccentEnabled > 0.5)
                     accent = SAMPLE_TEXTURE2D_X(_DitherAccentTexture, sampler_PointClamp, input.texcoord);
                 float3 paperColor = lerp(_Paper.rgb, accent.rgb, accent.a);
+                // An inward screen-space edge stays on the visible target silhouette,
+                // so an occluding wall never receives the highlight.
+                float4 pickup = SAMPLE_TEXTURE2D_X(_PickupOutlineTexture, sampler_PointClamp, input.texcoord);
+                if (pickup.a > 0)
+                {
+                    float2 radius = pickup.a * 8.0 / size;
+                    float inside = 1;
+                    const float2 directions[8] = {
+                        float2(1,0), float2(-1,0), float2(0,1), float2(0,-1),
+                        float2(0.707,0.707), float2(-0.707,0.707), float2(0.707,-0.707), float2(-0.707,-0.707)
+                    };
+                    [unroll] for (int i = 0; i < 8; i++)
+                        inside *= step(0.001, SAMPLE_TEXTURE2D_X(_PickupOutlineTexture,
+                            sampler_PointClamp, input.texcoord + directions[i] * radius).a);
+                    if (inside < 0.5) { paperColor = pickup.rgb; tone = 1; }
+                }
                 float3 color = lerp(_Ink.rgb, paperColor, tone);
                 color *= 1.0 - _PaperGrain * (1.0 - grain);
                 // Paper has its own screen-space scale, independent of the dither pixel size.

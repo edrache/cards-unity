@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CardsUnity.Controllers
@@ -6,6 +7,8 @@ namespace CardsUnity.Controllers
     [DefaultExecutionOrder(175)]
     public sealed class TorchInteraction : MonoBehaviour
     {
+        private static readonly List<TorchInteraction> activeInteractions = new();
+
         [SerializeField] private HandheldTorch torch;
         [Header("Interaction")]
         [SerializeField, Range(0.4f, 2f)] private float pickupRange = 1f;
@@ -25,13 +28,29 @@ namespace CardsUnity.Controllers
         private Vector3 reachTarget;
         private Quaternion pickupRotation, groundRotation;
         public bool IsBusy { get; private set; }
+        /// <summary>The currently reachable item that E would collect, for contextual presentation.</summary>
+        public Transform PickupTarget { get; private set; }
+
+        /// <summary>Returns the eligible contextual pickup in the camera's scene without a scene search.</summary>
+        public static Transform GetPickupTarget(Camera camera)
+        {
+            if (!Application.isPlaying || camera == null) return null;
+            for (int i = 0; i < activeInteractions.Count; i++)
+            {
+                var interaction = activeInteractions[i];
+                if (interaction == null || !interaction.isActiveAndEnabled
+                    || interaction.gameObject.scene != camera.gameObject.scene) continue;
+                if (interaction.PickupTarget != null) return interaction.PickupTarget;
+            }
+            return null;
+        }
+
         public bool CanPickUp
         {
             get
             {
-                if (!IsBusy) FindPickupTorch();
-                return torch != null && !torch.IsHeld && torch.isActiveAndEnabled
-                    && Vector3.Distance(transform.position, torch.transform.position) <= pickupRange && HasClearReach(torch);
+                RefreshPickupTarget();
+                return PickupTarget != null && treasure == null;
             }
         }
 
@@ -51,6 +70,30 @@ namespace CardsUnity.Controllers
             torch = nearest;
         }
         private bool HoldsTorch => torch != null && torch.IsHeld && torch.Holder == transform;
+
+        private bool HasEligiblePickupTorch()
+        {
+            return !HoldsTorch && torch != null && !torch.IsHeld && torch.isActiveAndEnabled
+                && Vector3.Distance(transform.position, torch.transform.position) <= pickupRange && HasClearReach(torch);
+        }
+
+        private void RefreshPickupTarget()
+        {
+            PickupTarget = null;
+            if (!isActiveAndEnabled || IsBusy || (attack != null && attack.IsAttacking)
+                || GetComponent<CharacterKnockdown>()?.IsDown == true) return;
+
+            FindTreasure();
+            if (treasure != null)
+            {
+                PickupTarget = treasure.transform;
+                return;
+            }
+
+            FindPickupTorch();
+            if (HasEligiblePickupTorch()) PickupTarget = torch.transform;
+        }
+
         private void FindTreasure()
         {
             treasure = null;
@@ -74,9 +117,9 @@ namespace CardsUnity.Controllers
         {
             get
             {
-                if (!IsBusy) { FindPickupTorch(); FindTreasure(); }
-                if (treasure != null) return "Podnieś: " + treasure.DisplayName;
-                return CanPickUp ? "Podnieś: pochodnię" : string.Empty;
+                RefreshPickupTarget();
+                if (PickupTarget == null) return string.Empty;
+                return treasure != null ? "Podnieś: " + treasure.DisplayName : "Podnieś: pochodnię";
             }
         }
 
@@ -88,6 +131,11 @@ namespace CardsUnity.Controllers
             gait = GetComponent<CartoonCharacterGait>();
             inventory = GetComponent<CharacterInventory>();
             if (inventory == null) inventory = gameObject.AddComponent<CharacterInventory>();
+        }
+
+        private void OnEnable()
+        {
+            activeInteractions.Add(this);
         }
 
         private bool HasClearReach(HandheldTorch target) => HasClearReach(target.transform);
@@ -106,11 +154,9 @@ namespace CardsUnity.Controllers
 
         public bool TryInteract()
         {
-            if (GetComponent<CharacterKnockdown>()?.IsDown == true) return false;
-            if (!isActiveAndEnabled || IsBusy || (attack != null && attack.IsAttacking)) return false;
-            FindPickupTorch();
-            FindTreasure();
-            collecting = treasure != null;
+            RefreshPickupTarget();
+            if (PickupTarget == null) return false;
+            collecting = treasure != null && PickupTarget == treasure.transform;
             useLeftHand = collecting && HoldsTorch;
             string side = useLeftHand ? "Left" : "Right";
             arm = Part(side + " Arm");
@@ -118,8 +164,9 @@ namespace CardsUnity.Controllers
             var hand = Part(side + " Hand");
             if (arm == null || elbow == null || hand == null) return false;
             gripOffset = hand.localPosition;
-            if (!collecting && !CanPickUp) return false;
+            if (!collecting && !HasEligiblePickupTorch()) return false;
             IsBusy = true;
+            PickupTarget = null;
             transferred = false;
             elapsed = weight = 0f;
             reachTarget = collecting ? treasure.transform.position : torch.transform.position;
@@ -128,7 +175,11 @@ namespace CardsUnity.Controllers
             return true;
         }
 
-        private void Update() => Tick(Time.deltaTime);
+        private void Update()
+        {
+            Tick(Time.deltaTime);
+            RefreshPickupTarget();
+        }
 
         public void Tick(float dt)
         {
@@ -182,7 +233,7 @@ namespace CardsUnity.Controllers
                         && Vector3.Distance(elbow.TransformPoint(gripOffset), reachTarget) < 0.12f)
                         inventory.Collect(treasure);
                 }
-                else if (CanPickUp && Vector3.Distance(elbow.TransformPoint(gripOffset), reachTarget) < 0.08f)
+                else if (HasEligiblePickupTorch() && Vector3.Distance(elbow.TransformPoint(gripOffset), reachTarget) < 0.08f)
                 {
                     groundRotation = torch.transform.rotation;
                     torch.SetGripOffset(gripOffset);
@@ -206,7 +257,12 @@ namespace CardsUnity.Controllers
             if (gait != null) gait.InteractionCrouch = 0f;
         }
 
-        private void OnDisable() => Finish();
+        private void OnDisable()
+        {
+            Finish();
+            PickupTarget = null;
+            activeInteractions.Remove(this);
+        }
 
         private void OnGUI()
         {

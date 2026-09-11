@@ -2,6 +2,9 @@ Shader "CardsUnity/Dither Accent"
 {
     Properties
     {
+        [ToggleUI] _AccentEnabled ("Use Accent Color", Float) = 1
+        _PickupOutlineColor ("Pickup Outline Color", Color) = (0.1, 0.9, 1, 1)
+        _PickupOutlineWidth ("Pickup Outline Width (Pixels)", Range(0, 6)) = 2
         [MainColor] _BaseColor ("Accent Color", Color) = (1, 0.78, 0.02, 1)
         [MainTexture] _BaseMap ("Base Map", 2D) = "white" {}
         _Metallic ("Metallic", Range(0, 1)) = 0
@@ -67,10 +70,52 @@ Shader "CardsUnity/Dither Accent"
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
                 return output;
             }
+            float _AccentEnabled;
             half4 AccentFragment(Varyings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
-                return half4(_BaseColor.rgb, 1);
+                return half4(_BaseColor.rgb, saturate(_AccentEnabled));
+            }
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "PickupOutline"
+            Tags { "LightMode" = "PickupOutline" }
+            ZWrite Off
+            ZTest Equal
+            Cull Back
+            HLSLPROGRAM
+            #pragma vertex OutlineVertex
+            #pragma fragment OutlineFragment
+            #pragma multi_compile_instancing
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
+            float4 _PickupOutlineColor;
+            float _PickupOutlineWidth;
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+                UNITY_VERTEX_OUTPUT_STEREO
+            };
+            Varyings OutlineVertex(Attributes input)
+            {
+                Varyings output = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
+                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                return output;
+            }
+            half4 OutlineFragment(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+                return half4(_PickupOutlineColor.rgb, clamp(_PickupOutlineWidth, 0, 6) / 8.0);
             }
             ENDHLSL
         }
