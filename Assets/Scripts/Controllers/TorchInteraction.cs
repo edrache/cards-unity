@@ -23,10 +23,11 @@ namespace CardsUnity.Controllers
         private Vector3 gripOffset;
         private TorchAttack attack;
         private CartoonCharacterGait gait;
-        private bool transferred;
-        private float elapsed, weight;
-        private Vector3 reachTarget;
-        private Quaternion pickupRotation, groundRotation, startRotation;
+        private bool recovering, attachedTorch;
+        private float elapsed, weight, crouchWeight;
+        private float recoveryStarted, recoveryArmWeight, recoveryCrouchWeight;
+        private Vector3 reachTarget, recoveryLocalTarget;
+        private Quaternion groundRotation;
         public bool IsBusy { get; private set; }
         /// <summary>The currently reachable item that E would collect, for contextual presentation.</summary>
         public Transform PickupTarget { get; private set; }
@@ -167,13 +168,28 @@ namespace CardsUnity.Controllers
             if (!collecting && !HasEligiblePickupTorch()) return false;
             IsBusy = true;
             PickupTarget = null;
-            transferred = false;
-            elapsed = weight = 0f;
-            startRotation = transform.rotation;
+            recovering = attachedTorch = false;
+            elapsed = weight = crouchWeight = 0f;
             reachTarget = collecting ? treasure.transform.position : torch.transform.position;
-            Vector3 direction = Vector3.ProjectOnPlane(reachTarget - transform.position, Vector3.up);
-            pickupRotation = direction.sqrMagnitude > 0.001f ? Quaternion.LookRotation(direction) : transform.rotation;
             return true;
+        }
+
+        private bool HasValidTarget()
+        {
+            if (!collecting) return HasEligiblePickupTorch();
+            return treasure != null && treasure.isActiveAndEnabled
+                && Vector3.Distance(transform.position, treasure.transform.position) <= pickupRange
+                && HasClearReach(treasure.transform);
+        }
+
+        private void BeginRecovery()
+        {
+            recovering = true;
+            recoveryStarted = elapsed;
+            recoveryArmWeight = weight;
+            recoveryCrouchWeight = crouchWeight;
+            // Return with the player instead of dragging the arm toward a world-space point.
+            recoveryLocalTarget = transform.InverseTransformPoint(reachTarget);
         }
 
         private void Update()
@@ -185,26 +201,21 @@ namespace CardsUnity.Controllers
         public void Tick(float dt)
         {
             if (!IsBusy) return;
-            if (collecting ? (!transferred && (treasure == null || !treasure.isActiveAndEnabled)) : torch == null) { Finish(); return; }
             elapsed += Mathf.Max(0f, dt);
+            // Once lost, this attempt stays cancelled even if the player comes back into range.
+            if (!recovering && !HasValidTarget()) BeginRecovery();
             float duration = Mathf.Max(0.0001f, pickupDuration);
             float progress = elapsed / duration;
-            float recovery = (elapsed - duration) / Mathf.Max(0.0001f, recoveryDuration);
+            float recovery = (elapsed - recoveryStarted) / Mathf.Max(0.0001f, recoveryDuration);
             // Prepare the body before reaching; bring the hand back before fully standing.
             // Both tracks still reach full contact at the original transfer deadline.
-            weight = !transferred ? PoseEasing.Window(progress, 0.12f, 1f)
-                : 1f - PoseEasing.Window(recovery, 0f, 0.9f);
-            float crouch = !transferred ? PoseEasing.Window(progress, 0f, 0.85f)
-                : 1f - PoseEasing.Window(recovery, 0.12f, 1f);
-            if (!transferred)
-            {
+            weight = !recovering ? PoseEasing.Window(progress, 0.12f, 1f)
+                : recoveryArmWeight * (1f - PoseEasing.Window(recovery, 0f, 0.9f));
+            crouchWeight = !recovering ? PoseEasing.Window(progress, 0f, 0.85f)
+                : recoveryCrouchWeight * (1f - PoseEasing.Window(recovery, 0.12f, 1f));
+            if (!recovering)
                 reachTarget = collecting ? treasure.transform.position : torch.transform.position;
-                Vector3 direction = Vector3.ProjectOnPlane(reachTarget - transform.position, Vector3.up);
-                if (direction.sqrMagnitude > 0.001f) pickupRotation = Quaternion.LookRotation(direction);
-                transform.rotation = Quaternion.Slerp(startRotation, pickupRotation,
-                    PoseEasing.Window(progress, 0f, 0.85f));
-            }
-            if (gait != null) gait.InteractionCrouch = crouch;
+            if (gait != null) gait.InteractionCrouch = crouchWeight;
             if (torch != null && !useLeftHand) torch.SetPoseSuppression(weight);
         }
 
@@ -213,9 +224,11 @@ namespace CardsUnity.Controllers
         public void ApplyPose()
         {
             if (!IsBusy) return;
-            if (collecting ? (!transferred && (treasure == null || !treasure.isActiveAndEnabled)) : torch == null) { Finish(); return; }
+            // Movement and target availability may have changed since Update.
+            if (!recovering && !HasValidTarget()) BeginRecovery();
             // Refresh after Update as Rigidbody interpolation may have moved the visible grip.
-            if (!transferred) reachTarget = collecting ? treasure.transform.position : torch.transform.position;
+            reachTarget = recovering ? transform.TransformPoint(recoveryLocalTarget)
+                : collecting ? treasure.transform.position : torch.transform.position;
             // Two-bone reach keeps the hand on the physical grip until it is attached.
             Vector3 shoulder = arm.position;
             float upper = Vector3.Distance(shoulder, elbow.position);
@@ -229,8 +242,7 @@ namespace CardsUnity.Controllers
             arm.rotation = Quaternion.Slerp(arm.rotation, Quaternion.FromToRotation(Vector3.down, joint - shoulder), weight);
             elbow.rotation = Quaternion.Slerp(elbow.rotation, Quaternion.FromToRotation(Vector3.down, reachTarget - elbow.position), weight);
 
-            float duration = pickupDuration;
-            if (!transferred && elapsed >= duration)
+            if (!recovering && elapsed >= pickupDuration)
             {
                 // Gameplay collection is independent of visual IK accuracy. Keep the selected
                 // treasure locked, but recheck availability, range and obstruction at transfer.
@@ -247,12 +259,13 @@ namespace CardsUnity.Controllers
                     torch.SetGripOffset(gripOffset);
                     torch.PickUp(transform, arm, elbow);
                     attack?.SetTorch(torch);
+                    attachedTorch = true;
                 }
-                transferred = true;
+                BeginRecovery();
             }
-            if (!collecting && transferred && torch.IsHeld)
+            if (attachedTorch && HoldsTorch)
                 torch.transform.rotation = Quaternion.Slerp(groundRotation, transform.rotation, 1f - weight);
-            if (elapsed >= duration + recoveryDuration) Finish();
+            if (recovering && elapsed - recoveryStarted >= recoveryDuration) Finish();
         }
 
         public void CancelInteraction() => Finish();
@@ -260,7 +273,7 @@ namespace CardsUnity.Controllers
         private void Finish()
         {
             IsBusy = false;
-            weight = 0f;
+            weight = crouchWeight = 0f;
             if (torch != null) torch.SetPoseSuppression(0f);
             if (gait != null) gait.InteractionCrouch = 0f;
         }

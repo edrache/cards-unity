@@ -94,11 +94,6 @@ namespace CardsUnity.Controllers
                 running = attackHeld = interactPressed = false;
             }
             if (interactPressed && torchInteraction != null) torchInteraction.TryInteract();
-            if (torchInteraction != null && torchInteraction.IsBusy)
-            {
-                input = Vector2.zero;
-                velocity = Vector3.zero;
-            }
             // Holding cocks the arm, releasing strikes, so the button state is fed every frame.
             if (torchAttack != null) torchAttack.SetAttackHeld(attackHeld);
             input = Vector2.ClampMagnitude(input, 1f);

@@ -61,6 +61,7 @@ Gameplay entry points (filenames below are under `Assets/Scripts/Controllers/`):
 ## Behavior to preserve
 
 - Camera-relative WASD/arrows/stick; held Run overrides Walk/Sneak, C toggles keyboard Sneak. Stick deflection selects Sneak/Walk, never Run; centered sticks release automatic style control. Sprint restores the custom mix of all twelve styles.
+- Player control takes priority: pickup must preserve movement, speed and player-controlled facing. Losing range or clear reach before contact cancels that attempt with a smooth recovery.
 - Gait phase/footsteps use actual distance, including stopping at walls. Jump/hop styles are visual. Keep named procedural rig parts and limb lengths stable; this is not a Humanoid Avatar.
 - Space holds torch windup and strikes on release. Preserve overlay order: gait/spine, HandheldTorch (100), TorchAttack (150), TorchInteraction (175). Pose suppression must be updated every frame by its owner.
 - E picks up the nearest reachable treasure first, otherwise an available torch with empty hands. It never drops or replaces a held torch. Collection uses the free arm, rechecks reach/obstruction at transfer and updates session-only inventory. Knockdown drops the torch and recovery advances only with actual movement.
