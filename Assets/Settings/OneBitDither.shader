@@ -2,6 +2,11 @@ Shader "CardsUnity/One Bit Dither"
 {
     Properties
     {
+        [Toggle] _LivingShadows ("Living Shadows", Float) = 1
+        _ShadowReach ("Shadow Reach At Low Fuel (Metres)", Range(0, 8)) = 3.5
+        _ShadowWidth ("Shadow Tendril Width", Range(0.1, 1)) = 0.55
+        _ShadowSpeed ("Shadow Motion Speed", Range(0, 2)) = 0.45
+        _ShadowSafeRadius ("Shadow Player Safe Radius (Metres)", Range(0.3, 3)) = 0.85
         _Ink ("Ink", Color) = (0.025, 0.035, 0.03, 1)
         _Paper ("Paper", Color) = (0.88, 0.85, 0.72, 1)
         _PixelSize ("Pixel Size", Range(1, 8)) = 2
@@ -43,6 +48,7 @@ Shader "CardsUnity/One Bit Dither"
             #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
+                float _LivingShadows, _ShadowReach, _ShadowWidth, _ShadowSpeed, _ShadowSafeRadius;
                 float4 _Ink, _Paper;
                 float _PixelSize, _Exposure, _Contrast, _DitherStrength, _EdgeStrength;
                 float _DitherMode, _NoiseTileSize;
@@ -58,6 +64,7 @@ Shader "CardsUnity/One Bit Dither"
             TEXTURE2D_X(_PlayerOcclusionTexture);
             float4 _PlayerOutlineColorWidth;
             float _DitherAccentEnabled;
+            float4 _LivingShadowSource;
             float4 _DitherCameraUIRect;
 
             bool IsCameraUI(float2 uv)
@@ -136,6 +143,44 @@ Shader "CardsUnity/One Bit Dither"
                 return dot(LinearToSRGB(max(color, 0)), float3(0.2126, 0.7152, 0.0722));
             }
 
+            // Extend existing dark regions inward in world metres. Four bounded taps,
+            // no history buffer, extra lights or geometry; quantization happens afterwards.
+            float LivingShadow(float2 uv)
+            {
+                if (_LivingShadows < 0.5 || _ShadowReach <= 0 || _LivingShadowSource.w <= 0 ||
+                    IsCameraUI(uv) || !HasSurface(uv)) return 0;
+                float2 playerMask = SAMPLE_TEXTURE2D_X(_PlayerOcclusionTexture, sampler_PointClamp, uv).rg;
+                if (playerMask.r > 0.01) return 0;
+                float3 world = PaperWorldPosition(uv);
+                float2 delta = world.xz - _LivingShadowSource.xz;
+                float radius = length(delta);
+                float protection = smoothstep(_ShadowSafeRadius, _ShadowSafeRadius + 0.65, radius);
+                if (protection <= 0) return 0;
+                float anxiety = smoothstep(0.0, 0.8, 1.0 - _LivingShadowSource.w);
+                float time = _Time.y * _ShadowSpeed;
+                float angle = atan2(delta.y, delta.x);
+                // Integer harmonics close the angular seam. World-space noise bends the tips.
+                float bend = (PaperNoise(world.xz * 0.65 + time * 0.13) - 0.5) * 1.3;
+                float wave = sin(angle * 7.0 + bend + sin(radius * 1.1 - time) * 0.65);
+                float width = _ShadowWidth * lerp(0.6, 1.0, anxiety);
+                float finger = smoothstep(1.0 - width, 1.0 - width * 0.2, wave);
+                float breath = 0.65 + 0.35 * sin(time * 0.8 + sin(angle * 3.0) * 2.0);
+                float reach = _ShadowReach * lerp(0.12, 1.0, anxiety) * finger * breath;
+                if (reach < 0.01) return 0;
+                float darkness = 0;
+                [unroll] for (int i = 1; i <= 4; i++)
+                {
+                    float3 outside = world + float3(delta.x, 0, delta.y) / max(radius, 0.001) * reach * (i * 0.25);
+                    float4 clip = TransformWorldToHClip(outside);
+                    float4 screen = ComputeScreenPos(clip);
+                    float2 sampleUV = screen.xy / max(screen.w, 0.0001);
+                    if (clip.w <= 0 || any(sampleUV <= 0) || any(sampleUV >= 1) || IsCameraUI(sampleUV)) continue;
+                    float tone = saturate((Luma(sampleUV) * _Exposure - 0.5) * _Contrast + 0.5);
+                    darkness = max(darkness, 1.0 - smoothstep(0.04, 0.23, tone));
+                }
+                return darkness * finger * protection * smoothstep(0.0, 0.025, _LivingShadowSource.w);
+            }
+
             float4 Frag(Varyings input) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
@@ -178,6 +223,8 @@ Shader "CardsUnity/One Bit Dither"
                 luminance = saturate(luminance + (boundary - 0.5) * _BoundaryStrength * midtoneMask);
 
                 if (_BackgroundInk > 0.5 && !HasSurface(uv) && !IsCameraUI(uv)) luminance = 0.0;
+
+                luminance *= 1.0 - LivingShadow(uv);
 
                 // A fixed Bayer matrix avoids temporal noise.
                 const float bayer[16] = {

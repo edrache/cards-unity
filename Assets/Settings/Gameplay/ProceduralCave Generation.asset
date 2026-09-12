@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: ProceduralCave Generation
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CaveGenerationProfile
   settings:
-    roomCount: 16
-    seed: 1
+    roomCount: 17
+    seed: 2
     roomRadius: 6.65
     roomSizeVariation: 1
     extraConnections: 0.074

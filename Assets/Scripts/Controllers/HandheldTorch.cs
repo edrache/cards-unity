@@ -111,6 +111,24 @@ namespace CardsUnity.Controllers
             initialized = false;
         }
 
+        private static readonly System.Collections.Generic.List<HandheldTorch> activeTorches = new();
+
+        /// <summary>Per-camera presentation input; corpse and dropped torches never own the effect.</summary>
+        public static Vector4 GetLivingShadowSource()
+        {
+            foreach (var torch in activeTorches)
+            {
+                if (torch == null || !torch.isActiveAndEnabled || !torch.IsHeld ||
+                    torch.character.GetComponent<ProceduralCharacter>() == null) continue;
+                var position = torch.character.position;
+                return new Vector4(position.x, position.y, position.z,
+                    Mathf.Clamp01(torch.RemainingLifetime / Mathf.Max(0.1f, torch.Lifetime)));
+            }
+            return new Vector4(0, 0, 0, -1);
+        }
+
+        private void OnDisable() => activeTorches.Remove(this);
+
         public float RemainingLifetime => Mathf.Max(0f, Lifetime - burnAge);
 
         /// <summary>Seconds of burn lifetime a single strike costs.</summary>
@@ -177,6 +195,7 @@ namespace CardsUnity.Controllers
 
         private void OnEnable()
         {
+            if (!activeTorches.Contains(this)) activeTorches.Add(this);
             initialized = false;
             ApplyLight(IsBurnedOut ? 0f : 1f);
         }
