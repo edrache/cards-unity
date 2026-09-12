@@ -47,6 +47,8 @@ namespace CardsUnity.Controllers
         }
         public int SlotCount => slotFills == null
             ? Mathf.Clamp(HealthBalance?.SlotCount ?? slotCount, 1, 8) : slotFills.Length;
+        /// <summary>Raised once when an accepted hit leaves the character alive.</summary>
+        public event Action Damaged;
         public event Action Died;
 
         private void Awake() => InitializeSlots();
@@ -104,8 +106,10 @@ namespace CardsUnity.Controllers
             for (int i = 0; i < slotFills.Length; i++)
                 if (slotFills[i] > 0f && slotFills[i] < 1f) slotFills[i] = 0f;
 
-            if (ActiveSlotCount == 0) Die();
+            bool isLethal = ActiveSlotCount == 0;
+            if (isLethal) Die();
             RefreshHud();
+            if (!isLethal) Damaged?.Invoke();
             return true;
         }
 

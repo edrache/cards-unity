@@ -1056,7 +1056,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &876049648
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1071,11 +1071,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterBreathingAudio
   track: {fileID: 8300000, guid: c0cc7511e9e2c499699eeeeee1b53254, type: 3}
   stress: {fileID: 1870170195}
+  character: {fileID: 0}
   volume: 0.5
   fadeInDuration: 0.2
   minimumPlaybackSpeed: 1
   maximumPlaybackSpeed: 3
   pitchResponseTime: 0.15
+  runningPlaybackMultiplier: 1.3
 --- !u!82 &876049649
 AudioSource:
   m_ObjectHideFlags: 0
@@ -2339,6 +2341,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 90125876250897346, guid: de83ee1d70753470db50e0696e996398, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1870170205}
+    - targetCorrespondingSourceObject: {fileID: 90125876250897346, guid: de83ee1d70753470db50e0696e996398, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1870170217}
   m_SourcePrefab: {fileID: 100100000, guid: de83ee1d70753470db50e0696e996398, type: 3}
 --- !u!4 &1870170170 stripped
 Transform:
@@ -2406,6 +2411,187 @@ MonoBehaviour:
   environmentMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &1870170207 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2488595432638457083, guid: de83ee1d70753470db50e0696e996398, type: 3}
+  m_PrefabInstance: {fileID: 1870170169}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 569035154}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e57f9d06b8bc4cbe9638ee3e846f6c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterHealth
+--- !u!114 &1870170217
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 569035154}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be15b16df127a4d6cb1dce2915785166, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterDarknessDamage
+  health: {fileID: 0}
+  lightExposure: {fileID: 0}
+  stress: {fileID: 0}
+  rollInterval: 5
+  damageChanceDenominator: 6
+  fullDarknessExposure: 0.0001
+  torchRefreshInterval: 1
+--- !u!1 &1914908111
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1914908114}
+  - component: {fileID: 1914908113}
+  - component: {fileID: 1914908112}
+  m_Layer: 0
+  m_Name: Player Damage Audio
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1914908112
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1914908111}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 121ec6515a9334470b5c00a59582c3df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterDamageAudio
+  health: {fileID: 1870170207}
+  injuryClips: []
+  injuryVolume: 1
+  injuryMinimumPitch: 0.9
+  injuryMaximumPitch: 1.1
+  deathClips: []
+  deathVolume: 1
+  deathMinimumPitch: 0.9
+  deathMaximumPitch: 1.1
+--- !u!82 &1914908113
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1914908111}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!4 &1914908114
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1914908111}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1950605600
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2652,3 +2838,4 @@ SceneRoots:
   - {fileID: 732561013}
   - {fileID: 864049268}
   - {fileID: 876049650}
+  - {fileID: 1914908114}
