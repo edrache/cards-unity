@@ -44,7 +44,9 @@ namespace CardsUnity.Controllers
         private bool TickAttack(float dt, float exposure, float threshold)
         {
             cooldown = Mathf.Max(0f, cooldown - dt);
-            if (target == null || !target.gameObject.activeInHierarchy)
+            if (target == null || !target.gameObject.activeInHierarchy
+                || target.GetComponent<CharacterHealth>()?.IsDead == true
+                || target.GetComponent<CaveExit>()?.IsCompleted == true)
             {
                 if (IsAttacking || State == BehaviourState.Enraged) FinishAttack();
                 lightTime = darknessTime = 0f;
@@ -126,14 +128,23 @@ namespace CardsUnity.Controllers
                         && Vector3.Distance(controller.ClosestPoint(head), head) <= 0.3f * size)
                     {
                         attackHit = true;
-                        if (target.GetComponent<CharacterKnockdown>()?.TryKnockDown() == true)
-                            target.GetComponent<CharacterStress>()?.RegisterHit();
+                        HitTarget();
                     }
                     if (attackTime >= Mathf.Max(0.1f, leapDuration)) FinishAttack();
                 }
             }
             if (IsAttacking) ApplyAttackPose();
             return true;
+        }
+
+        private void HitTarget()
+        {
+            // Only an accepted centipede impact spends health; knockdown immunity still applies.
+            if (target == null || target.GetComponent<CharacterHealth>()?.IsDead == true
+                || target.GetComponent<CaveExit>()?.IsCompleted == true) return;
+            if (target.GetComponent<CharacterKnockdown>()?.TryKnockDown() != true) return;
+            target.GetComponent<CharacterStress>()?.RegisterHit();
+            target.GetComponent<CharacterHealth>()?.TryTakeDamage();
         }
 
         private void ApplyAttackPose()

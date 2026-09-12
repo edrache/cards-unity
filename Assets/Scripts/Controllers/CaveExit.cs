@@ -9,6 +9,7 @@ namespace CardsUnity.Controllers
         private const float RearmMargin = 0.75f;
 
         private ProceduralCave cave;
+        private CharacterHealth health;
         private bool initialized;
         private bool ownsTimePause;
         private float previousTimeScale = 1f;
@@ -20,10 +21,14 @@ namespace CardsUnity.Controllers
         {
             get
             {
+                if (health == null) health = GetComponent<CharacterHealth>();
                 RefreshState();
-                return !IsCompleted && HasLeftEntrance && IsInsideExitArea();
+                return !IsCompleted && (health == null || !health.IsDead)
+                    && HasLeftEntrance && IsInsideExitArea();
             }
         }
+
+        private void Awake() => health = GetComponent<CharacterHealth>();
 
         private void Update() => RefreshState();
 

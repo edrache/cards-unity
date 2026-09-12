@@ -19,6 +19,8 @@ GameObject:
   - component: {fileID: 8015079483885469883}
   - component: {fileID: 2261660506157653080}
   - component: {fileID: 7236042496580281235}
+  - component: {fileID: 2488595432638457083}
+  - component: {fileID: 8051805571557914312}
   m_Layer: 0
   m_Name: Shadow Knight
   m_TagString: Untagged
@@ -367,6 +369,36 @@ MonoBehaviour:
   hunchAngle: 24
   headLookAngle: 60
   motionChaos: 1
+--- !u!114 &2488595432638457083
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90125876250897346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e57f9d06b8bc4cbe9638ee3e846f6c1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterHealth
+  slotCount: 3
+  refillSecondsPerSlot: 10
+  fullFillColor: {r: 1, g: 0.55, b: 0.16, a: 1}
+  refillingFillColor: {r: 0.5, g: 0.24, b: 0.08, a: 1}
+  emptyBackgroundColor: {r: 0.08, g: 0.06, b: 0.05, a: 0.95}
+--- !u!114 &8051805571557914312
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90125876250897346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d07402d83d784dda85537a5722e3695, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterDeath
+  defeatDelay: 3
 --- !u!1 &689539237441915602
 GameObject:
   m_ObjectHideFlags: 0

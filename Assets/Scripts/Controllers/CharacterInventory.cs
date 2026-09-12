@@ -28,6 +28,8 @@ namespace CardsUnity.Controllers
         private bool ownsCanvas;
         private GameObject ownedEventSystem;
         private Canvas summaryCanvas;
+        private Image summaryBackdrop;
+        private TMP_Text summaryTitle, summaryResult;
         private readonly System.Text.StringBuilder text = new System.Text.StringBuilder();
         public IReadOnlyList<Entry> Items => items;
         public Canvas UiCanvas => inventoryCanvas;
@@ -114,9 +116,26 @@ namespace CardsUnity.Controllers
         /// <summary>Shows the final collection totals on an undithered screen overlay.</summary>
         public void ShowCaveSummary()
         {
+            ShowEndSummary("WYPRAWA ZAKOŃCZONA", "Zebrane skarby: " + TreasureCount
+                + "\nZebrane monety: " + CoinCount
+                + "\nŁącznie przedmiotów: " + TotalCount
+                + "\nWartość skarbów: " + TotalValue, 0.96f);
+        }
+
+        /// <summary>Shows the final defeat message without revealing the collected treasure totals.</summary>
+        public void ShowDefeatSummary()
+        {
+            ShowEndSummary("PORAŻKA", "Nie udało ci się wydostać z jaskini.", 1f);
+        }
+
+        private void ShowEndSummary(string titleText, string resultText, float backdropAlpha)
+        {
             if (summaryCanvas != null)
             {
                 summaryCanvas.gameObject.SetActive(true);
+                summaryBackdrop.color = new Color(0.015f, 0.012f, 0.01f, backdropAlpha);
+                summaryTitle.text = titleText;
+                summaryResult.text = resultText;
                 return;
             }
 
@@ -134,22 +153,20 @@ namespace CardsUnity.Controllers
 
             var backdrop = Rect("Backdrop", root.transform, Vector2.zero, Vector2.one,
                 Vector2.zero, Vector2.zero);
-            backdrop.gameObject.AddComponent<Image>().color = new Color(0.015f, 0.012f, 0.01f, 0.96f);
+            summaryBackdrop = backdrop.gameObject.AddComponent<Image>();
+            summaryBackdrop.color = new Color(0.015f, 0.012f, 0.01f, backdropAlpha);
             var panel = Rect("Summary", backdrop, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(-260f, -180f), new Vector2(260f, 180f));
             panel.gameObject.AddComponent<Image>().color = new Color(0.08f, 0.065f, 0.045f, 1f);
 
-            var title = Label(Rect("Title", panel, new Vector2(0, 1), Vector2.one,
+            summaryTitle = Label(Rect("Title", panel, new Vector2(0, 1), Vector2.one,
                 new Vector2(28, -76), new Vector2(-28, -24)), 32, UiFont);
-            title.alignment = TextAlignmentOptions.Center;
-            title.text = "WYPRAWA ZAKOŃCZONA";
-            var result = Label(Rect("Result", panel, Vector2.zero, Vector2.one,
+            summaryTitle.alignment = TextAlignmentOptions.Center;
+            summaryTitle.text = titleText;
+            summaryResult = Label(Rect("Result", panel, Vector2.zero, Vector2.one,
                 new Vector2(36, 36), new Vector2(-36, -92)), 25, UiFont);
-            result.alignment = TextAlignmentOptions.Center;
-            result.text = "Zebrane skarby: " + TreasureCount
-                + "\nZebrane monety: " + CoinCount
-                + "\nŁącznie przedmiotów: " + TotalCount
-                + "\nWartość skarbów: " + TotalValue;
+            summaryResult.alignment = TextAlignmentOptions.Center;
+            summaryResult.text = resultText;
         }
 
         private static RectTransform Rect(string name, Transform parent, Vector2 min, Vector2 max,
