@@ -114,12 +114,16 @@ namespace CardsUnity.Controllers
         private static readonly System.Collections.Generic.List<HandheldTorch> activeTorches = new();
 
         /// <summary>Per-camera presentation input; corpse and dropped torches never own the effect.</summary>
-        public static Vector4 GetLivingShadowSource()
+        public static Vector4 GetLivingShadowSource() => GetLivingShadowSource(out _);
+
+        public static Vector4 GetLivingShadowSource(out float lightFraction)
         {
+            lightFraction = 1f;
             foreach (var torch in activeTorches)
             {
                 if (torch == null || !torch.isActiveAndEnabled || !torch.IsHeld ||
                     torch.character.GetComponent<ProceduralCharacter>() == null) continue;
+                lightFraction = 1f - Mathf.SmoothStep(0f, 1f, torch.BurnoutProgress);
                 var position = torch.character.position;
                 return new Vector4(position.x, position.y, position.z,
                     Mathf.Clamp01(torch.RemainingLifetime / Mathf.Max(0.1f, torch.Lifetime)));
@@ -128,6 +132,9 @@ namespace CardsUnity.Controllers
         }
 
         private void OnDisable() => activeTorches.Remove(this);
+
+        private float BurnoutProgress => Mathf.InverseLerp(1f - (FuelBalance?.BurnoutFraction ?? burnoutFraction),
+            1f, Mathf.Clamp01(burnAge / Mathf.Max(0.1f, Lifetime)));
 
         public float RemainingLifetime => Mathf.Max(0f, Lifetime - burnAge);
 
@@ -220,8 +227,7 @@ namespace CardsUnity.Controllers
             }
             float effectiveLifetime = Mathf.Max(0.1f, Lifetime);
             burnAge = Mathf.Min(effectiveLifetime, burnAge + dt);
-            float age = Mathf.Clamp01(burnAge / effectiveLifetime);
-            float dying = Mathf.InverseLerp(1f - (FuelBalance?.BurnoutFraction ?? burnoutFraction), 1f, age);
+            float dying = BurnoutProgress;
             float fuel = 1f - Mathf.SmoothStep(0f, 1f, dying);
             Transform motionSource = character != null ? character : transform;
             if (!initialized)

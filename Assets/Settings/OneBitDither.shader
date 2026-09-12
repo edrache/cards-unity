@@ -4,6 +4,8 @@ Shader "CardsUnity/One Bit Dither"
     {
         [Toggle] _LivingShadows ("Living Shadows", Float) = 1
         _ShadowReach ("Shadow Reach At Low Fuel (Metres)", Range(0, 8)) = 3.5
+        [IntRange] _ShadowCountBright ("Shadow Count In Bright Light", Range(1, 24)) = 4
+        [IntRange] _ShadowCountDim ("Shadow Count In Dim Light", Range(1, 24)) = 12
         _ShadowWidth ("Shadow Tendril Width", Range(0.1, 1)) = 0.55
         _ShadowSpeed ("Shadow Motion Speed", Range(0, 2)) = 0.45
         _ShadowSafeRadius ("Shadow Player Safe Radius (Metres)", Range(0.3, 3)) = 0.85
@@ -48,6 +50,7 @@ Shader "CardsUnity/One Bit Dither"
             #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
+                float _ShadowCountBright, _ShadowCountDim;
                 float _LivingShadows, _ShadowReach, _ShadowWidth, _ShadowSpeed, _ShadowSafeRadius;
                 float4 _Ink, _Paper;
                 float _PixelSize, _Exposure, _Contrast, _DitherStrength, _EdgeStrength;
@@ -65,6 +68,7 @@ Shader "CardsUnity/One Bit Dither"
             float4 _PlayerOutlineColorWidth;
             float _DitherAccentEnabled;
             float4 _LivingShadowSource;
+            float _LivingShadowLight;
             float4 _DitherCameraUIRect;
 
             bool IsCameraUI(float2 uv)
@@ -159,11 +163,23 @@ Shader "CardsUnity/One Bit Dither"
                 float anxiety = smoothstep(0.0, 0.8, 1.0 - _LivingShadowSource.w);
                 float time = _Time.y * _ShadowSpeed;
                 float angle = atan2(delta.y, delta.x);
-                // Integer harmonics close the angular seam. World-space noise bends the tips.
+                // Fixed directions survive count changes; new tips grow between existing ones.
                 float bend = (PaperNoise(world.xz * 0.65 + time * 0.13) - 0.5) * 1.3;
-                float wave = sin(angle * 7.0 + bend + sin(radius * 1.1 - time) * 0.65);
-                float width = _ShadowWidth * lerp(0.6, 1.0, anxiety);
-                float finger = smoothstep(1.0 - width, 1.0 - width * 0.2, wave);
+                float minimum = clamp(round(_ShadowCountBright), 1.0, 24.0);
+                float maximum = clamp(round(_ShadowCountDim), minimum, 24.0);
+                float count = lerp(minimum, maximum, 1.0 - saturate(_LivingShadowLight));
+                float width = _ShadowWidth * lerp(0.6, 1.0, anxiety) * 2.4 / count;
+                float curvedAngle = angle + (bend + sin(radius * 1.1 - time) * 0.65) * 0.14;
+                float finger = 0;
+                [loop] for (int tip = 0; tip < (int)maximum; tip++)
+                {
+                    float growth = smoothstep(0.0, 1.0, count - tip);
+                    // Golden-angle ordering spreads each new tip across the available circle.
+                    float direction = frac(tip * 0.38196601125) * TWO_PI;
+                    float separation = abs(frac((curvedAngle - direction) / TWO_PI + 0.5) - 0.5) * TWO_PI;
+                    float shape = 1.0 - smoothstep(width * 0.2, width, separation);
+                    finger = max(finger, shape * growth);
+                }
                 float breath = 0.65 + 0.35 * sin(time * 0.8 + sin(angle * 3.0) * 2.0);
                 float reach = _ShadowReach * lerp(0.12, 1.0, anxiety) * finger * breath;
                 if (reach < 0.01) return 0;

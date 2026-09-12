@@ -204,6 +204,7 @@ namespace CardsUnity.Rendering
                 public Vector4 playerColor;
                 public Vector4 cameraUIRect;
                 public Vector4 livingShadowSource;
+                public float livingShadowLight;
                 public Material material;
                 public MaterialPropertyBlock properties;
             }
@@ -221,8 +222,9 @@ namespace CardsUnity.Rendering
                 {
                     data.cameraUIRect = CardsUnity.Controllers.CharacterInventory.GetDitherUIRect(
                         frame.Get<UniversalCameraData>().camera);
+                    data.livingShadowLight = 1f;
                     data.livingShadowSource = Application.isPlaying && frame.Get<UniversalCameraData>().camera.cameraType == CameraType.Game
-                        ? CardsUnity.Controllers.HandheldTorch.GetLivingShadowSource() : new Vector4(0, 0, 0, -1);
+                        ? CardsUnity.Controllers.HandheldTorch.GetLivingShadowSource(out data.livingShadowLight) : new Vector4(0, 0, 0, -1);
                     data.source = resources.activeColorTexture;
                     data.accent = frame.Get<AccentData>().texture;
                     data.pickup = frame.Get<AccentData>().pickup;
@@ -247,6 +249,7 @@ namespace CardsUnity.Rendering
                         pass.properties.SetFloat(AccentEnabled, 1f);
                         pass.properties.SetVector(CameraUIRect, pass.cameraUIRect);
                         pass.properties.SetVector("_LivingShadowSource", pass.livingShadowSource);
+                        pass.properties.SetFloat("_LivingShadowLight", pass.livingShadowLight);
                         pass.properties.SetVector(BlitScaleBias, new Vector4(1, 1, 0, 0));
                         context.cmd.DrawProcedural(Matrix4x4.identity, pass.material, 0,
                             MeshTopology.Triangles, 3, 1, pass.properties);
