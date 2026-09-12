@@ -68,8 +68,9 @@ namespace CardsUnity.Controllers
         private readonly List<Rect> corridorBounds = new List<Rect>();
         private Vector2 entrance;
         private Vector2 entranceForward;
+        private Vector2 exit;
         private GameObject generated;
-        private Mesh floorMesh, wallMesh, wallCollisionMesh;
+        private Mesh floorMesh, wallMesh, wallCollisionMesh, entranceGrottoMesh;
         private bool rebuildPending;
         private float noiseOffset;
         public int RoomCount => roomCount;
@@ -77,6 +78,15 @@ namespace CardsUnity.Controllers
         public IReadOnlyList<Vector2[]> Corridors => corridors;
         public IReadOnlyList<float> RoomRadii => radii;
         public Vector3 SpawnPosition => transform.TransformPoint(Surface(entrance, 0.1f));
+        public Vector3 ExitPosition => transform.TransformPoint(Surface(exit, 0.1f));
+        public float ExitInteractionRadius
+        {
+            get
+            {
+                Vector3 scale = transform.lossyScale;
+                return 1.35f * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
+            }
+        }
 
         private void OnEnable() { rebuildPending = true; }
         private void OnValidate()
@@ -113,8 +123,8 @@ namespace CardsUnity.Controllers
         private void Clear()
         {
             if (generated != null) generated.SetActive(false);
-            Dispose(generated); Dispose(floorMesh); Dispose(wallMesh); Dispose(wallCollisionMesh);
-            generated = null; floorMesh = null; wallMesh = null; wallCollisionMesh = null;
+            Dispose(generated); Dispose(floorMesh); Dispose(wallMesh); Dispose(wallCollisionMesh); Dispose(entranceGrottoMesh);
+            generated = null; floorMesh = null; wallMesh = null; wallCollisionMesh = null; entranceGrottoMesh = null;
         }
 
         [ContextMenu("Rebuild Cave")]
@@ -164,6 +174,7 @@ namespace CardsUnity.Controllers
             CreateSurface("Level floor", floorMesh, floorMaterial);
             wallCollisionMesh = collision.Build("Cave wall collision");
             CreateSurface("Rock walls", wallMesh, wallMaterial, wallCollisionMesh);
+            CreateEntranceGrotto();
             SpawnTreasures();
             ScatterRocks(min, max);
             SpawnCoins();
@@ -541,6 +552,54 @@ namespace CardsUnity.Controllers
             var entryPath = corridors[corridors.Count - 1];
             entrance = entryPath[2];
             entranceForward = (entryPath[3] - entryPath[2]).normalized;
+            // The existing spawn becomes a small first chamber. Its rear arch is close enough
+            // to return to, while the clear centre continues to point into the generated cave.
+            Vector2 portal = entrance - entranceForward * 2.55f;
+            exit = portal + entranceForward * 0.65f;
+        }
+
+        private void CreateEntranceGrotto()
+        {
+            var rocks = new MeshData();
+            var random = new System.Random(unchecked(seed * 397 ^ 86028121));
+            Vector2 right = Vector2.Perpendicular(entranceForward);
+            Vector2 portal = entrance - entranceForward * 2.55f;
+            Quaternion facing = Quaternion.LookRotation(V(entranceForward, 0f), Vector3.up);
+
+            // Chunky voussoirs form a readable portal without narrowing the central route.
+            // Their own random stream keeps layout, population and scattered-rock streams stable.
+            const int stoneCount = 9;
+            for (int i = 0; i < stoneCount; i++)
+            {
+                float angle = Mathf.Lerp(Mathf.PI, 0f, i / (stoneCount - 1f));
+                float x = Mathf.Cos(angle) * 1.72f;
+                float y = 0.42f + Mathf.Sin(angle) * 2.15f;
+                float jitterX = Mathf.Lerp(-0.09f, 0.09f, (float)random.NextDouble());
+                float jitterY = Mathf.Lerp(-0.07f, 0.07f, (float)random.NextDouble());
+                Vector2 centre = portal + right * (x + jitterX);
+                Vector3 position = V(centre, FloorHeight(centre) + y + jitterY);
+                Vector3 halfExtents = new Vector3(
+                    Mathf.Lerp(0.32f, 0.43f, (float)random.NextDouble()),
+                    Mathf.Lerp(0.35f, 0.48f, (float)random.NextDouble()),
+                    Mathf.Lerp(0.38f, 0.56f, (float)random.NextDouble()));
+                Quaternion rotation = facing * Quaternion.Euler(
+                    Mathf.Lerp(-7f, 7f, (float)random.NextDouble()),
+                    Mathf.Lerp(-9f, 9f, (float)random.NextDouble()),
+                    -Mathf.Cos(angle) * 19f + Mathf.Lerp(-5f, 5f, (float)random.NextDouble()));
+                rocks.Box(position, halfExtents, rotation);
+            }
+
+            // Low shoulder stones tie the arch into the surrounding carved wall while leaving
+            // more than the minimum corridor width unobstructed at ground level.
+            for (int side = -1; side <= 1; side += 2)
+            {
+                Vector2 centre = portal + right * (side * 2.35f) + entranceForward * 0.12f;
+                rocks.Box(V(centre, FloorHeight(centre) + 0.48f), new Vector3(0.62f, 0.48f, 0.72f),
+                    facing * Quaternion.Euler(0f, side * 13f, side * -8f));
+            }
+
+            entranceGrottoMesh = rocks.Build("Entrance grotto rocks");
+            CreateSurface("Entrance grotto", entranceGrottoMesh, wallMaterial);
         }
 
         private void AddCorridor(Vector2Int edge, System.Random random, float spacing)
@@ -592,6 +651,15 @@ namespace CardsUnity.Controllers
                 float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude);
                 value = Mathf.Max(value, corridorWidth * 0.5f - Vector2.Distance(p, a + t * ab));
             }
+            }
+            // A broad elliptical pocket around the actual spawn reads as the grotto the knight
+            // emerged from and prevents the decorative entrance from becoming a narrow dead end.
+            if (entranceForward.sqrMagnitude > 0.5f)
+            {
+                Vector2 grottoDelta = p - entrance;
+                float across = Vector2.Dot(grottoDelta, Vector2.Perpendicular(entranceForward)) / 3.2f;
+                float along = Vector2.Dot(grottoDelta, entranceForward) / 3.4f;
+                value = Mathf.Max(value, (1f - new Vector2(across, along).magnitude) * 3.2f);
             }
             // Perturb only the boundary: minimum corridor clearance remains above 1.8 metres.
             return value + (Mathf.PerlinNoise(p.x * 0.42f + noiseOffset, p.y * 0.42f + noiseOffset) - 0.5f) * irregularity * 0.7f;
@@ -677,6 +745,23 @@ namespace CardsUnity.Controllers
             {
                 if (Vector3.Dot(Vector3.Cross(b-a, c-a), normal) >= 0f) { Triangle(a,b,c); Triangle(a,c,d); }
                 else { Triangle(a,c,b); Triangle(a,d,c); }
+            }
+            public void Box(Vector3 centre, Vector3 halfExtents, Quaternion rotation)
+            {
+                Vector3 p000 = centre + rotation * new Vector3(-halfExtents.x, -halfExtents.y, -halfExtents.z);
+                Vector3 p001 = centre + rotation * new Vector3(-halfExtents.x, -halfExtents.y, halfExtents.z);
+                Vector3 p010 = centre + rotation * new Vector3(-halfExtents.x, halfExtents.y, -halfExtents.z);
+                Vector3 p011 = centre + rotation * new Vector3(-halfExtents.x, halfExtents.y, halfExtents.z);
+                Vector3 p100 = centre + rotation * new Vector3(halfExtents.x, -halfExtents.y, -halfExtents.z);
+                Vector3 p101 = centre + rotation * new Vector3(halfExtents.x, -halfExtents.y, halfExtents.z);
+                Vector3 p110 = centre + rotation * new Vector3(halfExtents.x, halfExtents.y, -halfExtents.z);
+                Vector3 p111 = centre + rotation * new Vector3(halfExtents.x, halfExtents.y, halfExtents.z);
+                Quad(p000, p100, p110, p010, rotation * Vector3.back);
+                Quad(p101, p001, p011, p111, rotation * Vector3.forward);
+                Quad(p001, p000, p010, p011, rotation * Vector3.left);
+                Quad(p100, p101, p111, p110, rotation * Vector3.right);
+                Quad(p010, p110, p111, p011, rotation * Vector3.up);
+                Quad(p001, p101, p100, p000, rotation * Vector3.down);
             }
             public Mesh Build(string name)
             {

@@ -27,18 +27,23 @@ namespace CardsUnity.Controllers
         [SerializeField] private TMP_Text heading, contents, total;
         private bool ownsCanvas;
         private GameObject ownedEventSystem;
+        private Canvas summaryCanvas;
         private readonly System.Text.StringBuilder text = new System.Text.StringBuilder();
         public IReadOnlyList<Entry> Items => items;
         public Canvas UiCanvas => inventoryCanvas;
         public TMP_FontAsset UiFont => heading != null ? heading.font : Resources.Load<TMP_FontAsset>("Fonts/CaveUI");
         public int TotalValue { get; private set; }
         public int TotalCount { get; private set; }
+        public int CoinCount { get; private set; }
+        public int TreasureCount => TotalCount - CoinCount;
+        public bool IsSummaryVisible => summaryCanvas != null && summaryCanvas.gameObject.activeInHierarchy;
 
         public bool Collect(Treasure treasure)
         {
             if (treasure == null || !treasure.isActiveAndEnabled) return false;
             string itemName = treasure.DisplayName;
             int value = treasure.Value;
+            if (treasure.name.Split('(')[0].Trim() == "Gold Coin") CoinCount++;
             var entry = items.Find(item => item.Name == itemName && item.UnitValue == value);
             if (entry == null) items.Add(new Entry(itemName, value));
             else entry.Count++;
@@ -102,7 +107,49 @@ namespace CardsUnity.Controllers
         private void OnDestroy()
         {
             if (ownsCanvas && inventoryCanvas != null) Destroy(inventoryCanvas.gameObject);
+            if (summaryCanvas != null) Destroy(summaryCanvas.gameObject);
             if (ownedEventSystem != null) Destroy(ownedEventSystem);
+        }
+
+        /// <summary>Shows the final collection totals on an undithered screen overlay.</summary>
+        public void ShowCaveSummary()
+        {
+            if (summaryCanvas != null)
+            {
+                summaryCanvas.gameObject.SetActive(true);
+                return;
+            }
+
+            var root = new GameObject("Cave Summary Canvas", typeof(RectTransform), typeof(Canvas),
+                typeof(CanvasScaler), typeof(GraphicRaycaster));
+            root.layer = LayerMask.NameToLayer("UI");
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(root, gameObject.scene);
+            summaryCanvas = root.GetComponent<Canvas>();
+            summaryCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            summaryCanvas.sortingOrder = 1000;
+            var scaler = root.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1280, 720);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            var backdrop = Rect("Backdrop", root.transform, Vector2.zero, Vector2.one,
+                Vector2.zero, Vector2.zero);
+            backdrop.gameObject.AddComponent<Image>().color = new Color(0.015f, 0.012f, 0.01f, 0.96f);
+            var panel = Rect("Summary", backdrop, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(-260f, -180f), new Vector2(260f, 180f));
+            panel.gameObject.AddComponent<Image>().color = new Color(0.08f, 0.065f, 0.045f, 1f);
+
+            var title = Label(Rect("Title", panel, new Vector2(0, 1), Vector2.one,
+                new Vector2(28, -76), new Vector2(-28, -24)), 32, UiFont);
+            title.alignment = TextAlignmentOptions.Center;
+            title.text = "WYPRAWA ZAKOŃCZONA";
+            var result = Label(Rect("Result", panel, Vector2.zero, Vector2.one,
+                new Vector2(36, 36), new Vector2(-36, -92)), 25, UiFont);
+            result.alignment = TextAlignmentOptions.Center;
+            result.text = "Zebrane skarby: " + TreasureCount
+                + "\nZebrane monety: " + CoinCount
+                + "\nŁącznie przedmiotów: " + TotalCount
+                + "\nWartość skarbów: " + TotalValue;
         }
 
         private static RectTransform Rect(string name, Transform parent, Vector2 min, Vector2 max,

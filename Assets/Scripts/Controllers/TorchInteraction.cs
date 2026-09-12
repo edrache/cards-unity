@@ -24,6 +24,7 @@ namespace CardsUnity.Controllers
         private Treasure treasure;
         private bool collecting, useLeftHand;
         private CharacterInventory inventory;
+        private CaveExit caveExit;
         private Vector3 gripOffset;
         private TorchAttack attack;
         private CartoonCharacterGait gait;
@@ -56,6 +57,16 @@ namespace CardsUnity.Controllers
             {
                 RefreshPickupTarget();
                 return PickupTarget != null && treasure == null;
+            }
+        }
+
+        /// <summary>True when E would finish the run at the cave entrance.</summary>
+        public bool CanExit
+        {
+            get
+            {
+                RefreshPickupTarget();
+                return PickupTarget == null && CanUseExit();
             }
         }
 
@@ -123,7 +134,7 @@ namespace CardsUnity.Controllers
             get
             {
                 RefreshPickupTarget();
-                if (PickupTarget == null) return string.Empty;
+                if (PickupTarget == null) return CanUseExit() ? "Wyjdź z jaskini" : string.Empty;
                 return treasure != null ? "Podnieś: " + treasure.DisplayName : "Podnieś: pochodnię";
             }
         }
@@ -136,6 +147,8 @@ namespace CardsUnity.Controllers
             gait = GetComponent<CartoonCharacterGait>();
             inventory = GetComponent<CharacterInventory>();
             if (inventory == null) inventory = gameObject.AddComponent<CharacterInventory>();
+            caveExit = GetComponent<CaveExit>();
+            if (caveExit == null) caveExit = gameObject.AddComponent<CaveExit>();
         }
 
         private void OnEnable()
@@ -160,7 +173,7 @@ namespace CardsUnity.Controllers
         public bool TryInteract()
         {
             RefreshPickupTarget();
-            if (PickupTarget == null) return false;
+            if (PickupTarget == null) return CanUseExit() && caveExit.TryExit(inventory);
             collecting = treasure != null && PickupTarget == treasure.transform;
             useLeftHand = collecting && HoldsTorch;
             string side = useLeftHand ? "Left" : "Right";
@@ -176,6 +189,13 @@ namespace CardsUnity.Controllers
             elapsed = weight = crouchWeight = 0f;
             reachTarget = collecting ? treasure.transform.position : torch.transform.position;
             return true;
+        }
+
+        private bool CanUseExit()
+        {
+            return isActiveAndEnabled && !IsBusy && (attack == null || !attack.IsAttacking)
+                && GetComponent<CharacterKnockdown>()?.IsDown != true
+                && caveExit != null && caveExit.CanExit;
         }
 
         private bool HasValidTarget()
