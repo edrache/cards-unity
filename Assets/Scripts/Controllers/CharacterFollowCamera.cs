@@ -11,11 +11,22 @@ namespace CardsUnity.Controllers
         [SerializeField] private float orbitAngle = 0f;
         [SerializeField] private float smoothing = 8f;
 
+        [Header("Shake orbit")]
+        [Tooltip("Minimum/maximum orbit step in degrees per shake. Direction is random. Set both to zero to disable. Steps accumulate during this run.")]
+        [SerializeField] private Vector2 shakeOrbitDegrees = new Vector2(2f, 5f);
+        [Tooltip("Approximate smoothing time in seconds for the orbit change triggered by a shake.")]
+        [Min(0.01f)]
+        [SerializeField] private float shakeOrbitSmoothTime = 0.4f;
+
         private Vector3 appliedShake;
         private float shakeRemaining;
         private float shakeDuration;
         private float shakeAmplitude;
         private float shakeFrequency;
+        private float shakeOrbitOffset;
+        private float shakeOrbitTarget;
+        private float shakeOrbitVelocity;
+        private readonly System.Random shakeRandom = new System.Random();
 
         /// <summary>Refreshes a bounded impulse without stacking amplitudes from simultaneous rocks.</summary>
         public void Shake(float amplitude, float duration, float frequency)
@@ -25,6 +36,12 @@ namespace CardsUnity.Controllers
             shakeAmplitude = Mathf.Max(current, amplitude);
             shakeDuration = shakeRemaining = Mathf.Max(shakeRemaining, duration);
             shakeFrequency = Mathf.Max(0.1f, frequency);
+            float minimum = Mathf.Clamp(Mathf.Min(shakeOrbitDegrees.x, shakeOrbitDegrees.y), 0f, 180f);
+            float maximum = Mathf.Clamp(Mathf.Max(shakeOrbitDegrees.x, shakeOrbitDegrees.y), minimum, 180f);
+            float step = Mathf.Lerp(minimum, maximum, (float)shakeRandom.NextDouble());
+            if (shakeRandom.Next(2) == 0) step = -step;
+            // Keep pending steps when another rock lands during the same smooth transition.
+            shakeOrbitTarget = Mathf.DeltaAngle(0f, shakeOrbitTarget + step);
         }
 
         private void OnDisable()
@@ -32,6 +49,8 @@ namespace CardsUnity.Controllers
             transform.position -= appliedShake;
             appliedShake = Vector3.zero;
             shakeRemaining = 0f;
+            shakeOrbitTarget = shakeOrbitOffset;
+            shakeOrbitVelocity = 0f;
         }
 
         private void LateUpdate()
@@ -40,7 +59,11 @@ namespace CardsUnity.Controllers
             transform.position -= appliedShake;
             appliedShake = Vector3.zero;
             if (target == null) return;
-            Vector3 rotatedOffset = Quaternion.AngleAxis(orbitAngle, Vector3.up) * offset;
+            if (Time.deltaTime > 0f)
+                shakeOrbitOffset = Mathf.DeltaAngle(0f, Mathf.SmoothDampAngle(shakeOrbitOffset,
+                    shakeOrbitTarget, ref shakeOrbitVelocity, Mathf.Max(0.01f, shakeOrbitSmoothTime),
+                    Mathf.Infinity, Time.deltaTime));
+            Vector3 rotatedOffset = Quaternion.AngleAxis(orbitAngle + shakeOrbitOffset, Vector3.up) * offset;
             transform.position = Vector3.Lerp(transform.position, target.position + rotatedOffset,
                 1f - Mathf.Exp(-smoothing * Time.deltaTime));
             transform.rotation = Quaternion.LookRotation(-rotatedOffset + Vector3.up);

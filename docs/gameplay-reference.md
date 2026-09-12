@@ -124,7 +124,7 @@ Open **Tools > Cards Unity > Designer Hub** for shared tuning assets and source 
 
 ## Follow camera orbit
 
-- `CharacterFollowCamera.orbitAngle` is an Inspector angle in degrees (-180 to 180, default 0) around the world Y axis through the target. It rotates the authored offset and its look direction independently of character facing. Follow smoothing interpolates toward the rotated destination; shake is applied afterward without modifying the base offset. Zero preserves previous framing.
+- `CharacterFollowCamera.orbitAngle` is an Inspector angle in degrees (-180 to 180, default 0) around the world Y axis through the target. It rotates the authored offset and its look direction independently of character facing. Follow smoothing interpolates toward the rotated destination; shake is applied afterward without modifying the base offset. Zero preserves previous framing. Each accepted `Shake` also adds a random signed orbit step (magnitude from `shakeOrbitDegrees`, default 2–5 degrees). `shakeOrbitSmoothTime` (0.4 s) controls `SmoothDampAngle` toward the accumulated, wrapped runtime destination, independently of positional noise. Runtime rotation persists after the impulse; a 0/0 range disables new steps. Disable cancels pending rotation at the current angle. Randomness does not consume gameplay generation streams.
 
 ## Corridor rockfall traps
 
