@@ -122,6 +122,10 @@ Open **Tools > Cards Unity > Designer Hub** for shared tuning assets and source 
 - Enable Elevation adds a continuous, slope-limited height field shared by every room and corridor, so junctions remain seamless and floors never stack. Elevation Range controls the total height envelope; Maximum Slope controls terrain steepness (5–20 degrees). Cutaway Wall Height caps visible walls in this mode while full-height boundary collision remains. The overhead camera follows player Y; spawn includes floor elevation.
 - Elevation verification: 23,288 direct controller samples uphill/downhill at 1/12 m range and the maximum slope setting passed; disabling elevation produced zero floor height. The analytic height field bounds slope conservatively; tiny clipped boundary triangles can have noisy numerical normals. Lighting remains torch-only.
 
+## Follow camera orbit
+
+- `CharacterFollowCamera.orbitAngle` is an Inspector angle in degrees (-180 to 180, default 0) around the world Y axis through the target. It rotates the authored offset and its look direction independently of character facing. Follow smoothing interpolates toward the rotated destination; shake is applied afterward without modifying the base offset. Zero preserves previous framing.
+
 ## Corridor rockfall traps
 
 - `CaveRockfallFeedback` on the persistent generator owns scene-local audio and shake tuning. `CaveRockfallTrap` plays one randomly selected non-empty spatial collapse clip when Warning enters Collapsing, using an independent random pitch (default 0.85–1.15). First natural `CaveBoulder` landings refresh a weaker impulse; carry/drop never repeats it. `CharacterFollowCamera` removes its previous offset before follow smoothing and applies bounded, decaying position noise afterward. Shake attenuates by player distance; audio uses its own min/max distance and optional mixer routing.

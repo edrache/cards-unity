@@ -6,6 +6,9 @@ namespace CardsUnity.Controllers
     {
         [SerializeField] private Transform target;
         [SerializeField] private Vector3 offset = new Vector3(0f, 7f, -8f);
+        [Tooltip("Rotation around the target's world vertical axis, in degrees. Zero preserves the authored offset; independent of character facing.")]
+        [Range(-180f, 180f)]
+        [SerializeField] private float orbitAngle = 0f;
         [SerializeField] private float smoothing = 8f;
 
         private Vector3 appliedShake;
@@ -37,9 +40,10 @@ namespace CardsUnity.Controllers
             transform.position -= appliedShake;
             appliedShake = Vector3.zero;
             if (target == null) return;
-            transform.position = Vector3.Lerp(transform.position, target.position + offset,
+            Vector3 rotatedOffset = Quaternion.AngleAxis(orbitAngle, Vector3.up) * offset;
+            transform.position = Vector3.Lerp(transform.position, target.position + rotatedOffset,
                 1f - Mathf.Exp(-smoothing * Time.deltaTime));
-            transform.rotation = Quaternion.LookRotation(-offset + Vector3.up);
+            transform.rotation = Quaternion.LookRotation(-rotatedOffset + Vector3.up);
             if (shakeRemaining <= 0f) return;
             shakeRemaining = Mathf.Max(0f, shakeRemaining - Time.deltaTime);
             float envelope = shakeRemaining / shakeDuration;
