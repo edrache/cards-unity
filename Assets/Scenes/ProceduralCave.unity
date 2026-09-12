@@ -1860,6 +1860,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 90125876250897346, guid: de83ee1d70753470db50e0696e996398, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1870170181}
+    - targetCorrespondingSourceObject: {fileID: 90125876250897346, guid: de83ee1d70753470db50e0696e996398, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1870170192}
   m_SourcePrefab: {fileID: 100100000, guid: de83ee1d70753470db50e0696e996398, type: 3}
 --- !u!4 &1870170170 stripped
 Transform:
@@ -1883,6 +1886,22 @@ MonoBehaviour:
   heading: {fileID: 1246992372}
   contents: {fileID: 7161437}
   total: {fileID: 1314669545}
+--- !u!114 &1870170192
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 569035154}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1cca79d44fcb419cb108af7167ce077, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Rendering.PlayerOcclusionOutline
+  targetCamera: {fileID: 990240588}
+  maskMaterial: {fileID: 2100000, guid: 00331a792dc0e41cd8c25186d45157f9, type: 2}
+  color: {r: 0.05, g: 0.85, b: 1, a: 1}
+  width: 2
 --- !u!1001 &1950605600
 PrefabInstance:
   m_ObjectHideFlags: 0

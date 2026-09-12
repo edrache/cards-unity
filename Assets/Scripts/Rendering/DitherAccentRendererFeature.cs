@@ -35,8 +35,9 @@ namespace CardsUnity.Rendering
         // Frame data avoids global textures leaking between cameras or renderers.
         private sealed class AccentData : ContextItem
         {
-            public TextureHandle texture, pickup;
-            public override void Reset() { texture = pickup = TextureHandle.nullHandle; }
+            public TextureHandle texture, pickup, player;
+            public Vector4 playerColor;
+            public override void Reset() { texture = pickup = player = TextureHandle.nullHandle; playerColor = Vector4.zero; }
         }
 
         private sealed class AccentPass : ScriptableRenderPass
@@ -50,6 +51,33 @@ namespace CardsUnity.Rendering
                 public int submesh, pass;
             }
             private sealed class PickupPassData { public PickupDraw[] draws; }
+            private sealed class PlayerPassData { public PickupDraw[] draws; }
+
+            private Renderer[] cachedPlayerRenderers;
+            private Material cachedPlayerMaterial;
+            private PickupDraw[] cachedPlayerDraws = System.Array.Empty<PickupDraw>();
+
+            private PickupDraw[] PlayerDraws(PlayerOcclusionOutline outline)
+            {
+                if (outline == null) return System.Array.Empty<PickupDraw>();
+                var renderers = outline.Renderers;
+                var material = outline.maskMaterial;
+                if (renderers == cachedPlayerRenderers && material == cachedPlayerMaterial)
+                    return cachedPlayerDraws;
+                cachedPlayerRenderers = renderers;
+                cachedPlayerMaterial = material;
+                var draws = new System.Collections.Generic.List<PickupDraw>();
+                if (outline != null)
+                    foreach (var renderer in renderers)
+                    {
+                        if (renderer == null) continue;
+                        int count = renderer.sharedMaterials.Length;
+                        for (int i = 0; i < count; i++)
+                            draws.Add(new PickupDraw { renderer = renderer, material = outline.maskMaterial, submesh = i });
+                    }
+                cachedPlayerDraws = draws.ToArray();
+                return cachedPlayerDraws;
+            }
             private Transform cachedTarget;
             private PickupDraw[] cachedDraws = System.Array.Empty<PickupDraw>();
 
@@ -112,6 +140,31 @@ namespace CardsUnity.Rendering
                 }
 
 
+                descriptor.name = "Player Occlusion Mask";
+                var player = graph.CreateTexture(descriptor);
+                var outline = PlayerOcclusionOutline.ForCamera(camera.camera);
+                var accents = frame.Get<AccentData>();
+                accents.player = player;
+                accents.playerColor = outline != null
+                    ? new Vector4(outline.color.r, outline.color.g, outline.color.b, outline.width)
+                    : Vector4.zero;
+                using (var builder = graph.AddRasterRenderPass<PlayerPassData>("Player Occlusion Mask", out var data))
+                {
+                    data.draws = PlayerDraws(outline);
+                    builder.SetRenderAttachment(player, 0, AccessFlags.Write);
+                    builder.SetRenderAttachmentDepth(resources.activeDepthTexture, AccessFlags.Read);
+                    int playerCullingMask = camera.camera.cullingMask;
+                    builder.SetRenderFunc((PlayerPassData pass, RasterGraphContext context) =>
+                    {
+                        for (int phase = 0; phase < 2; phase++)
+                            foreach (var draw in pass.draws)
+                                if (draw.renderer != null && draw.renderer.enabled && !draw.renderer.forceRenderingOff &&
+                                    draw.renderer.gameObject.activeInHierarchy &&
+                                    (playerCullingMask & (1 << draw.renderer.gameObject.layer)) != 0)
+                                    context.cmd.DrawRenderer(draw.renderer, draw.material, draw.submesh, phase);
+                    });
+                }
+
                 var drawing = RenderingUtils.CreateDrawingSettings(AccentTag, rendering, camera, lights,
                     camera.defaultOpaqueSortFlags);
                 var filtering = new FilteringSettings(RenderQueueRange.opaque, camera.camera.cullingMask);
@@ -147,7 +200,8 @@ namespace CardsUnity.Rendering
 
             private sealed class PassData
             {
-                public TextureHandle source, accent, pickup;
+                public TextureHandle source, accent, pickup, player;
+                public Vector4 playerColor;
                 public Vector4 cameraUIRect;
                 public Material material;
                 public MaterialPropertyBlock properties;
@@ -169,11 +223,14 @@ namespace CardsUnity.Rendering
                     data.source = resources.activeColorTexture;
                     data.accent = frame.Get<AccentData>().texture;
                     data.pickup = frame.Get<AccentData>().pickup;
+                    data.player = frame.Get<AccentData>().player;
+                    data.playerColor = frame.Get<AccentData>().playerColor;
                     data.material = material;
                     data.properties = properties;
                     builder.UseTexture(data.source);
                     builder.UseTexture(data.accent);
                     builder.UseTexture(data.pickup);
+                    builder.UseTexture(data.player);
                     builder.UseTexture(resources.cameraDepthTexture);
                     builder.SetRenderAttachment(destination, 0, AccessFlags.Write);
                     builder.SetRenderFunc((PassData pass, RasterGraphContext context) =>
@@ -182,6 +239,8 @@ namespace CardsUnity.Rendering
                         pass.properties.SetTexture(BlitTexture, (RTHandle)pass.source);
                         pass.properties.SetTexture(AccentTexture, (RTHandle)pass.accent);
                         pass.properties.SetTexture(PickupTexture, (RTHandle)pass.pickup);
+                        pass.properties.SetTexture("_PlayerOcclusionTexture", (RTHandle)pass.player);
+                        pass.properties.SetVector("_PlayerOutlineColorWidth", pass.playerColor);
                         pass.properties.SetFloat(AccentEnabled, 1f);
                         pass.properties.SetVector(CameraUIRect, pass.cameraUIRect);
                         pass.properties.SetVector(BlitScaleBias, new Vector4(1, 1, 0, 0));

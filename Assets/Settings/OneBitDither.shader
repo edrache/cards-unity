@@ -55,6 +55,8 @@ Shader "CardsUnity/One Bit Dither"
             CBUFFER_END
             TEXTURE2D_X(_DitherAccentTexture);
             TEXTURE2D_X(_PickupOutlineTexture);
+            TEXTURE2D_X(_PlayerOcclusionTexture);
+            float4 _PlayerOutlineColorWidth;
             float _DitherAccentEnabled;
             float4 _DitherCameraUIRect;
 
@@ -221,6 +223,21 @@ Shader "CardsUnity/One Bit Dither"
                         inside *= step(0.001, SAMPLE_TEXTURE2D_X(_PickupOutlineTexture,
                             sampler_PointClamp, input.texcoord + directions[i] * radius).a);
                     if (inside < 0.5) { paperColor = pickup.rgb; tone = 1; }
+                }
+                float2 playerMask = SAMPLE_TEXTURE2D_X(_PlayerOcclusionTexture,
+                    sampler_PointClamp, input.texcoord).rg;
+                if (_PlayerOutlineColorWidth.a > 0 && playerMask.r > 0.5 && playerMask.g < 0.5)
+                {
+                    float2 radius = _PlayerOutlineColorWidth.a / size;
+                    float inside = 1;
+                    const float2 directions[8] = {
+                        float2(1,0), float2(-1,0), float2(0,1), float2(0,-1),
+                        float2(0.707,0.707), float2(-0.707,0.707), float2(0.707,-0.707), float2(-0.707,-0.707)
+                    };
+                    [unroll] for (int i = 0; i < 8; i++)
+                        inside *= step(0.5, SAMPLE_TEXTURE2D_X(_PlayerOcclusionTexture,
+                            sampler_PointClamp, input.texcoord + directions[i] * radius).r);
+                    if (inside < 0.5) { paperColor = _PlayerOutlineColorWidth.rgb; tone = 1; }
                 }
                 float3 color = lerp(_Ink.rgb, paperColor, tone);
                 color *= 1.0 - _PaperGrain * (1.0 - grain);
