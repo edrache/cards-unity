@@ -90,15 +90,15 @@ Material:
     - _BumpScale: 1
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
-    - _CrawlerDensity: 2
+    - _CrawlerDensity: 1.3
     - _CrawlerFadeRange: 4
-    - _CrawlerMaxDistance: 16
+    - _CrawlerMaxDistance: 40
     - _CrawlerPopulation: 1
-    - _CrawlerSeed: 42.2
-    - _CrawlerSize: 0.053
-    - _CrawlerSpeed: 0.148
+    - _CrawlerSeed: 30.6
+    - _CrawlerSize: 0.268
+    - _CrawlerSpeed: 0.444
     - _CrawlerWallThreshold: 0.55
-    - _CrawlerWiggle: 0.056
+    - _CrawlerWiggle: 0.3
     - _Cull: 2
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
@@ -124,9 +124,9 @@ Material:
     - _XRMotionVectorsPass: 1
     - _ZWrite: 1
     m_Colors:
-    - _BaseColor: {r: 1, g: 0.09971626, b: 0, a: 1}
+    - _BaseColor: {r: 1, g: 0.098039225, b: 0, a: 1}
     - _Color: {r: 0.16999996, g: 0.19999996, b: 0.23999995, a: 1}
-    - _CrawlerColor: {r: 0, g: 0, b: 0, a: 1}
+    - _CrawlerColor: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []

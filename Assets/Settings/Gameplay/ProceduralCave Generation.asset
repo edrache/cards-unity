@@ -64,5 +64,5 @@ MonoBehaviour:
     irregularity: 1
     wallHeight: 20
     floorMaterial: {fileID: 2100000, guid: 14fbd045c7f4f429a92d26e9ec18cafa, type: 2}
-    wallMaterial: {fileID: 2100000, guid: b0eebf67d7ee74aadb64fe539f83b49d, type: 2}
+    wallMaterial: {fileID: 2100000, guid: aa05295aa904a4ff3a64f766e3627ec9, type: 2}
     roomContentRules: []
