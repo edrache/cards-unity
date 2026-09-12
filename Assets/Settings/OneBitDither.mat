@@ -48,7 +48,8 @@ Material:
     - _EdgeStrength: 1.36
     - _Exposure: 3.4
     - _InkEdgeDistortion: 8
-    - _InkEdgeScale: 1.89
+    - _InkEdgeScale: 2.74
+    - _LivingShadows: 1
     - _NoiseTileSize: 885
     - _PaperDodgeStrength: 0.311
     - _PaperGrain: 0.19
@@ -57,6 +58,12 @@ Material:
     - _PaperTileSize: 767
     - _PaperWorldSize: 50
     - _PixelSize: 1
+    - _ShadowCountBright: 6
+    - _ShadowCountDim: 20
+    - _ShadowReach: 4.11
+    - _ShadowSafeRadius: 0.69
+    - _ShadowSpeed: 0.94
+    - _ShadowWidth: 1
     - _ToneCount: 3
     m_Colors:
     - _Ink: {r: 0.21698111, g: 0.20032176, b: 0.18115875, a: 1}
