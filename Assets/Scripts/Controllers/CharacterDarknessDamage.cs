@@ -16,8 +16,8 @@ namespace CardsUnity.Controllers
         [Header("Darkness damage")]
         [Tooltip("Seconds spent continuously eligible before each damage roll.")]
         [SerializeField, Min(0.01f)] private float rollInterval = 5f;
-        [Tooltip("A roll succeeds when one of this many equally likely outcomes is selected.")]
-        [SerializeField, Min(1)] private int damageChanceDenominator = 6;
+        [Tooltip("Roll d6: damage occurs on a result of X or less. 1 = 1-in-6, 3 = 50%, 6 = certain; 0 disables damage.")]
+        [InspectorName("X-in-6"), SerializeField, Range(0, 6)] private int damageChanceXIn6 = 1;
         [Tooltip("Maximum gameplay light exposure still treated as complete darkness.")]
         [SerializeField, Min(0f)] private float fullDarknessExposure = 0.0001f;
         [Tooltip("Maximum seconds before a held torch lookup is refreshed.")]
@@ -87,7 +87,7 @@ namespace CardsUnity.Controllers
             if (eligibleElapsed < Mathf.Max(0.01f, rollInterval)) return;
 
             eligibleElapsed = 0f;
-            if (random.Next(Mathf.Max(1, damageChanceDenominator)) != 0) return;
+            if (!Dice.RollXIn6(random, damageChanceXIn6)) return;
             if (!health.TryTakeDamage()) return;
 
             stress?.RegisterHit();
@@ -144,7 +144,7 @@ namespace CardsUnity.Controllers
         private void OnValidate()
         {
             rollInterval = Mathf.Max(0.01f, rollInterval);
-            damageChanceDenominator = Mathf.Max(1, damageChanceDenominator);
+            damageChanceXIn6 = Mathf.Clamp(damageChanceXIn6, 0, 6);
             fullDarknessExposure = Mathf.Max(0f, fullDarknessExposure);
             torchRefreshInterval = Mathf.Max(0.1f, torchRefreshInterval);
         }

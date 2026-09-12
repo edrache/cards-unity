@@ -598,12 +598,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 673913795}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.03563, y: 0.0976, z: -5.25441}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 922766792}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &732561010
 GameObject:
@@ -920,7 +920,7 @@ MonoBehaviour:
   track: {fileID: 8300000, guid: 2f89f9e1c89a049e8ade2214e7176a86, type: 3}
   player: {fileID: 1870170170}
   sampleOffset: {x: 0, y: 1, z: 0}
-  maximumVolume: 0.371
+  maximumVolume: 0.5
   silentExposure: 3
   fadeDuration: 3
   environmentMask:
@@ -1032,12 +1032,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 864049265}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.03563, y: 0.0976, z: -5.25441}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 922766792}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &876049647
 GameObject:
@@ -1183,11 +1183,46 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 876049647}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.03563, y: 0.0976, z: -5.25441}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
+  m_Father: {fileID: 922766792}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &922766791
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 922766792}
+  m_Layer: 0
+  m_Name: Audio
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &922766792
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 922766791}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.03563, y: -0.0976, z: 5.25441}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 673913798}
+  - {fileID: 864049268}
+  - {fileID: 876049650}
+  - {fileID: 1914908114}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &990240584
@@ -2438,7 +2473,7 @@ MonoBehaviour:
   lightExposure: {fileID: 0}
   stress: {fileID: 0}
   rollInterval: 5
-  damageChanceDenominator: 6
+  damageChanceXIn6: 1
   fullDarknessExposure: 0.0001
   torchRefreshInterval: 1
 --- !u!1 &1914908111
@@ -2472,11 +2507,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterDamageAudio
   health: {fileID: 1870170207}
-  injuryClips: []
+  injuryClips:
+  - {fileID: 8300000, guid: 0e7a9dfed1dd74f4f9b9b12031b6051d, type: 3}
   injuryVolume: 1
   injuryMinimumPitch: 0.9
   injuryMaximumPitch: 1.1
-  deathClips: []
+  deathClips:
+  - {fileID: 8300000, guid: 8eebfb14261af4e40bfe601b59ede646, type: 3}
+  - {fileID: 8300000, guid: a537b251ed7374a64be8956c2a803cfb, type: 3}
+  - {fileID: 8300000, guid: 11fbffa4d55bf49eaa9dfb293a304d46, type: 3}
   deathVolume: 1
   deathMinimumPitch: 0.9
   deathMaximumPitch: 1.1
@@ -2585,12 +2624,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1914908111}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.03563, y: 0.0976, z: -5.25441}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 922766792}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1950605600
 PrefabInstance:
@@ -2830,12 +2869,9 @@ SceneRoots:
   - {fileID: 1950605600}
   - {fileID: 1667939974}
   - {fileID: 1502766264}
-  - {fileID: 673913798}
   - {fileID: 647389027}
   - {fileID: 768642817}
   - {fileID: 2084509324}
   - {fileID: 787596214}
   - {fileID: 732561013}
-  - {fileID: 864049268}
-  - {fileID: 876049650}
-  - {fileID: 1914908114}
+  - {fileID: 922766792}

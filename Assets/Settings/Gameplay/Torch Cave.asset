@@ -16,7 +16,7 @@ MonoBehaviour:
     brightness: 7
     lightRange: 18
   fuel:
-    lifetime: 180
+    lifetime: 60
     burnoutFraction: 0.4
     strikeLifetimeCost: 5
     dropLifetimeCost: 10

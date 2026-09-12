@@ -21,6 +21,14 @@ namespace CardsUnity.Controllers.Editor
             int assertions = 0;
             try
             {
+                for (int x = 0; x <= 6; x++)
+                {
+                    int successes = 0;
+                    for (int roll = 1; roll <= 6; roll++)
+                        if (Dice.SucceedsXIn6(roll, x)) successes++;
+                    Check(successes == x, "X-in-6 exact outcome count " + x, ref assertions);
+                }
+
                 var settings = new CaveGenerationSettings
                 {
                     roomCount = 0,
