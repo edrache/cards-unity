@@ -32,6 +32,7 @@ MonoBehaviour:
     encounterResetTime: 10
     recoveryPerSecond: 0
     recoveryDelay: 10
+    darknessStressPerSecond: 5
   knockdown:
     fallDuration: 0.25
     kneelDuration: 1.4

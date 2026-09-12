@@ -367,6 +367,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterStress
   balanceProfile: {fileID: 11400000, guid: 3138c25bbcaf14370aa4f273785dff96, type: 2}
+  lightExposure: {fileID: 0}
   stress: 0
   encounterStress: 8
   hitStress: 25
@@ -374,6 +375,7 @@ MonoBehaviour:
   encounterResetTime: 10
   recoveryPerSecond: 0
   recoveryDelay: 10
+  darknessStressPerSecond: 5
   hunchAngle: 24
   headLookAngle: 60
   motionChaos: 1

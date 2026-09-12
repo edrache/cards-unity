@@ -208,6 +208,7 @@ namespace CardsUnity.Controllers
         [SerializeField, Min(1f)] private float encounterResetTime = 10f;
         [SerializeField, Min(0f)] private float recoveryPerSecond;
         [SerializeField, Min(0f)] private float recoveryDelay = 10f;
+        [SerializeField, Min(0f)] private float darknessStressPerSecond = 5f;
         public float InitialStress => initialStress;
         public float EncounterStress => encounterStress;
         public float HitStress => hitStress;
@@ -215,7 +216,9 @@ namespace CardsUnity.Controllers
         public float EncounterResetTime => encounterResetTime;
         public float RecoveryPerSecond => recoveryPerSecond;
         public float RecoveryDelay => recoveryDelay;
-        internal void Capture(float initial, float encounter, float hit, float range, float reset, float recovery, float delay)
+        public float DarknessStressPerSecond => darknessStressPerSecond;
+        internal void Capture(float initial, float encounter, float hit, float range, float reset, float recovery, float delay,
+            float darknessPerSecond)
         {
             initialStress = initial;
             encounterStress = encounter;
@@ -224,6 +227,7 @@ namespace CardsUnity.Controllers
             encounterResetTime = reset;
             recoveryPerSecond = recovery;
             recoveryDelay = delay;
+            darknessStressPerSecond = darknessPerSecond;
         }
         internal void Validate()
         {
@@ -234,6 +238,7 @@ namespace CardsUnity.Controllers
             encounterResetTime = Mathf.Max(1f, encounterResetTime);
             recoveryPerSecond = Mathf.Max(0f, recoveryPerSecond);
             recoveryDelay = Mathf.Max(0f, recoveryDelay);
+            darknessStressPerSecond = Mathf.Max(0f, darknessStressPerSecond);
         }
     }
 

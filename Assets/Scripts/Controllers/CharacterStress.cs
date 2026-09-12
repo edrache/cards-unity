@@ -10,6 +10,8 @@ namespace CardsUnity.Controllers
         [Header("Balance")]
         [Tooltip("Optional shared player balance. Existing fields below are used when empty.")]
         [SerializeField] private PlayerGameplayBalanceProfile balanceProfile;
+        [Tooltip("Optional light exposure source. The component on this GameObject is used when empty.")]
+        [SerializeField] private PlayerLightExposure lightExposure;
 
         [Header("Local fallback — Stress")]
         [SerializeField, Range(0f, 100f)] private float stress;
@@ -21,6 +23,8 @@ namespace CardsUnity.Controllers
         [Tooltip("Optional recovery per second after threats stop. Zero keeps accumulated stress.")]
         [SerializeField, Min(0f)] private float recoveryPerSecond;
         [SerializeField, Min(0f)] private float recoveryDelay = 10f;
+        [Tooltip("Stress added each second at full darkness.")]
+        [SerializeField, Min(0f)] private float darknessStressPerSecond = 5f;
         [Header("Per-instance stress pose")]
         [SerializeField, Range(0f, 45f)] private float hunchAngle = 24f;
         [SerializeField, Range(0f, 80f)] private float headLookAngle = 60f;
@@ -38,6 +42,7 @@ namespace CardsUnity.Controllers
 
         private void Awake()
         {
+            lightExposure ??= GetComponent<PlayerLightExposure>();
             if (StressBalance != null) Stress = StressBalance.InitialStress;
         }
 
@@ -48,12 +53,25 @@ namespace CardsUnity.Controllers
             if (dt <= 0f) return;
             clock += dt;
             scanPhase += dt * Mathf.Lerp(0.5f, 2.2f, Weight);
+            float darknessStress = GetDarknessStressPerSecond();
+            if (darknessStress > 0f)
+            {
+                Stress += darknessStress * dt;
+                lastThreat = clock;
+            }
             if (clock - lastThreat > (StressBalance?.RecoveryDelay ?? recoveryDelay))
                 Stress -= (StressBalance?.RecoveryPerSecond ?? recoveryPerSecond) * dt;
             weight = Mathf.Lerp(weight, stress / 100f, 1f - Mathf.Exp(-dt / 0.45f));
         }
 
         private float Noise(float channel) => Mathf.PerlinNoise(channel, scanPhase) * 2f - 1f;
+
+        private float GetDarknessStressPerSecond()
+        {
+            if (lightExposure == null || !lightExposure.isActiveAndEnabled) return 0f;
+            float darkness = Mathf.Clamp01(lightExposure.Darkness);
+            return darkness * (StressBalance?.DarknessStressPerSecond ?? darknessStressPerSecond);
+        }
 
         public void RegisterHit()
         {
@@ -92,7 +110,7 @@ namespace CardsUnity.Controllers
         internal void CopyLegacyBalanceTo(PlayerStressBalance destination)
         {
             destination.Capture(stress, encounterStress, hitStress, encounterRange,
-                encounterResetTime, recoveryPerSecond, recoveryDelay);
+                encounterResetTime, recoveryPerSecond, recoveryDelay, darknessStressPerSecond);
         }
 
         internal void AssignBalanceProfile(PlayerGameplayBalanceProfile profile)
