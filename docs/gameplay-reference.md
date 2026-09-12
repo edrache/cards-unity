@@ -290,3 +290,5 @@ Open **Tools > Cards Unity > Designer Hub** for shared tuning assets and source 
 ### Darkness stress and breathing
 
 ProceduralCave assigns a PlayerLightExposure probe to player stress and whisper ambience. Point/spot light uses squared range falloff and collider occlusion, ignoring ambient/directional light. Darkness scales 0–1 against Fully Lit Exposure (3). CharacterStress adds up to 5 points/second via PlayerStressBalance.DarknessStressPerSecond and refreshes the recovery delay while this contribution is positive. Light stops the gain but does not reset accumulated stress. The dedicated Player Breathing object loops Breath.wav; stress 0–100 smoothly maps AudioSource pitch from 1 to 1.6, changing both rate and pitch. Volume is independently configurable (0.5).
+
+Breathing multiplies its stress-driven rate by Running Playback Multiplier (1.3) during actual running (held Run and measured speed above 0.05 m/s), with a final pitch cap of 3. Stopping returns smoothly to the stress-only rate.

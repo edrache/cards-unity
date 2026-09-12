@@ -915,12 +915,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2e88620f931e84ac2a57473a74cb4325, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.DarknessWhisperAudio
   track: {fileID: 8300000, guid: 2f89f9e1c89a049e8ade2214e7176a86, type: 3}
   player: {fileID: 1870170170}
   sampleOffset: {x: 0, y: 1, z: 0}
-  maximumVolume: 0.684
+  maximumVolume: 0.371
   silentExposure: 3
   fadeDuration: 3
   environmentMask:
@@ -1067,14 +1067,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b97bf8f7950364e428c2352753451bf3, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterBreathingAudio
   track: {fileID: 8300000, guid: c0cc7511e9e2c499699eeeeee1b53254, type: 3}
   stress: {fileID: 1870170195}
   volume: 0.5
   fadeInDuration: 0.2
   minimumPlaybackSpeed: 1
-  maximumPlaybackSpeed: 1.6
+  maximumPlaybackSpeed: 3
   pitchResponseTime: 0.15
 --- !u!82 &876049649
 AudioSource:
@@ -2300,7 +2300,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7236042496580281235, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: lightExposure
-      value:
+      value: 
       objectReference: {fileID: 1870170205}
     - target: {fileID: 7236042496580281235, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: balanceProfile
@@ -2387,7 +2387,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0dfa35d8412bc4a13b945544993f81e4, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterStress
 --- !u!114 &1870170205
 MonoBehaviour:
@@ -2399,7 +2399,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7cc095ed098274834a4c2fbf8c07882d, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.PlayerLightExposure
   sampleOffset: {x: 0, y: 1, z: 0}
   fullyLitExposure: 3

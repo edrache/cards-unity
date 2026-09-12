@@ -50,6 +50,9 @@ namespace CardsUnity.Controllers
         private bool sneaking;
         private bool analogMovement;
 
+        public bool IsRunning => isActiveAndEnabled && runningWithMovement;
+        private bool runningWithMovement;
+
         public PlayerGameplayBalanceProfile BalanceProfile => balanceProfile;
         private PlayerMovementBalance MovementBalance => balanceProfile != null ? balanceProfile.Movement : null;
 
@@ -160,6 +163,7 @@ namespace CardsUnity.Controllers
             float dt = Mathf.Max(Time.deltaTime, 0.0001f);
             Vector3 actualVelocity = displacement / dt;
             float actualSpeed = actualVelocity.magnitude;
+            runningWithMovement = running && actualSpeed > 0.05f;
             if (gait != null)
             {
                 gait.SetLocomotionStyle(running, activeSneak, activeWalk);
