@@ -26,6 +26,7 @@ namespace CardsUnity.Controllers
 
         private readonly List<CaveBoulder> spawnedBoulders = new List<CaveBoulder>();
         private ProceduralCave cave;
+        private CaveRockfallFeedback feedback;
         private Vector3[] floorPath;
         private Transform player;
         private Material boulderMaterial;
@@ -63,6 +64,7 @@ namespace CardsUnity.Controllers
             float minBoulderRadius = 0.55f, float maxBoulderRadius = 0.67f)
         {
             cave = owner;
+            feedback = owner != null ? owner.GetComponent<CaveRockfallFeedback>() : null;
             floorPath = path != null ? (Vector3[])path.Clone() : Array.Empty<Vector3>();
             player = target;
             width = Mathf.Max(1f, corridorWidth);
@@ -120,6 +122,8 @@ namespace CardsUnity.Controllers
                         float collapseRemainder = stateTime - warningSeconds;
                         State = RockfallState.Collapsing;
                         stateTime = collapseRemainder;
+                        SamplePath(PathLength() * 0.5f, out Vector3 collapsePosition, out _);
+                        feedback?.PlayCollapse(transform, collapsePosition, player);
                         SpawnDueBoulders();
                     }
                     break;
@@ -142,6 +146,11 @@ namespace CardsUnity.Controllers
             }
 
             EmitPebbles(emissionRate, dt);
+        }
+
+        internal void NotifyBoulderLanded(CaveBoulder source)
+        {
+            if (source != null) feedback?.PlayLanding(source.transform.position, player);
         }
 
         internal void TryHitPlayer(CaveBoulder source)

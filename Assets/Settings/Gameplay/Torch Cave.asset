@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Torch Cave
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.TorchBalanceProfile
   illumination:
-    brightness: 6.2
-    lightRange: 16.5
+    brightness: 7
+    lightRange: 18
   fuel:
     lifetime: 180
     burnoutFraction: 0.4

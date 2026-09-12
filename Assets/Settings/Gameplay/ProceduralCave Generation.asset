@@ -39,8 +39,8 @@ MonoBehaviour:
     rockfallIdlePebblesPerSecond: 20
     rockfallActivePebblesPerSecond: 100
     rockfallPebbleLifetime: 2
-    minimumRockfallPebbleSize: 0.025
-    maximumRockfallPebbleSize: 0.085
+    minimumRockfallPebbleSize: 0.1
+    maximumRockfallPebbleSize: 0.2
     minimumRockfallBoulderRadius: 0.55
     maximumRockfallBoulderRadius: 1
     rockfallMaterial: {fileID: 0}

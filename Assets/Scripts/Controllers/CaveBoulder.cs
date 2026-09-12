@@ -130,6 +130,7 @@ namespace CardsUnity.Controllers
                 initialFall = false;
                 hasLanded = true;
                 settleTime = 0f;
+                trap?.NotifyBoulderLanded(this);
                 return;
             }
         }

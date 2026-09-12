@@ -172,11 +172,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6ba07fcfe05754293938fe0f8dca1bae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.ShadowKnightProportions
-  upperArmLength: 0.61
-  forearmLength: 0.57
+  upperArmLength: 0.468
+  forearmLength: 0.444
   thighLength: 0.51
   calfLength: 0.524
-  torsoHeight: 1
+  torsoHeight: 0.735
   torsoWidth: 0.892
   torsoDepth: 0.611
   headSize: 0.493

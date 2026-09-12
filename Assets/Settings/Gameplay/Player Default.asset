@@ -22,8 +22,8 @@ MonoBehaviour:
     turnSpeed: 1000
     knockedDownSpeedMultiplier: 0.4
   health:
-    slotCount: 3
-    refillSecondsPerSlot: 10
+    slotCount: 2
+    refillSecondsPerSlot: 20
   stress:
     initialStress: 0
     encounterStress: 8

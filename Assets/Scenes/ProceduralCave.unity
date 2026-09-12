@@ -1575,6 +1575,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1667939974}
   - component: {fileID: 1667939973}
+  - component: {fileID: 1667939975}
   m_Layer: 0
   m_Name: Procedural Cave
   m_TagString: Untagged
@@ -1663,6 +1664,32 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1667939975
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1667939972}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ae0c32bccaae405a99a9d35375a03aa, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CaveRockfallFeedback
+  followCamera: {fileID: 0}
+  shakeEnabled: 1
+  collapseAmplitude: 0.14
+  landingAmplitude: 0.09
+  shakeDuration: 0.65
+  shakeFrequency: 24
+  shakeFullDistance: 4
+  shakeMaxDistance: 18
+  collapseClip: {fileID: 0}
+  output: {fileID: 0}
+  volume: 0.8
+  pitchRange: {x: 0.85, y: 1.15}
+  audioMinDistance: 3
+  audioMaxDistance: 28
 --- !u!1 &1752562764
 GameObject:
   m_ObjectHideFlags: 0
