@@ -4962,6 +4962,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb6efc4d169d84b8099b94f2a5cb4007, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.Treasure
+  definition: {fileID: 11400000, guid: 8dcc4076bc832438489af4bcd567e5f1, type: 2}
   value: 1
   lightThreshold: 0.005
   glints: {fileID: 2318783042025862254}

@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6621118cd7482428d80e99dfcbd31c96, type: 3}
+  m_Name: Centipede Default
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CentipedeBalanceProfile
+  hunting:
+    stalkSpeed: 1.2
+    fleeSpeed: 4.5
+    stopDistance: 1.2
+    turnSpeed: 300
+  variation:
+    amount: 0.8
+    wanderAngle: 32
+    noiseFrequency: 0.45
+    speedVariation: 0.3
+  recovery:
+    stuckCheckInterval: 0.7
+    recoveryDuration: 1.5
+  light:
+    dimLightThreshold: 0.005
+    fearThreshold: 0.12
+    safeLightRatio: 0.4
+    hideDuration: 2.5
+  attack:
+    lightPatience: 3
+    attackRange: 3.5
+    attackWindup: 0.65
+    leapDuration: 0.45
+    leapHeight: 0.8
+    attackCooldown: 4
+    darknessAttackThreshold: 0.02
+    darknessPatience: 0.75

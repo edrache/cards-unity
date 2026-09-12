@@ -6,6 +6,10 @@ namespace CardsUnity.Controllers
     [DisallowMultipleComponent, RequireComponent(typeof(CharacterHealth))]
     public sealed class CharacterDeath : MonoBehaviour
     {
+        [Header("Balance")]
+        [Tooltip("Optional shared player balance. Existing Defeat Delay is used when empty.")]
+        [SerializeField] private PlayerGameplayBalanceProfile balanceProfile;
+        [Header("Local fallback — Defeat")]
         [SerializeField, Min(0f)] private float defeatDelay = 3f;
 
         private CharacterHealth health;
@@ -16,6 +20,7 @@ namespace CardsUnity.Controllers
 
         public bool IsGameOver { get; private set; }
         public bool IsDefeatVisible { get; private set; }
+        public PlayerGameplayBalanceProfile BalanceProfile => balanceProfile;
 
         private void Awake()
         {
@@ -41,7 +46,7 @@ namespace CardsUnity.Controllers
         {
             if (!IsGameOver || IsDefeatVisible) return;
             elapsed += Mathf.Max(0f, unscaledDeltaTime);
-            if (elapsed < defeatDelay) return;
+            if (elapsed < (balanceProfile != null ? balanceProfile.Death.DefeatDelay : defeatDelay)) return;
 
             if (inventory == null) inventory = GetComponent<CharacterInventory>();
             inventory?.ShowDefeatSummary();
@@ -83,5 +88,18 @@ namespace CardsUnity.Controllers
         }
 
         private void OnDestroy() => RestoreTimeScale();
+
+#if UNITY_EDITOR
+        internal void CopyLegacyBalanceTo(PlayerDeathBalance destination)
+        {
+            destination.Capture(defeatDelay);
+        }
+
+        internal void AssignBalanceProfile(PlayerGameplayBalanceProfile profile)
+        {
+            balanceProfile = profile;
+            UnityEditor.EditorUtility.SetDirty(this);
+        }
+#endif
     }
 }

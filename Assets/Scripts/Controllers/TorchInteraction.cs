@@ -12,10 +12,14 @@ namespace CardsUnity.Controllers
         private static readonly List<TorchInteraction> activeInteractions = new();
 
         [SerializeField] private HandheldTorch torch;
-        [Header("Interaction")]
+        [Header("Balance")]
+        [Tooltip("Optional shared player balance. Carry placement and prompt presentation stay on this instance.")]
+        [SerializeField] private PlayerGameplayBalanceProfile balanceProfile;
+        [Header("Local fallback — Interaction")]
         [SerializeField, Range(0.4f, 2f)] private float pickupRange = 1f;
         [SerializeField, Range(0.3f, 2f)] private float pickupDuration = 0.75f;
         [SerializeField, Range(0.15f, 1f)] private float recoveryDuration = 0.45f;
+        [Header("Per-instance presentation")]
         [SerializeField] private bool showPrompt = true;
 
         [Header("Boulder carrying")]
@@ -42,6 +46,11 @@ namespace CardsUnity.Controllers
         private Vector3 boulderLiftStart;
         private Quaternion boulderCarryLocalRotation;
         public bool IsBusy { get; private set; }
+        public PlayerGameplayBalanceProfile BalanceProfile => balanceProfile;
+        private PlayerInteractionBalance InteractionBalance => balanceProfile != null ? balanceProfile.Interaction : null;
+        private float PickupRange => InteractionBalance?.PickupRange ?? pickupRange;
+        private float PickupDuration => InteractionBalance?.PickupDuration ?? pickupDuration;
+        private float RecoveryDuration => InteractionBalance?.RecoveryDuration ?? recoveryDuration;
         /// <summary>The currently reachable item that E would collect, for contextual presentation.</summary>
         public Transform PickupTarget { get; private set; }
 
@@ -82,7 +91,7 @@ namespace CardsUnity.Controllers
         {
             if (torch != null && torch.IsHeld && torch.Holder == transform) return;
             HandheldTorch nearest = null;
-            float distance = pickupRange;
+            float distance = PickupRange;
             foreach (var candidate in FindObjectsByType<HandheldTorch>(FindObjectsSortMode.None))
             {
                 if (!candidate.isActiveAndEnabled || candidate.IsHeld || candidate.gameObject.scene != gameObject.scene) continue;
@@ -98,7 +107,7 @@ namespace CardsUnity.Controllers
         private bool HasEligiblePickupTorch()
         {
             return !HoldsTorch && torch != null && !torch.IsHeld && torch.isActiveAndEnabled
-                && Vector3.Distance(transform.position, torch.transform.position) <= pickupRange && HasClearReach(torch);
+                && Vector3.Distance(transform.position, torch.transform.position) <= PickupRange && HasClearReach(torch);
         }
 
         private void RefreshPickupTarget()
@@ -128,7 +137,7 @@ namespace CardsUnity.Controllers
         private void FindTreasure()
         {
             treasure = null;
-            float distance = pickupRange;
+            float distance = PickupRange;
             foreach (var candidate in Treasure.ActiveTreasures)
             {
                 if (candidate == null || !candidate.isActiveAndEnabled || candidate.gameObject.scene != gameObject.scene) continue;
@@ -142,7 +151,7 @@ namespace CardsUnity.Controllers
         private void FindBoulder()
         {
             boulder = null;
-            float distance = pickupRange;
+            float distance = PickupRange;
             foreach (var candidate in CaveBoulder.ActiveBoulders)
             {
                 if (candidate == null || !candidate.isActiveAndEnabled || !candidate.CanPickUp
@@ -247,11 +256,11 @@ namespace CardsUnity.Controllers
         {
             if (liftingBoulder)
                 return boulder != null && boulder.isActiveAndEnabled && boulder.CanPickUp && !boulder.IsHeld
-                    && DistanceToBoulder(boulder) <= pickupRange
+                    && DistanceToBoulder(boulder) <= PickupRange
                     && HasClearReach(boulder.transform);
             if (!collecting) return HasEligiblePickupTorch();
             return treasure != null && treasure.isActiveAndEnabled
-                   && Vector3.Distance(transform.position, treasure.transform.position) <= pickupRange
+                   && Vector3.Distance(transform.position, treasure.transform.position) <= PickupRange
                    && HasClearReach(treasure.transform);
         }
 
@@ -289,15 +298,15 @@ namespace CardsUnity.Controllers
             }
             // Once lost, this attempt stays cancelled even if the player comes back into range.
             if (!recovering && !carryingBoulder && !HasValidTarget()) BeginRecovery();
-            float duration = Mathf.Max(0.0001f, pickupDuration);
+            float duration = Mathf.Max(0.0001f, PickupDuration);
             float progress = elapsed / duration;
-            float recovery = (elapsed - recoveryStarted) / Mathf.Max(0.0001f, recoveryDuration);
+            float recovery = (elapsed - recoveryStarted) / Mathf.Max(0.0001f, RecoveryDuration);
             // Prepare the body before reaching; bring the hand back before fully standing.
             // Both tracks still reach full contact at the original transfer deadline.
             weight = !recovering ? PoseEasing.Window(progress, 0.12f, 1f)
                 : recoveryArmWeight * (1f - PoseEasing.Window(recovery, 0f, 0.9f));
             float lift = carryingBoulder
-                ? PoseEasing.Window((elapsed - pickupDuration) / Mathf.Max(0.0001f, recoveryDuration), 0f, 1f) : 0f;
+                ? PoseEasing.Window((elapsed - PickupDuration) / Mathf.Max(0.0001f, RecoveryDuration), 0f, 1f) : 0f;
             crouchWeight = !recovering ? PoseEasing.Window(progress, 0f, 0.85f) * (1f - lift)
                 : recoveryCrouchWeight * (1f - PoseEasing.Window(recovery, 0.12f, 1f));
             if (!recovering && !carryingBoulder) reachTarget = CurrentGroundTarget();
@@ -345,7 +354,7 @@ namespace CardsUnity.Controllers
             arm.rotation = Quaternion.Slerp(arm.rotation, Quaternion.FromToRotation(Vector3.down, joint - shoulder), weight);
             elbow.rotation = Quaternion.Slerp(elbow.rotation, Quaternion.FromToRotation(Vector3.down, reachTarget - elbow.position), weight);
 
-            if (!recovering && !carryingBoulder && elapsed >= pickupDuration)
+            if (!recovering && !carryingBoulder && elapsed >= PickupDuration)
             {
                 // Gameplay collection is independent of visual IK accuracy. Keep the selected
                 // treasure locked, but recheck availability, range and obstruction at transfer.
@@ -362,7 +371,7 @@ namespace CardsUnity.Controllers
                 else if (collecting)
                 {
                     if (treasure != null && treasure.isActiveAndEnabled
-                        && Vector3.Distance(transform.position, treasure.transform.position) <= pickupRange
+                        && Vector3.Distance(transform.position, treasure.transform.position) <= PickupRange
                         && HasClearReach(treasure.transform))
                         inventory.Collect(treasure);
                 }
@@ -378,7 +387,7 @@ namespace CardsUnity.Controllers
             }
             if (attachedTorch && HoldsTorch)
                 torch.transform.rotation = Quaternion.Slerp(groundRotation, transform.rotation, 1f - weight);
-            if (recovering && elapsed - recoveryStarted >= recoveryDuration) Finish();
+            if (recovering && elapsed - recoveryStarted >= RecoveryDuration) Finish();
         }
 
         public void CancelInteraction() => Finish();
@@ -386,7 +395,7 @@ namespace CardsUnity.Controllers
         private bool MoveCarriedBoulder()
         {
             if (!OwnsCarriedBoulder()) return false;
-            float lift = PoseEasing.Window((elapsed - pickupDuration) / Mathf.Max(0.0001f, recoveryDuration), 0f, 1f);
+            float lift = PoseEasing.Window((elapsed - PickupDuration) / Mathf.Max(0.0001f, RecoveryDuration), 0f, 1f);
             float side = useLeftHand ? -1f : 1f;
             Vector3 carryLocal = new Vector3(side * (boulderSideClearance + boulder.Radius * 0.25f),
                 Mathf.Max(boulderCarryHeight, boulder.Radius + 0.25f), boulder.Radius + boulderCarryForward);
@@ -451,6 +460,19 @@ namespace CardsUnity.Controllers
         {
             if (!hasFocus && liftingBoulder) Finish();
         }
+
+#if UNITY_EDITOR
+        internal void CopyLegacyBalanceTo(PlayerInteractionBalance destination)
+        {
+            destination.Capture(pickupRange, pickupDuration, recoveryDuration);
+        }
+
+        internal void AssignBalanceProfile(PlayerGameplayBalanceProfile profile)
+        {
+            balanceProfile = profile;
+            UnityEditor.EditorUtility.SetDirty(this);
+        }
+#endif
 
         private void UpdatePrompt()
         {

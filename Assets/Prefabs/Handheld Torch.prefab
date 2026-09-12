@@ -10028,6 +10028,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ef1df17f54d5b4556a9f4890a059cd46, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.HandheldTorch
+  balanceProfile: {fileID: 11400000, guid: 25cb05ca20aed48a7905894d28c5da37, type: 2}
   character: {fileID: 0}
   upperArm: {fileID: 0}
   forearm: {fileID: 0}

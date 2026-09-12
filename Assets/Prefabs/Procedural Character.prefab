@@ -836,6 +836,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ef1df17f54d5b4556a9f4890a059cd46, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.HandheldTorch
+  balanceProfile: {fileID: 11400000, guid: 91d69fcbe41454ccdae2fed37d2a27fa, type: 2}
   character: {fileID: 894305925818616417}
   upperArm: {fileID: 7037270030506631498}
   forearm: {fileID: 5625084441258383485}
@@ -848,11 +849,17 @@ MonoBehaviour:
   flickerAmount: 0.16
   flickerSpeed: 2.5
   movementFlicker: 0.3
+  lifetime: 180
+  burnoutFraction: 0.4
+  dyingFlickerAmount: 1.4
+  strikeLifetimeCost: 5
+  dropLifetimeCost: 10
   holdingPose: 0.9
   swayAngle: 12
   swayResponse: 0.18
   smokeTrail: 0.55
   gripOffset: {x: 0, y: -0.32, z: 0}
+  armOutwardAngle: 22
 --- !u!1 &2602845520662877188
 GameObject:
   m_ObjectHideFlags: 0
@@ -12529,7 +12536,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 142a04a0734e748e189e5d3e1475e90c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.ProceduralCharacter
+  balanceProfile: {fileID: 0}
   rewiredPlayerName: Player0
+  idleThreshold: 0.08
+  walkThreshold: 0.35
   speed: 3.5
   acceleration: 9
   braking: 7
@@ -12570,6 +12580,7 @@ MonoBehaviour:
   thighLength: 0.44
   calfLength: 0.44
   hipHeight: 0.88
+  hipHalfWidth: 0.19
   armLag: 0.1
   sideLeanAngle: 7.3
   sideSwayDistance: 0.055
@@ -12596,6 +12607,8 @@ MonoBehaviour:
   fastRun: 0
   tipToe: 0
   skip: 0
+  kneeWalk: 0
+  crawl: 0
   styleTransitionTime: 0.2
   noiseAmount: 0.642
   noiseFrequency: 1.76

@@ -7,16 +7,20 @@ namespace CardsUnity.Controllers
     [RequireComponent(typeof(CharacterController))]
     public sealed class ProceduralCharacter : MonoBehaviour
     {
+        [Header("Balance")]
+        [Tooltip("Optional shared balance. When empty, the values below keep their original behaviour.")]
+        [SerializeField] private PlayerGameplayBalanceProfile balanceProfile;
+
         [Header("Rewired input")]
         [SerializeField] private string rewiredPlayerName = "Player0";
 
-        [Header("Analog locomotion")]
+        [Header("Local fallback — Analog locomotion")]
         [Tooltip("Stick magnitude below which the stick counts as centred. The character stops and the manual style mix returns.")]
         [SerializeField, Range(0.01f, 0.5f)] private float idleThreshold = 0.08f;
         [Tooltip("Stick magnitude at which walking starts. Between Idle Threshold and this value the character sneaks. Running stays on the held Run action.")]
         [SerializeField, Range(0.02f, 0.99f)] private float walkThreshold = 0.35f;
 
-        [Header("Movement")]
+        [Header("Local fallback — Movement")]
         [SerializeField] private float speed = 3.5f;
         [SerializeField] private float acceleration = 9f;
         [SerializeField] private float braking = 7f;
@@ -45,6 +49,9 @@ namespace CardsUnity.Controllers
         private Vector3 previousActualVelocity;
         private bool sneaking;
         private bool analogMovement;
+
+        public PlayerGameplayBalanceProfile BalanceProfile => balanceProfile;
+        private PlayerMovementBalance MovementBalance => balanceProfile != null ? balanceProfile.Movement : null;
 
         private void Awake()
         {
@@ -105,7 +112,9 @@ namespace CardsUnity.Controllers
             if (torchAttack != null) torchAttack.SetAttackHeld(attackHeld);
             input = Vector2.ClampMagnitude(input, 1f);
             float stickMagnitude = input.magnitude;
-            if (analogMovement && stickMagnitude < idleThreshold)
+            float effectiveIdleThreshold = MovementBalance?.IdleThreshold ?? idleThreshold;
+            float effectiveWalkThreshold = MovementBalance?.WalkThreshold ?? walkThreshold;
+            if (analogMovement && stickMagnitude < effectiveIdleThreshold)
             {
                 // A centred stick must release the automatic style, otherwise the manual
                 // style mixer would stay overwritten for as long as a gamepad is connected.
@@ -119,19 +128,24 @@ namespace CardsUnity.Controllers
             if (analogMovement)
             {
                 // Stick deflection only chooses between Sneak and Walk; Run overrides both.
-                activeSneak = !running && stickMagnitude < walkThreshold;
+                activeSneak = !running && stickMagnitude < effectiveWalkThreshold;
                 activeWalk = !running && !activeSneak;
             }
             // The input vector still carries the stick magnitude, so speed scales with deflection.
-            float movementSpeed = running ? runSpeed : speed;
-            if (knockdown != null && knockdown.IsDown) movementSpeed *= 0.4f;
+            float walkSpeed = MovementBalance?.WalkSpeed ?? speed;
+            float sprintSpeed = MovementBalance?.RunSpeed ?? runSpeed;
+            float movementSpeed = running ? sprintSpeed : walkSpeed;
+            if (knockdown != null && knockdown.IsDown)
+                movementSpeed *= MovementBalance?.KnockedDownSpeedMultiplier ?? 0.4f;
 
             Vector3 forward = movementCamera != null
                 ? Vector3.ProjectOnPlane(movementCamera.forward, Vector3.up).normalized : Vector3.forward;
             Vector3 right = Vector3.Cross(Vector3.up, forward);
             Vector3 desired = (forward * input.y + right * input.x) * movementSpeed;
             velocity = Vector3.MoveTowards(velocity, desired,
-                (input.sqrMagnitude > 0.001f ? acceleration : braking) * Time.deltaTime);
+                (input.sqrMagnitude > 0.001f
+                    ? MovementBalance?.Acceleration ?? acceleration
+                    : MovementBalance?.Braking ?? braking) * Time.deltaTime);
             if (controller.isGrounded && verticalSpeed < 0f) verticalSpeed = -2f;
             verticalSpeed += Physics.gravity.y * Time.deltaTime;
             Vector3 before = transform.position;
@@ -141,7 +155,7 @@ namespace CardsUnity.Controllers
             if ((controller.collisionFlags & CollisionFlags.Above) != 0) verticalSpeed = Mathf.Min(verticalSpeed, 0f);
             if (velocity.sqrMagnitude > 0.01f)
                 transform.rotation = Quaternion.RotateTowards(transform.rotation,
-                    Quaternion.LookRotation(velocity), turnSpeed * Time.deltaTime);
+                    Quaternion.LookRotation(velocity), (MovementBalance?.TurnSpeed ?? turnSpeed) * Time.deltaTime);
 
             float dt = Mathf.Max(Time.deltaTime, 0.0001f);
             Vector3 actualVelocity = displacement / dt;
@@ -150,11 +164,12 @@ namespace CardsUnity.Controllers
             {
                 gait.SetLocomotionStyle(running, activeSneak, activeWalk);
                 gait.Animate(actualVelocity, (actualVelocity - previousActualVelocity) / dt,
-                    displacement.magnitude, controller.isGrounded, runSpeed);
+                    displacement.magnitude, controller.isGrounded, sprintSpeed);
                 previousActualVelocity = actualVelocity;
                 return;
             }
-            blend = Mathf.MoveTowards(blend, controller.isGrounded ? Mathf.Clamp01(actualSpeed / speed) : 0f,
+            blend = Mathf.MoveTowards(blend, controller.isGrounded
+                    ? Mathf.Clamp01(actualSpeed / Mathf.Max(0.0001f, walkSpeed)) : 0f,
                 Time.deltaTime * 8f);
             phase = Mathf.Repeat(phase + displacement.magnitude / Mathf.Max(0.1f, strideLength) * Mathf.PI * 2f, Mathf.PI * 2f);
             float swing = Mathf.Sin(phase) * blend;
@@ -214,6 +229,19 @@ namespace CardsUnity.Controllers
             walkThreshold = Mathf.Clamp(walkThreshold, idleThreshold + 0.01f, 0.99f);
         }
 
+#if UNITY_EDITOR
+        internal void CopyLegacyBalanceTo(PlayerMovementBalance destination)
+        {
+            destination.Capture(idleThreshold, walkThreshold, speed, acceleration, braking, runSpeed, turnSpeed);
+        }
+
+        internal void AssignBalanceProfile(PlayerGameplayBalanceProfile profile)
+        {
+            balanceProfile = profile;
+            UnityEditor.EditorUtility.SetDirty(this);
+        }
+#endif
+
         private void OnDisable()
         {
             torchInteraction?.SetInteractHeld(false);
@@ -242,7 +270,7 @@ namespace CardsUnity.Controllers
             // The keyboard keeps priority; the stick only takes over once it is actually deflected.
             if (input.sqrMagnitude > 0f || gamepad == null) return;
             Vector2 stick = gamepad.leftStick.ReadValue();
-            if (stick.magnitude < idleThreshold) return;
+            if (stick.magnitude < (MovementBalance?.IdleThreshold ?? idleThreshold)) return;
             input = stick;
             analog = true;
         }

@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8531c092d5db64d54b87601a0a5a16a9, type: 3}
+  m_Name: Player Default
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.PlayerGameplayBalanceProfile
+  movement:
+    idleThreshold: 0.08
+    walkThreshold: 0.35
+    walkSpeed: 2
+    acceleration: 9
+    braking: 7
+    runSpeed: 7
+    turnSpeed: 1000
+    knockedDownSpeedMultiplier: 0.4
+  health:
+    slotCount: 3
+    refillSecondsPerSlot: 10
+  stress:
+    initialStress: 0
+    encounterStress: 8
+    hitStress: 25
+    encounterRange: 7
+    encounterResetTime: 10
+    recoveryPerSecond: 0
+    recoveryDelay: 10
+  knockdown:
+    fallDuration: 0.25
+    kneelDuration: 1.4
+    standDuration: 0.65
+    immunityAfterStanding: 1.5
+  attack:
+    windupDuration: 0.14
+    strikeDuration: 0.1
+    recoverDuration: 0.3
+  interaction:
+    pickupRange: 1
+    pickupDuration: 0.75
+    recoveryDuration: 0.45
+  death:
+    defeatDelay: 3

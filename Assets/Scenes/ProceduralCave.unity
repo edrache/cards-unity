@@ -208,8 +208,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4291155938
+  m_fontColor: {r: 0.8862745, g: 0.84313726, b: 0.77254903, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1114,8 +1114,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4291155938
+  m_fontColor: {r: 0.8862745, g: 0.84313726, b: 0.77254903, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1251,8 +1251,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4291155938
+  m_fontColor: {r: 0.8862745, g: 0.84313726, b: 0.77254903, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1594,6 +1594,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 660130bf8fad147c899a0e96ad4fd123, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.ProceduralCave
+  generationProfile: {fileID: 11400000, guid: 846ab6ed0319d479ea9424fb22f317a6, type: 2}
   roomCount: 16
   seed: 1
   roomRadius: 6.65
@@ -1611,6 +1612,20 @@ MonoBehaviour:
   rockDensity: 0.744
   minimumRockSize: 1.2
   maximumRockSize: 1.64
+  rockfallCorridorPercentage: 50
+  minimumRockfallLength: 2
+  maximumRockfallLength: 10
+  rockfallCeilingHeight: 3.5
+  rockfallWarningSeconds: 2.5
+  rockfallCollapseSeconds: 0.5
+  rockfallIdlePebblesPerSecond: 20
+  rockfallActivePebblesPerSecond: 100
+  rockfallPebbleLifetime: 2
+  minimumRockfallPebbleSize: 0.025
+  maximumRockfallPebbleSize: 0.085
+  minimumRockfallBoulderRadius: 0.55
+  maximumRockfallBoulderRadius: 1
+  rockfallMaterial: {fileID: 0}
   centipedePrefab: {fileID: 8402668057444636402, guid: b4f4b46d9a579409ba14a9d3563f22e8, type: 3}
   centipedeRoomPercentage: 30.5
   treasurePrefab: {fileID: 5334899008198995573, guid: b931fd32a89184c268b6ab0154d103e4, type: 3}
@@ -1805,10 +1820,22 @@ PrefabInstance:
       propertyPath: m_StepOffset
       value: 0.524
       objectReference: {fileID: 0}
+    - target: {fileID: 2261660506157653080, guid: de83ee1d70753470db50e0696e996398, type: 3}
+      propertyPath: balanceProfile
+      value:
+      objectReference: {fileID: 11400000, guid: 1eb0921b29e894e69b2f58fb2f3deff6, type: 2}
+    - target: {fileID: 2444056741941372767, guid: de83ee1d70753470db50e0696e996398, type: 3}
+      propertyPath: balanceProfile
+      value:
+      objectReference: {fileID: 11400000, guid: 1eb0921b29e894e69b2f58fb2f3deff6, type: 2}
     - target: {fileID: 2444056741941372767, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: movementCamera
       value: 
       objectReference: {fileID: 990240585}
+    - target: {fileID: 2488595432638457083, guid: de83ee1d70753470db50e0696e996398, type: 3}
+      propertyPath: balanceProfile
+      value:
+      objectReference: {fileID: 11400000, guid: 1eb0921b29e894e69b2f58fb2f3deff6, type: 2}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalPosition.x
       value: 34.392662
@@ -1849,10 +1876,26 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5031540644886181503, guid: de83ee1d70753470db50e0696e996398, type: 3}
+      propertyPath: balanceProfile
+      value:
+      objectReference: {fileID: 11400000, guid: 1eb0921b29e894e69b2f58fb2f3deff6, type: 2}
+    - target: {fileID: 7236042496580281235, guid: de83ee1d70753470db50e0696e996398, type: 3}
+      propertyPath: balanceProfile
+      value:
+      objectReference: {fileID: 11400000, guid: 1eb0921b29e894e69b2f58fb2f3deff6, type: 2}
     - target: {fileID: 8015079483885469883, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: pickupRange
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 8015079483885469883, guid: de83ee1d70753470db50e0696e996398, type: 3}
+      propertyPath: balanceProfile
+      value:
+      objectReference: {fileID: 11400000, guid: 1eb0921b29e894e69b2f58fb2f3deff6, type: 2}
+    - target: {fileID: 8051805571557914312, guid: de83ee1d70753470db50e0696e996398, type: 3}
+      propertyPath: balanceProfile
+      value:
+      objectReference: {fileID: 11400000, guid: 1eb0921b29e894e69b2f58fb2f3deff6, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

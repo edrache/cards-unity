@@ -51,6 +51,11 @@ Playable procedural 3D cave prototype: articulated knight, distance-driven gait/
 | `Assets/Prefabs/` | Shadow Knight, Handheld Torch, Centipede, Fallen Knight, CaveRocks and Treasures |
 | `Assets/Settings/`, `Assets/Materials/Cave/`, `Assets/Audio/` | Rendering/shaders, cave materials and audio |
 
+Designer entry point: **Tools > Cards Unity > Designer Hub**. Shared tuning lives in `Assets/Settings/Gameplay/`; the offline handbook is [docs/designer-guide/index.html](docs/designer-guide/index.html). Refresh its source-derived catalog with `python3 docs/designer-guide/generate_inventory.py` after serialized configuration changes. Run the focused Edit Mode configuration checks from **Tools > Cards Unity > Run Configuration Checks**.
+
+- `CaveGenerationProfile` owns reusable generation settings; `ProceduralCave.player` remains a scene binding. Settings are snapshotted on rebuild. `CaveRoomContentRule` and `ICaveSpawnParticipant` extend room populations without changing built-in random streams.
+- `PlayerGameplayBalanceProfile`, `TorchBalanceProfile`, `CentipedeBalanceProfile` and `TreasureDefinition` supply shared tuning/identity. Components retain original serialized values as fallback when no profile is assigned. Keep mutable health, fuel, stress and encounter state on instances; preserve profile assignments and variant-specific tuning.
+
 Gameplay entry points (filenames below are under `Assets/Scripts/Controllers/`):
 
 - Movement/animation: `ProceduralCharacter.cs`, `CharacterFollowCamera.cs`, `CartoonCharacterGait.cs`, `GaitStylePose.cs`, `ProceduralSpine.cs`, `ShadowKnightProportions.cs`.

@@ -53,6 +53,7 @@ MonoBehaviour:
   attackCooldown: 4
   darknessAttackThreshold: 0.02
   darknessPatience: 0.75
+  balanceProfile: {fileID: 11400000, guid: a196b18867bbf4b6b88b07f48f1b863e, type: 2}
   segmentCount: 14
   size: 1
   shellMaterial: {fileID: 2100000, guid: 815285d7b1572435aaa7598357710521, type: 2}

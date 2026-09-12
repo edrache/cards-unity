@@ -45,7 +45,7 @@ namespace CardsUnity.Controllers
             if (treasure == null || !treasure.isActiveAndEnabled) return false;
             string itemName = treasure.DisplayName;
             int value = treasure.Value;
-            if (treasure.name.Split('(')[0].Trim() == "Gold Coin") CoinCount++;
+            if (treasure.IsCoin) CoinCount++;
             var entry = items.Find(item => item.Name == itemName && item.UnitValue == value);
             if (entry == null) items.Add(new Entry(itemName, value));
             else entry.Count++;

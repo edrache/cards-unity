@@ -4,7 +4,7 @@ namespace CardsUnity.Controllers
 {
     public sealed partial class ProceduralCentipede
     {
-        [Header("Light provoked attack")]
+        [Header("Local fallback — Light provoked attack")]
         [SerializeField, Min(0.1f)] private float lightPatience = 3f;
         [SerializeField, Min(0.5f)] private float attackRange = 3.5f;
         [SerializeField, Min(0.1f)] private float attackWindup = 0.65f;
@@ -33,8 +33,8 @@ namespace CardsUnity.Controllers
         {
             State = BehaviourState.Hiding;
             darkTime = lightTime = attackTime = darknessTime = 0f;
-            cooldown = Mathf.Max(0.1f, attackCooldown);
-            currentHideDuration = hideDuration;
+            cooldown = Mathf.Max(0.1f, AttackBalance?.AttackCooldown ?? attackCooldown);
+            currentHideDuration = LightBalance?.HideDuration ?? hideDuration;
             progressOrigin = transform.position;
             progressTime = recoveryRemaining = 0f;
             FollowBody();
@@ -65,14 +65,17 @@ namespace CardsUnity.Controllers
                     Vector3 offset = Quaternion.AngleAxis(i * 90f, Vector3.up) * target.forward * 0.8f;
                     TargetLightExposure = Mathf.Max(TargetLightExposure, SampleLight(centre + offset, target));
                 }
-                darknessTime = TargetLightExposure <= darknessAttackThreshold ? darknessTime + dt : 0f;
-                if (cooldown <= 0f && (lightTime >= Mathf.Max(0.1f, lightPatience)
-                    || darknessTime >= Mathf.Max(0.1f, darknessPatience))) State = BehaviourState.Enraged;
+                darknessTime = TargetLightExposure <= (AttackBalance?.DarknessAttackThreshold ?? darknessAttackThreshold)
+                    ? darknessTime + dt : 0f;
+                if (cooldown <= 0f && (lightTime >= Mathf.Max(0.1f, AttackBalance?.LightPatience ?? lightPatience)
+                    || darknessTime >= Mathf.Max(0.1f, AttackBalance?.DarknessPatience ?? darknessPatience)))
+                    State = BehaviourState.Enraged;
                 if (State != BehaviourState.Enraged) return false;
                 var victim = target.GetComponent<CharacterKnockdown>();
                 if (victim != null && !victim.CanBeHit) return false;
                 Vector3 delta = Vector3.ProjectOnPlane(target.position - transform.position, Vector3.up);
-                if (delta.magnitude > attackRange || transform.up.y < 0.65f || delta.sqrMagnitude < 0.001f) return false;
+                float effectiveAttackRange = AttackBalance?.AttackRange ?? attackRange;
+                if (delta.magnitude > effectiveAttackRange || transform.up.y < 0.65f || delta.sqrMagnitude < 0.001f) return false;
                 if (SurfaceRay(transform.position + Vector3.up * 0.5f, delta.normalized, delta.magnitude, out _)) return false;
                 State = BehaviourState.WindingUp;
                 attackTime = 0f;
@@ -90,25 +93,29 @@ namespace CardsUnity.Controllers
                 {
                     Vector3 direction = Vector3.ProjectOnPlane(target.position - transform.position, transform.up);
                     if (direction.sqrMagnitude > 0.001f)
-                        transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(direction, transform.up), turnSpeed * step);
+                        transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(direction, transform.up),
+                            (HuntingBalance?.TurnSpeed ?? turnSpeed) * step);
                     RecordContact();
-                    if (attackTime >= Mathf.Max(0.1f, attackWindup))
+                    if (attackTime >= Mathf.Max(0.1f, AttackBalance?.AttackWindup ?? attackWindup))
                     {
                         State = BehaviourState.Leaping;
                         attackTime = 0f;
-                        leapDistance = Mathf.Min(attackRange + 0.5f, direction.magnitude + 0.4f);
+                        leapDistance = Mathf.Min((AttackBalance?.AttackRange ?? attackRange) + 0.5f, direction.magnitude + 0.4f);
                     }
                 }
                 else
                 {
-                    float distance = leapDistance * step / Mathf.Max(0.1f, leapDuration);
+                    float effectiveLeapDuration = AttackBalance?.LeapDuration ?? leapDuration;
+                    float effectiveLeapHeight = AttackBalance?.LeapHeight ?? leapHeight;
+                    float distance = leapDistance * step / Mathf.Max(0.1f, effectiveLeapDuration);
                     Vector3 oldPosition = rig.position;
                     Quaternion oldRotation = rig.rotation;
                     // The contact path remains on valid terrain; the rendered body follows an arc.
                     if (!TrySurfaceStep(transform.position, transform.rotation, distance, out Pose next)
                         || (next.rotation * Vector3.up).y < 0.65f)
                     { FinishAttack(); break; }
-                    Vector3 castOrigin = transform.position + Vector3.up * (0.22f * size + leapHeight * Mathf.Sin(Mathf.PI * Mathf.Clamp01(attackTime / Mathf.Max(0.1f, leapDuration))));
+                    Vector3 castOrigin = transform.position + Vector3.up * (0.22f * size
+                        + effectiveLeapHeight * Mathf.Sin(Mathf.PI * Mathf.Clamp01(attackTime / Mathf.Max(0.1f, effectiveLeapDuration))));
                     bool blocked = false;
                     foreach (var hit in Physics.SphereCastAll(castOrigin, 0.15f * size, transform.forward,
                                  distance, environmentMask, QueryTriggerInteraction.Ignore))
@@ -130,7 +137,7 @@ namespace CardsUnity.Controllers
                         attackHit = true;
                         HitTarget();
                     }
-                    if (attackTime >= Mathf.Max(0.1f, leapDuration)) FinishAttack();
+                    if (attackTime >= Mathf.Max(0.1f, effectiveLeapDuration)) FinishAttack();
                 }
             }
             if (IsAttacking) ApplyAttackPose();
@@ -151,10 +158,12 @@ namespace CardsUnity.Controllers
         {
             FollowBody();
             float windup = State == BehaviourState.WindingUp
-                ? Mathf.SmoothStep(0f, 1f, attackTime / Mathf.Max(0.1f, attackWindup))
-                : 1f - Mathf.Clamp01(attackTime / Mathf.Max(0.1f, leapDuration));
+                ? Mathf.SmoothStep(0f, 1f, attackTime / Mathf.Max(0.1f, AttackBalance?.AttackWindup ?? attackWindup))
+                : 1f - Mathf.Clamp01(attackTime / Mathf.Max(0.1f, AttackBalance?.LeapDuration ?? leapDuration));
             float arc = State == BehaviourState.Leaping
-                ? Mathf.Sin(Mathf.PI * Mathf.Clamp01(attackTime / Mathf.Max(0.1f, leapDuration))) * leapHeight : 0f;
+                ? Mathf.Sin(Mathf.PI * Mathf.Clamp01(attackTime
+                    / Mathf.Max(0.1f, AttackBalance?.LeapDuration ?? leapDuration)))
+                    * (AttackBalance?.LeapHeight ?? leapHeight) : 0f;
             int front = Mathf.Min(5, segments.Length - 1);
             for (int i = front - 1; i >= 0; i--)
             {

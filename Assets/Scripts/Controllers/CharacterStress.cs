@@ -7,6 +7,11 @@ namespace CardsUnity.Controllers
     [DisallowMultipleComponent, DefaultExecutionOrder(-60)]
     public sealed class CharacterStress : MonoBehaviour
     {
+        [Header("Balance")]
+        [Tooltip("Optional shared player balance. Existing fields below are used when empty.")]
+        [SerializeField] private PlayerGameplayBalanceProfile balanceProfile;
+
+        [Header("Local fallback — Stress")]
         [SerializeField, Range(0f, 100f)] private float stress;
         [SerializeField, Min(0f)] private float encounterStress = 8f;
         [SerializeField, Min(0f)] private float hitStress = 25f;
@@ -16,17 +21,25 @@ namespace CardsUnity.Controllers
         [Tooltip("Optional recovery per second after threats stop. Zero keeps accumulated stress.")]
         [SerializeField, Min(0f)] private float recoveryPerSecond;
         [SerializeField, Min(0f)] private float recoveryDelay = 10f;
+        [Header("Per-instance stress pose")]
         [SerializeField, Range(0f, 45f)] private float hunchAngle = 24f;
         [SerializeField, Range(0f, 80f)] private float headLookAngle = 60f;
         [SerializeField, Range(0f, 2f)] private float motionChaos = 1f;
         private readonly Dictionary<int, float> lastSeen = new Dictionary<int, float>();
         private float clock, lastThreat, weight, scanPhase;
+        public PlayerGameplayBalanceProfile BalanceProfile => balanceProfile;
+        private PlayerStressBalance StressBalance => balanceProfile != null ? balanceProfile.Stress : null;
         public float Stress { get => stress; set => stress = Mathf.Clamp(value, 0f, 100f); }
         public float Weight => isActiveAndEnabled ? weight : 0f;
         public float Chaos => Weight * motionChaos;
         public float Hunch => Weight * hunchAngle;
         public Quaternion HeadLook => Quaternion.Euler(Noise(31f) * 9f * Weight,
             Noise(73f) * headLookAngle * Weight, Noise(97f) * 5f * Weight);
+
+        private void Awake()
+        {
+            if (StressBalance != null) Stress = StressBalance.InitialStress;
+        }
 
         private void Update() => Tick(Time.deltaTime);
 
@@ -35,7 +48,8 @@ namespace CardsUnity.Controllers
             if (dt <= 0f) return;
             clock += dt;
             scanPhase += dt * Mathf.Lerp(0.5f, 2.2f, Weight);
-            if (clock - lastThreat > recoveryDelay) Stress -= recoveryPerSecond * dt;
+            if (clock - lastThreat > (StressBalance?.RecoveryDelay ?? recoveryDelay))
+                Stress -= (StressBalance?.RecoveryPerSecond ?? recoveryPerSecond) * dt;
             weight = Mathf.Lerp(weight, stress / 100f, 1f - Mathf.Exp(-dt / 0.45f));
         }
 
@@ -44,25 +58,48 @@ namespace CardsUnity.Controllers
         public void RegisterHit()
         {
             if (!isActiveAndEnabled) return;
-            Stress += hitStress;
+            Stress += StressBalance?.HitStress ?? hitStress;
             lastThreat = clock;
         }
 
         public void Observe(ProceduralCentipede creature)
         {
-            if (!isActiveAndEnabled || creature == null || !creature.isActiveAndEnabled) return;
+            if (creature == null || !creature.isActiveAndEnabled) return;
+            Observe(creature.transform);
+        }
+
+        /// <summary>Registers a visible nearby threat without coupling future enemies to centipede code.</summary>
+        public void Observe(Transform threat)
+        {
+            if (!isActiveAndEnabled || threat == null || !threat.gameObject.activeInHierarchy) return;
             Vector3 origin = transform.position + Vector3.up * 1.2f;
-            Vector3 delta = creature.transform.position + creature.transform.up * 0.25f - origin;
-            if (delta.sqrMagnitude > encounterRange * encounterRange) return;
+            Vector3 delta = threat.position + threat.up * 0.25f - origin;
+            float range = StressBalance?.EncounterRange ?? encounterRange;
+            if (delta.sqrMagnitude > range * range) return;
             foreach (var hit in Physics.RaycastAll(origin, delta.normalized, delta.magnitude, ~0, QueryTriggerInteraction.Ignore))
             {
-                if (hit.transform.IsChildOf(transform) || hit.transform.IsChildOf(creature.transform)) continue;
+                if (hit.transform.IsChildOf(transform) || hit.transform.IsChildOf(threat)) continue;
                 return;
             }
-            int id = creature.GetInstanceID();
-            if (!lastSeen.TryGetValue(id, out float previous) || clock - previous >= encounterResetTime)
-                Stress += encounterStress;
+            int id = threat.GetInstanceID();
+            if (!lastSeen.TryGetValue(id, out float previous)
+                || clock - previous >= (StressBalance?.EncounterResetTime ?? encounterResetTime))
+                Stress += StressBalance?.EncounterStress ?? encounterStress;
             lastSeen[id] = lastThreat = clock;
         }
+
+#if UNITY_EDITOR
+        internal void CopyLegacyBalanceTo(PlayerStressBalance destination)
+        {
+            destination.Capture(stress, encounterStress, hitStress, encounterRange,
+                encounterResetTime, recoveryPerSecond, recoveryDelay);
+        }
+
+        internal void AssignBalanceProfile(PlayerGameplayBalanceProfile profile)
+        {
+            balanceProfile = profile;
+            UnityEditor.EditorUtility.SetDirty(this);
+        }
+#endif
     }
 }

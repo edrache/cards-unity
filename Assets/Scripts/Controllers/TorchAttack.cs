@@ -28,7 +28,11 @@ namespace CardsUnity.Controllers
         [Tooltip("Optional chest joint. A small twist is layered on top of the procedural spine.")]
         [SerializeField] private Transform chest;
 
-        [Header("Timing")]
+        [Header("Balance")]
+        [Tooltip("Optional shared player balance. Attack pose stays authored on this instance.")]
+        [SerializeField] private PlayerGameplayBalanceProfile balanceProfile;
+
+        [Header("Local fallback — Timing")]
         [Tooltip("Seconds spent raising the torch behind the head. The arm then stays cocked for as long as the button is held.")]
         [SerializeField, Range(0.02f, 1f)] private float windupDuration = 0.14f;
         [Tooltip("Seconds of the downward strike. The hit window is open for exactly this long.")]
@@ -70,6 +74,8 @@ namespace CardsUnity.Controllers
 
         /// <summary>Blend weight of the attack pose over the torch holding pose.</summary>
         public float PoseWeight => weight;
+        public PlayerGameplayBalanceProfile BalanceProfile => balanceProfile;
+        private PlayerAttackBalance AttackBalance => balanceProfile != null ? balanceProfile.Attack : null;
 
         private enum Phase { Idle, Charging, Striking, Recovering }
 
@@ -188,10 +194,11 @@ namespace CardsUnity.Controllers
             chargeTime = phaseTime;
             // The weight ramp itself carries the arm from the holding pose up into the cocked pose,
             // which then holds until the button is released.
-            weight = PoseEasing.SmootherStep(phaseTime / Mathf.Max(0.0001f, windupDuration));
+            float duration = AttackBalance?.WindupDuration ?? windupDuration;
+            weight = PoseEasing.SmootherStep(phaseTime / Mathf.Max(0.0001f, duration));
             swing = 0f;
             // A quick tap still swings from the top: the release waits for the windup to finish.
-            if (releaseRequested && phaseTime >= windupDuration)
+            if (releaseRequested && phaseTime >= duration)
             {
                 phase = Phase.Striking;
                 phaseTime = 0f;
@@ -204,11 +211,12 @@ namespace CardsUnity.Controllers
         private void AdvanceStrike()
         {
             weight = 1f;
-            float u = Mathf.Clamp01(phaseTime / Mathf.Max(0.0001f, strikeDuration));
+            float duration = AttackBalance?.StrikeDuration ?? strikeDuration;
+            float u = Mathf.Clamp01(phaseTime / Mathf.Max(0.0001f, duration));
             // Ease out, so the torch leaves the top fast and settles into the follow-through.
             float remaining = 1f - u;
             swing = 1f - remaining * remaining * remaining;
-            if (phaseTime >= strikeDuration)
+            if (phaseTime >= duration)
             {
                 phase = Phase.Recovering;
                 phaseTime = 0f;
@@ -218,14 +226,15 @@ namespace CardsUnity.Controllers
         private void AdvanceRecovery()
         {
             swing = 1f;
-            if (phaseTime >= recoverDuration)
+            float duration = AttackBalance?.RecoverDuration ?? recoverDuration;
+            if (phaseTime >= duration)
             {
                 phase = Phase.Idle;
                 phaseTime = 0f;
                 weight = 0f;
                 return;
             }
-            weight = 1f - PoseEasing.SmootherStep(phaseTime / Mathf.Max(0.0001f, recoverDuration));
+            weight = 1f - PoseEasing.SmootherStep(phaseTime / Mathf.Max(0.0001f, duration));
         }
 
         private void LateUpdate()
@@ -275,5 +284,18 @@ namespace CardsUnity.Controllers
             if (Quaternion.Angle(chest.localRotation, chestApplied) < 0.01f) chest.localRotation = chestBase;
             chestWritten = false;
         }
+
+#if UNITY_EDITOR
+        internal void CopyLegacyBalanceTo(PlayerAttackBalance destination)
+        {
+            destination.Capture(windupDuration, strikeDuration, recoverDuration);
+        }
+
+        internal void AssignBalanceProfile(PlayerGameplayBalanceProfile profile)
+        {
+            balanceProfile = profile;
+            UnityEditor.EditorUtility.SetDirty(this);
+        }
+#endif
     }
 }

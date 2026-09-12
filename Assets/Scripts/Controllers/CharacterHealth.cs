@@ -11,9 +11,14 @@ namespace CardsUnity.Controllers
     [DisallowMultipleComponent]
     public sealed class CharacterHealth : MonoBehaviour
     {
-        [Header("Segmented Health")]
+        [Header("Balance")]
+        [Tooltip("Optional shared player balance. Existing fields below are used when empty.")]
+        [SerializeField] private PlayerGameplayBalanceProfile balanceProfile;
+
+        [Header("Local fallback — Segmented Health")]
         [SerializeField, Range(1, 8)] private int slotCount = 3;
         [SerializeField, Min(0.01f)] private float refillSecondsPerSlot = 10f;
+        [Header("Per-instance HUD appearance")]
         [SerializeField] private Color fullFillColor = new Color(1f, 0.55f, 0.16f, 1f);
         [SerializeField] private Color refillingFillColor = new Color(0.5f, 0.24f, 0.08f, 1f);
         [SerializeField] private Color emptyBackgroundColor = new Color(0.08f, 0.06f, 0.05f, 0.95f);
@@ -27,6 +32,8 @@ namespace CardsUnity.Controllers
         private bool initialized;
 
         public bool IsDead { get; private set; }
+        public PlayerGameplayBalanceProfile BalanceProfile => balanceProfile;
+        private PlayerHealthBalance HealthBalance => balanceProfile != null ? balanceProfile.Health : null;
         public int ActiveSlotCount
         {
             get
@@ -38,7 +45,8 @@ namespace CardsUnity.Controllers
                 return count;
             }
         }
-        public int SlotCount => slotFills == null ? Mathf.Clamp(slotCount, 1, 8) : slotFills.Length;
+        public int SlotCount => slotFills == null
+            ? Mathf.Clamp(HealthBalance?.SlotCount ?? slotCount, 1, 8) : slotFills.Length;
         public event Action Died;
 
         private void Awake() => InitializeSlots();
@@ -120,7 +128,7 @@ namespace CardsUnity.Controllers
             if (refillIndex < 0) return;
 
             float remaining = dt;
-            float duration = Mathf.Max(0.01f, refillSecondsPerSlot);
+            float duration = Mathf.Max(0.01f, HealthBalance?.RefillSecondsPerSlot ?? refillSecondsPerSlot);
             while (remaining > 0f && refillIndex >= 0)
             {
                 float needed = (1f - slotFills[refillIndex]) * duration;
@@ -144,12 +152,25 @@ namespace CardsUnity.Controllers
         {
             if (initialized) return;
             initialized = true;
-            int count = Mathf.Clamp(slotCount, 1, 8);
+            int count = Mathf.Clamp(HealthBalance?.SlotCount ?? slotCount, 1, 8);
             slotFills = new float[count];
             for (int i = 0; i < count; i++) slotFills[i] = 1f;
         }
 
         private void OnValidate() => slotCount = Mathf.Clamp(slotCount, 1, 8);
+
+#if UNITY_EDITOR
+        internal void CopyLegacyBalanceTo(PlayerHealthBalance destination)
+        {
+            destination.Capture(slotCount, refillSecondsPerSlot);
+        }
+
+        internal void AssignBalanceProfile(PlayerGameplayBalanceProfile profile)
+        {
+            balanceProfile = profile;
+            UnityEditor.EditorUtility.SetDirty(this);
+        }
+#endif
 
         private bool IsRunCompleted()
         {

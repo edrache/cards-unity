@@ -20,42 +20,55 @@ namespace CardsUnity.Controllers
 
     /// <summary>A surface-crawling stalker with a generated rig and distance-driven legs.</summary>
     [ExecuteAlways, DisallowMultipleComponent]
-    public sealed partial class ProceduralCentipede : MonoBehaviour
+    public sealed partial class ProceduralCentipede : MonoBehaviour, ICaveSpawnParticipant
     {
+        [Header("Balance")]
+        [Tooltip("Optional shared behaviour balance. Shape, materials, seed and collision mask stay on this instance.")]
+        [SerializeField] private CentipedeBalanceProfile balanceProfile;
+
         [Header("Shape")]
         [SerializeField, Range(3, 48)] private int segmentCount = 14;
         [Tooltip("Uniform size multiplier. Segment count independently controls body length.")]
         [SerializeField, Range(0.25f, 3f)] private float size = 1f;
         [SerializeField] private Material shellMaterial;
         [SerializeField] private Material legMaterial;
-        [Header("Hunting")]
+        [Header("Local fallback — Hunting")]
         [SerializeField] private Transform target;
         [SerializeField, Min(0.1f)] private float stalkSpeed = 1.2f;
         [SerializeField, Min(0.1f)] private float fleeSpeed = 4.5f;
         [SerializeField, Min(0.1f)] private float stopDistance = 1.2f;
         [SerializeField, Min(1f)] private float turnSpeed = 300f;
-        [Header("Natural variation")]
+        [Header("Local fallback — Natural variation")]
         [Tooltip("Zero restores uniform behaviour. Each instance has independent smooth steering and speed noise.")]
         [SerializeField, Range(0f, 1f)] private float behaviourVariation = 0.8f;
+        [Header("Per-instance identity")]
         [Tooltip("Zero chooses a unique runtime seed, including for duplicated prefabs. Nonzero seeds allow repeatable checks.")]
         [SerializeField] private int randomSeed;
+        [Header("Local fallback — Natural variation detail")]
         [SerializeField, Range(0f, 60f)] private float wanderAngle = 32f;
         [SerializeField, Range(0.05f, 2f)] private float noiseFrequency = 0.45f;
         [SerializeField, Range(0f, 0.5f)] private float speedVariation = 0.3f;
-        [Header("Movement recovery")]
+        [Header("Local fallback — Movement recovery")]
         [SerializeField, Min(0.2f)] private float stuckCheckInterval = 0.7f;
         [SerializeField, Min(0.2f)] private float recoveryDuration = 1.5f;
-        [Header("Fear of light")]
+        [Header("Local fallback — Fear of light")]
         [Tooltip("Respond to the faint outer torch light, before the bright centre. Gameplay exposure, not a rendered pixel tone.")]
         [SerializeField, Min(0.0001f)] private float dimLightThreshold = 0.005f;
         [Tooltip("Approximate local light exposure that triggers flight. Moonlight is ignored.")]
         [SerializeField, Min(0.001f)] private float fearThreshold = 0.12f;
         [SerializeField, Range(0.1f, 0.9f)] private float safeLightRatio = 0.4f;
         [SerializeField, Min(0f)] private float hideDuration = 2.5f;
+        [Header("Per-instance collision")]
         [Tooltip("Colliders that block movement, ground probes and light. Triggers are ignored.")]
         [SerializeField] private LayerMask environmentMask = ~0;
 
         public enum BehaviourState { Stalking, Fleeing, Hiding, Dormant, Enraged, WindingUp, Leaping }
+        public CentipedeBalanceProfile BalanceProfile => balanceProfile;
+        private CentipedeHuntingBalance HuntingBalance => balanceProfile != null ? balanceProfile.Hunting : null;
+        private CentipedeVariationBalance VariationBalance => balanceProfile != null ? balanceProfile.Variation : null;
+        private CentipedeRecoveryBalance RecoveryBalance => balanceProfile != null ? balanceProfile.Recovery : null;
+        private CentipedeLightBalance LightBalance => balanceProfile != null ? balanceProfile.Light : null;
+        private CentipedeAttackBalance AttackBalance => balanceProfile != null ? balanceProfile.Attack : null;
         public BehaviourState State { get; private set; }
         public float Exposure { get; private set; }
         public void SetTarget(Transform value) => target = value;
@@ -69,6 +82,12 @@ namespace CardsUnity.Controllers
             homeRoom = room;
             alerted = false;
             State = BehaviourState.Dormant;
+        }
+
+        public void OnCaveSpawned(CaveSpawnContext context)
+        {
+            SetTarget(context.Player);
+            SetCaveHome(context.Cave, context.RoomIndex);
         }
         public int SegmentCount => segmentCount;
         public float Size => size;
@@ -111,7 +130,7 @@ namespace CardsUnity.Controllers
             personalitySpeed = RandomRange(-0.5f, 0.5f);
             gaitOffset = RandomRange(0f, Mathf.PI * 2f);
             behaviourTime = 0f;
-            currentHideDuration = hideDuration;
+            currentHideDuration = LightBalance?.HideDuration ?? hideDuration;
             progressOrigin = transform.position;
             progressTime = 0f;
             recoveryRemaining = 0f;
@@ -120,7 +139,7 @@ namespace CardsUnity.Controllers
         private float BehaviourNoise(float channel)
         {
             return Mathf.Clamp(Mathf.PerlinNoise(noiseOffset + channel,
-                behaviourTime * noiseFrequency * tempo) * 2f - 1f, -1f, 1f);
+                behaviourTime * (VariationBalance?.NoiseFrequency ?? noiseFrequency) * tempo) * 2f - 1f, -1f, 1f);
         }
 
         private void OnValidate()
@@ -189,7 +208,13 @@ namespace CardsUnity.Controllers
             Exposure = 0f;
             for (int i = 0; i < segments.Length; i++)
                 Exposure = Mathf.Max(Exposure, SampleLight(segments[i].position));
-            float reactionThreshold = Mathf.Min(fearThreshold, dimLightThreshold);
+            float effectiveFearThreshold = LightBalance?.FearThreshold ?? fearThreshold;
+            float effectiveDimThreshold = LightBalance?.DimLightThreshold ?? dimLightThreshold;
+            float effectiveSafeRatio = LightBalance?.SafeLightRatio ?? safeLightRatio;
+            float effectiveVariation = VariationBalance?.Amount ?? behaviourVariation;
+            float effectiveHideDuration = LightBalance?.HideDuration ?? hideDuration;
+            float effectiveFleeSpeed = HuntingBalance?.FleeSpeed ?? fleeSpeed;
+            float reactionThreshold = Mathf.Min(effectiveFearThreshold, effectiveDimThreshold);
             if (homeCave != null && !alerted && (Exposure >= reactionThreshold
                 || (target != null && homeCave.IsInRoom(target.position, homeRoom))))
                 alerted = true;
@@ -206,10 +231,10 @@ namespace CardsUnity.Controllers
                 State = BehaviourState.Fleeing;
                 darkTime = 0f;
             }
-            else if (State == BehaviourState.Fleeing && headExposure < reactionThreshold * safeLightRatio)
+            else if (State == BehaviourState.Fleeing && headExposure < reactionThreshold * effectiveSafeRatio)
             {
                 State = BehaviourState.Hiding;
-                currentHideDuration = hideDuration * (1f + behaviourVariation * RandomRange(-0.45f, 0.65f));
+                currentHideDuration = effectiveHideDuration * (1f + effectiveVariation * RandomRange(-0.45f, 0.65f));
                 darkTime = 0f;
             }
             else if (State == BehaviourState.Hiding)
@@ -219,7 +244,7 @@ namespace CardsUnity.Controllers
             }
 
             Vector3 desired = Vector3.zero;
-            float speed = stalkSpeed;
+            float speed = HuntingBalance?.StalkSpeed ?? stalkSpeed;
             if (State == BehaviourState.Fleeing)
             {
                 Vector3 away = Vector3.zero;
@@ -234,14 +259,14 @@ namespace CardsUnity.Controllers
                     away = Vector3.ProjectOnPlane(escapeDirection, transform.up);
                 if (away.sqrMagnitude < 0.001f) away = -transform.forward;
                 desired = away.normalized;
-                speed = fleeSpeed;
+                speed = effectiveFleeSpeed;
             }
             else if (target != null)
             {
                 desired = State == BehaviourState.Enraged
                     ? Vector3.ProjectOnPlane(target.position - transform.position, transform.up).normalized
-                    : ShadowPursuitDirection(reactionThreshold * safeLightRatio);
-                if (State == BehaviourState.Enraged) speed = fleeSpeed;
+                    : ShadowPursuitDirection(reactionThreshold * effectiveSafeRatio);
+                if (State == BehaviourState.Enraged) speed = effectiveFleeSpeed;
             }
 
             bool descending = homeCave != null && State != BehaviourState.Fleeing && transform.up.y < 0.65f;
@@ -250,10 +275,11 @@ namespace CardsUnity.Controllers
             {
                 bool fleeing = State == BehaviourState.Fleeing;
                 // Small escape deviations keep the light gradient dominant; stalking can meander more.
-                float angle = wanderAngle * behaviourVariation * BehaviourNoise(0f) * (fleeing ? 0.2f : 1f);
+                float angle = (VariationBalance?.WanderAngle ?? wanderAngle) * effectiveVariation
+                    * BehaviourNoise(0f) * (fleeing ? 0.2f : 1f);
                 if (!fleeing) angle *= Mathf.Clamp01(desired.magnitude / (2f * size));
                 desired = Quaternion.AngleAxis(angle, transform.up) * desired;
-                float variation = behaviourVariation * speedVariation
+                float variation = effectiveVariation * (VariationBalance?.SpeedVariation ?? speedVariation)
                     * Mathf.Clamp(personalitySpeed + BehaviourNoise(37f), -1f, 1f);
                 speed *= 1f + variation * (fleeing ? 0.35f : 1f);
             }
@@ -277,7 +303,8 @@ namespace CardsUnity.Controllers
                     if (State == BehaviourState.Fleeing) escapeDirection = desired;
                     Vector3 up = transform.up;
                     transform.rotation = Quaternion.RotateTowards(transform.rotation,
-                        Quaternion.LookRotation(desired, up), turnSpeed * (State == BehaviourState.Fleeing || IsRecovering ? 2f : 1f) * dt);
+                        Quaternion.LookRotation(desired, up), (HuntingBalance?.TurnSpeed ?? turnSpeed)
+                        * (State == BehaviourState.Fleeing || IsRecovering ? 2f : 1f) * dt);
                     // Bound probe distance even during a long frame; never bridge a gap in one step.
                     int steps = Mathf.Max(1, Mathf.CeilToInt(speed * dt / (0.06f * size)));
                     for (int j = 0; j < steps; j++)
@@ -285,7 +312,7 @@ namespace CardsUnity.Controllers
                         if (!TrySurfaceStep(transform.position, transform.rotation, speed * dt / steps, out Pose next)) break;
                         // Turn along the shadow edge before the next step enters frightening light.
                         if (State != BehaviourState.Fleeing && State != BehaviourState.Enraged && SampleLight(next.position
-                            + next.rotation * Vector3.up * 0.22f * size) > Mathf.Max(Exposure, Mathf.Min(fearThreshold, dimLightThreshold) * safeLightRatio))
+                            + next.rotation * Vector3.up * 0.22f * size) > Mathf.Max(Exposure, reactionThreshold * effectiveSafeRatio))
                             break;
                         transform.SetPositionAndRotation(next.position, next.rotation);
                         RecordContact();
@@ -312,11 +339,12 @@ namespace CardsUnity.Controllers
             // Search from the prey outward for the nearest dark point on this radial line.
             // Recompute against the moving torch, including collider shadows.
             Vector3 centre = transform.position - outward * distance + up * 0.22f * size;
-            float limit = stopDistance * size + 2f;
+            float effectiveStopDistance = HuntingBalance?.StopDistance ?? stopDistance;
+            float limit = effectiveStopDistance * size + 2f;
             foreach (var light in lights)
-                if (IsThreat(light) && Vector3.Distance(centre, light.transform.position) < light.range + stopDistance * size)
+                if (IsThreat(light) && Vector3.Distance(centre, light.transform.position) < light.range + effectiveStopDistance * size)
                     limit = Mathf.Max(limit, Vector3.Distance(centre, light.transform.position) + light.range);
-            float radius = stopDistance * size;
+            float radius = effectiveStopDistance * size;
             float spacing = Mathf.Max(0.2f, (limit - radius) / 48f);
             for (; radius < limit; radius += spacing)
                 if (SampleLight(centre + outward * radius) < safeExposure * 0.75f) break;
@@ -333,7 +361,7 @@ namespace CardsUnity.Controllers
         {
             recoveryRemaining = Mathf.Max(0f, recoveryRemaining - dt);
             progressTime += dt;
-            if (progressTime < stuckCheckInterval) return;
+            if (progressTime < (RecoveryBalance?.StuckCheckInterval ?? stuckCheckInterval)) return;
             float progress = Vector3.Distance(progressOrigin, transform.position);
             progressTime = 0f;
             progressOrigin = transform.position;
@@ -352,7 +380,7 @@ namespace CardsUnity.Controllers
                 Vector3 back = previous - transform.position;
                 if (back.sqrMagnitude > 0.001f) recoveryDirection = back.normalized;
             }
-            recoveryRemaining = recoveryDuration;
+            recoveryRemaining = RecoveryBalance?.RecoveryDuration ?? recoveryDuration;
         }
 
         private Vector3 ChooseDirection(Vector3 desired, float step)
@@ -382,7 +410,10 @@ namespace CardsUnity.Controllers
                 {
                     // Normalize against the same faint-light threshold used for fear: raw exposure
                     // is too small to compete with heading scores near the torch's outer edge.
-                    float safeExposure = Mathf.Max(0.00001f, Mathf.Min(fearThreshold, dimLightThreshold) * safeLightRatio);
+                    float safeExposure = Mathf.Max(0.00001f,
+                        Mathf.Min(LightBalance?.FearThreshold ?? fearThreshold,
+                            LightBalance?.DimLightThreshold ?? dimLightThreshold)
+                        * (LightBalance?.SafeLightRatio ?? safeLightRatio));
                     score -= Mathf.Clamp(aheadLight / safeExposure, 0f, 4f) * 4f;
                 }
                 if (score > bestScore) { bestScore = score; best = direction; }
@@ -580,7 +611,8 @@ namespace CardsUnity.Controllers
             for (int i = 0; i < segmentCount; i++)
                 for (int side = 0; side < 2; side++)
                 {
-                    float offset = gaitOffset * behaviourVariation - i * 0.75f + side * Mathf.PI - Mathf.PI;
+                    float offset = gaitOffset * (VariationBalance?.Amount ?? behaviourVariation)
+                        - i * 0.75f + side * Mathf.PI - Mathf.PI;
                     if (Mathf.FloorToInt((previousPhase + offset) / turn)
                         == Mathf.FloorToInt((phase + offset) / turn)) continue;
                     int index = i * 2 + side;
@@ -596,7 +628,8 @@ namespace CardsUnity.Controllers
                 for (int side = 0; side < 2; side++)
                 {
                     float sign = side == 0 ? -1f : 1f;
-                    float cycle = phase + gaitOffset * behaviourVariation - i * 0.75f + side * Mathf.PI;
+                    float cycle = phase + gaitOffset * (VariationBalance?.Amount ?? behaviourVariation)
+                        - i * 0.75f + side * Mathf.PI;
                     Vector3 hip = new Vector3(sign * 0.15f, -0.01f, 0f);
                     Vector3 knee = new Vector3(sign * 0.34f, 0.02f + Mathf.Max(0f, Mathf.Sin(cycle)) * 0.07f, Mathf.Cos(cycle) * 0.10f);
                     Vector3 foot = new Vector3(sign * 0.48f, -0.21f + Mathf.Max(0f, Mathf.Sin(cycle)) * 0.14f, Mathf.Cos(cycle) * 0.17f - 0.10f);
@@ -674,6 +707,26 @@ namespace CardsUnity.Controllers
             rod.localRotation = Quaternion.FromToRotation(Vector3.up, end - start);
             rod.localScale = new Vector3(width, (end - start).magnitude * 0.5f, width);
         }
+
+#if UNITY_EDITOR
+        internal void CopyLegacyBalanceTo(CentipedeHuntingBalance hunting,
+            CentipedeVariationBalance variation, CentipedeRecoveryBalance recovery,
+            CentipedeLightBalance light, CentipedeAttackBalance attack)
+        {
+            hunting.Capture(stalkSpeed, fleeSpeed, stopDistance, turnSpeed);
+            variation.Capture(behaviourVariation, wanderAngle, noiseFrequency, speedVariation);
+            recovery.Capture(stuckCheckInterval, recoveryDuration);
+            light.Capture(dimLightThreshold, fearThreshold, safeLightRatio, hideDuration);
+            attack.Capture(lightPatience, attackRange, attackWindup, leapDuration, leapHeight,
+                attackCooldown, darknessAttackThreshold, darknessPatience);
+        }
+
+        internal void AssignBalanceProfile(CentipedeBalanceProfile profile)
+        {
+            balanceProfile = profile;
+            UnityEditor.EditorUtility.SetDirty(this);
+        }
+#endif
 
         private void ClearRig()
         {

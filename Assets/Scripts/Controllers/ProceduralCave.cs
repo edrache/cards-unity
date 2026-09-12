@@ -6,8 +6,12 @@ namespace CardsUnity.Controllers
 {
     /// <summary>Connected cave carved from a continuous field, with a level collision floor.</summary>
     [ExecuteAlways]
-    public sealed class ProceduralCave : MonoBehaviour
+    public sealed partial class ProceduralCave : MonoBehaviour
     {
+        [Header("Configuration")]
+        [Tooltip("Optional reusable settings. When assigned, the profile is read at the start of each rebuild; the fields below remain the legacy fallback.")]
+        [SerializeField] private CaveGenerationProfile generationProfile;
+
         [Header("Layout")]
         [SerializeField, Range(1, 24)] private int roomCount = 6;
         [SerializeField] private int seed = 173;
@@ -96,7 +100,7 @@ namespace CardsUnity.Controllers
         private Material generatedRockfallMaterial;
         private bool rebuildPending;
         private float noiseOffset;
-        public int RoomCount => roomCount;
+        public int RoomCount => Settings.roomCount;
         public IReadOnlyList<Vector2> RoomCenters => rooms;
         public IReadOnlyList<Vector2[]> Corridors => corridors;
         public IReadOnlyList<float> RoomRadii => radii;
@@ -111,7 +115,11 @@ namespace CardsUnity.Controllers
             }
         }
 
-        private void OnEnable() { rebuildPending = true; }
+        private void OnEnable()
+        {
+            RefreshActiveSettings();
+            rebuildPending = true;
+        }
         private void OnValidate()
         {
             roomCount = Mathf.Clamp(roomCount, 1, 24);
@@ -169,8 +177,10 @@ namespace CardsUnity.Controllers
         public void Rebuild()
         {
             rebuildPending = false;
+            RefreshActiveSettings();
             Clear(); rockFootprints.Clear(); treasurePositions.Clear(); rooms.Clear(); radii.Clear(); corridors.Clear(); corridorBounds.Clear();
-            var random = new System.Random(seed);
+            occupiedContentFootprints.Clear();
+            var random = new System.Random(Settings.seed);
             noiseOffset = (float)random.NextDouble() * 1000f;
             GenerateLayout(random);
             const float cell = 0.8f;
@@ -185,7 +195,7 @@ namespace CardsUnity.Controllers
             foreach (var corridor in corridors)
                 foreach (var point in corridor)
                 {
-                    Vector2 extent = Vector2.one * (corridorWidth * 0.5f + 3f);
+                    Vector2 extent = Vector2.one * (Settings.corridorWidth * 0.5f + 3f);
                     min = Vector2.Min(min, point - extent);
                     max = Vector2.Max(max, point + extent);
                 }
@@ -209,9 +219,9 @@ namespace CardsUnity.Controllers
             generated.hideFlags = HideFlags.DontSave;
             generated.transform.SetParent(transform, false);
             floorMesh = floor.Build("Cave floor"); wallMesh = walls.Build("Cave walls");
-            CreateSurface("Level floor", floorMesh, floorMaterial);
+            CreateSurface("Level floor", floorMesh, Settings.floorMaterial);
             wallCollisionMesh = collision.Build("Cave wall collision");
-            CreateSurface("Rock walls", wallMesh, wallMaterial, wallCollisionMesh);
+            CreateSurface("Rock walls", wallMesh, Settings.wallMaterial, wallCollisionMesh);
             CreateEntranceGrotto();
             SpawnTreasures();
             ScatterRocks(min, max);
@@ -233,13 +243,14 @@ namespace CardsUnity.Controllers
             SpawnCentipedes();
             SpawnBodies();
             SpawnRockfallTraps();
+            SpawnRoomContent();
         }
 
         private void SpawnRockfallTraps()
         {
-            if (rockfallCorridorPercentage <= 0f || corridors.Count <= 1) return;
+            if (Settings.rockfallCorridorPercentage <= 0f || corridors.Count <= 1) return;
             // Selection and debris have their own stream; trap tuning cannot rearrange the cave.
-            var random = new System.Random(unchecked(seed * 397 ^ 91827361));
+            var random = new System.Random(unchecked(Settings.seed * 397 ^ 91827361));
             var eligible = new List<(int corridor, Vector3[] path)>();
             for (int c = 0; c < corridors.Count - 1; c++)
             {
@@ -248,9 +259,9 @@ namespace CardsUnity.Controllers
                 for (int i = 1; i < route.Length; i++)
                     distances[i] = distances[i - 1] + Vector2.Distance(route[i - 1], route[i]);
                 float available = distances[distances.Length - 1] - 4f;
-                float minimum = Mathf.Max(1f, minimumRockfallLength);
+                float minimum = Mathf.Max(1f, Settings.minimumRockfallLength);
                 if (available < minimum) continue;
-                float maximum = Mathf.Min(available, Mathf.Max(minimum, maximumRockfallLength));
+                float maximum = Mathf.Min(available, Mathf.Max(minimum, Settings.maximumRockfallLength));
                 for (int attempt = 0; attempt < 32; attempt++)
                 {
                     float length = Mathf.Lerp(minimum, maximum, (float)random.NextDouble());
@@ -274,9 +285,9 @@ namespace CardsUnity.Controllers
                 int j = random.Next(i + 1);
                 (eligible[i], eligible[j]) = (eligible[j], eligible[i]);
             }
-            int count = Mathf.Clamp(Mathf.FloorToInt(eligible.Count * rockfallCorridorPercentage / 100f + 0.5f), 0, eligible.Count);
+            int count = Mathf.Clamp(Mathf.FloorToInt(eligible.Count * Settings.rockfallCorridorPercentage / 100f + 0.5f), 0, eligible.Count);
             if (count == 0) return;
-            Material material = rockfallMaterial;
+            Material material = Settings.rockfallMaterial;
             if (material == null || material.FindPass("PickupOutline") < 0)
             {
                 generatedRockfallMaterial = new Material(Shader.Find("CardsUnity/Dither Accent"))
@@ -297,11 +308,11 @@ namespace CardsUnity.Controllers
                 var root = new GameObject($"Rockfall (Corridor {selected.corridor + 1:00})") { hideFlags = HideFlags.DontSave };
                 root.transform.SetParent(population.transform, false);
                 root.transform.position = selected.path[selected.path.Length / 2];
-                root.AddComponent<CaveRockfallTrap>().Configure(this, selected.path, corridorWidth - 0.25f,
-                    player, rockfallCeilingHeight, rockfallWarningSeconds, rockfallCollapseSeconds,
-                    rockfallIdlePebblesPerSecond, rockfallActivePebblesPerSecond, rockfallPebbleLifetime,
-                    material, random.Next(), minimumRockfallPebbleSize, maximumRockfallPebbleSize,
-                    minimumRockfallBoulderRadius, maximumRockfallBoulderRadius);
+                root.AddComponent<CaveRockfallTrap>().Configure(this, selected.path, Settings.corridorWidth - 0.25f,
+                    player, Settings.rockfallCeilingHeight, Settings.rockfallWarningSeconds, Settings.rockfallCollapseSeconds,
+                    Settings.rockfallIdlePebblesPerSecond, Settings.rockfallActivePebblesPerSecond, Settings.rockfallPebbleLifetime,
+                    material, random.Next(), Settings.minimumRockfallPebbleSize, Settings.maximumRockfallPebbleSize,
+                    Settings.minimumRockfallBoulderRadius, Settings.maximumRockfallBoulderRadius);
             }
         }
 
@@ -321,7 +332,7 @@ namespace CardsUnity.Controllers
                 {
                     Vector2 edge = route[i] - route[i - 1];
                     float t = Mathf.Clamp01(Vector2.Dot(point - route[i - 1], edge) / Mathf.Max(0.0001f, edge.sqrMagnitude));
-                    if (Vector2.Distance(point, route[i - 1] + edge * t) < corridorWidth * 0.75f) return false;
+                    if (Vector2.Distance(point, route[i - 1] + edge * t) < Settings.corridorWidth * 0.75f) return false;
                 }
             }
             return Field(point) >= 0.85f;
@@ -337,21 +348,21 @@ namespace CardsUnity.Controllers
 
         private void SpawnTreasures()
         {
-            int count = Mathf.Clamp(Mathf.FloorToInt(rooms.Count * treasureRoomPercentage / 100f + 0.5f), 0, rooms.Count);
+            int count = Mathf.Clamp(Mathf.FloorToInt(rooms.Count * Settings.treasureRoomPercentage / 100f + 0.5f), 0, rooms.Count);
             var types = new List<Treasure>();
-            if (treasurePrefab != null) types.Add(treasurePrefab);
-            if (treasureVariants != null)
-                foreach (var variant in treasureVariants)
+            if (Settings.treasurePrefab != null) types.Add(Settings.treasurePrefab);
+            if (Settings.treasureVariants != null)
+                foreach (var variant in Settings.treasureVariants)
                     if (variant != null && !types.Contains(variant)) types.Add(variant);
             if (count == 0 || types.Count == 0) return;
             // Shuffle a separate bag so every type appears before any repeats.
-            var typeRandom = new System.Random(unchecked(seed * 397 ^ 32452843));
+            var typeRandom = new System.Random(unchecked(Settings.seed * 397 ^ 32452843));
             for (int i = types.Count - 1; i > 0; i--)
             {
                 int j = typeRandom.Next(i + 1);
                 var swap = types[i]; types[i] = types[j]; types[j] = swap;
             }
-            var random = new System.Random(unchecked(seed * 397 ^ 15485863));
+            var random = new System.Random(unchecked(Settings.seed * 397 ^ 15485863));
             var order = new int[rooms.Count];
             for (int i = 0; i < order.Length; i++) order[i] = i;
             for (int i = order.Length - 1; i > 0; i--)
@@ -376,7 +387,7 @@ namespace CardsUnity.Controllers
                     Vector2 candidate = rooms[room] + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
                     bool blocked = false;
                     foreach (var centre in rooms)
-                        if (bodyPrefab != null && bodyRoomPercentage > 0f && Vector2.Distance(candidate, centre) < 2.3f)
+                        if (Settings.bodyPrefab != null && Settings.bodyRoomPercentage > 0f && Vector2.Distance(candidate, centre) < 2.3f)
                         { blocked = true; break; }
                     foreach (var other in treasurePositions)
                         if (Vector2.Distance(candidate, other) < 1.5f) { blocked = true; break; }
@@ -419,14 +430,14 @@ namespace CardsUnity.Controllers
 
         private void SpawnCoins()
         {
-            if (coinPrefab == null || coinsPerRoom <= 0) return;
+            if (Settings.coinPrefab == null || Settings.coinsPerRoom <= 0) return;
             // A separate stream keeps existing rooms, rocks and large treasures unchanged.
-            var random = new System.Random(unchecked(seed * 397 ^ 49979687));
+            var random = new System.Random(unchecked(Settings.seed * 397 ^ 49979687));
             var positions = new List<Vector2>();
             var population = new GameObject("Generated Coins") { hideFlags = HideFlags.DontSave };
             population.transform.SetParent(generated.transform, false);
             for (int room = 0; room < rooms.Count; room++)
-                for (int index = 0; index < coinsPerRoom; index++)
+                for (int index = 0; index < Settings.coinsPerRoom; index++)
                     for (int attempt = 0; attempt < 128; attempt++)
                     {
                         float angle = (float)random.NextDouble() * Mathf.PI * 2f;
@@ -444,7 +455,7 @@ namespace CardsUnity.Controllers
                             if (Vector2.Distance(p, treasure) < 1f) { blocked = true; break; }
                         foreach (var other in positions)
                             if (Vector2.Distance(p, other) < 0.65f) { blocked = true; break; }
-                        if (bodyPrefab != null && bodyRoomPercentage > 0f)
+                        if (Settings.bodyPrefab != null && Settings.bodyRoomPercentage > 0f)
                             foreach (var centre in rooms)
                                 if (Vector2.Distance(p, centre) < 2.3f) { blocked = true; break; }
                         if (blocked) continue;
@@ -453,7 +464,7 @@ namespace CardsUnity.Controllers
                         Vector3 normal = new Vector3(
                             -(FloorHeight(p + Vector2.right * e) - FloorHeight(p - Vector2.right * e)) / (2f * e), 1f,
                             -(FloorHeight(p + Vector2.up * e) - FloorHeight(p - Vector2.up * e)) / (2f * e)).normalized;
-                        var coin = Instantiate(coinPrefab, population.transform);
+                        var coin = Instantiate(Settings.coinPrefab, population.transform);
                         coin.name = $"Gold Coin (Room {room + 1:00}, {index + 1})";
                         coin.gameObject.hideFlags = HideFlags.DontSave;
                         coin.transform.localPosition = Surface(p, 0f);
@@ -468,15 +479,16 @@ namespace CardsUnity.Controllers
                             }
                         if (!float.IsNegativeInfinity(lift)) coin.transform.localPosition += Vector3.up * (lift + 0.008f);
                         positions.Add(p);
+                        occupiedContentFootprints.Add(new Vector3(p.x, p.y, 0.3f));
                         break;
                     }
         }
 
         private void SpawnBodies()
         {
-            int count = Mathf.Clamp(Mathf.FloorToInt(rooms.Count * bodyRoomPercentage / 100f + 0.5f), 0, rooms.Count);
-            if (count == 0 || bodyPrefab == null) return;
-            var random = new System.Random(unchecked(seed * 397 ^ 79693));
+            int count = Mathf.Clamp(Mathf.FloorToInt(rooms.Count * Settings.bodyRoomPercentage / 100f + 0.5f), 0, rooms.Count);
+            if (count == 0 || Settings.bodyPrefab == null) return;
+            var random = new System.Random(unchecked(Settings.seed * 397 ^ 79693));
             var order = new int[rooms.Count];
             for (int i = 0; i < order.Length; i++) order[i] = i;
             for (int i = order.Length - 1; i > 0; i--)
@@ -492,21 +504,22 @@ namespace CardsUnity.Controllers
                 const float e = 0.1f;
                 Vector3 normal = new Vector3(-(FloorHeight(centre + Vector2.right * e) - FloorHeight(centre - Vector2.right * e)) / (2f * e),
                     1f, -(FloorHeight(centre + Vector2.up * e) - FloorHeight(centre - Vector2.up * e)) / (2f * e)).normalized;
-                var body = Instantiate(bodyPrefab, population.transform);
+                var body = Instantiate(Settings.bodyPrefab, population.transform);
                 body.name = $"Body (Room {order[i] + 1:00})";
                 body.gameObject.hideFlags = HideFlags.DontSave;
                 body.transform.localPosition = Surface(centre, 0.03f);
                 body.transform.localRotation = Quaternion.FromToRotation(Vector3.up, normal) * Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f);
                 body.Configure(random.Next());
+                occupiedContentFootprints.Add(new Vector3(centre.x, centre.y, 2.1f));
             }
         }
 
         private void SpawnCentipedes()
         {
-            int count = Mathf.Clamp(Mathf.FloorToInt(rooms.Count * centipedeRoomPercentage / 100f + 0.5f), 0, rooms.Count);
-            if (count == 0 || centipedePrefab == null) return;
+            int count = Mathf.Clamp(Mathf.FloorToInt(rooms.Count * Settings.centipedeRoomPercentage / 100f + 0.5f), 0, rooms.Count);
+            if (count == 0 || Settings.centipedePrefab == null) return;
             // Separate stream: changing population must not rearrange rooms or rocks.
-            var random = new System.Random(unchecked(seed * 397 ^ 104729));
+            var random = new System.Random(unchecked(Settings.seed * 397 ^ 104729));
             var order = new int[rooms.Count];
             for (int i = 0; i < order.Length; i++) order[i] = i;
             for (int i = order.Length - 1; i > 0; i--)
@@ -525,13 +538,14 @@ namespace CardsUnity.Controllers
                 const float e = 0.1f;
                 Vector3 normal = new Vector3(-(FloorHeight(centre + Vector2.right * e) - FloorHeight(centre - Vector2.right * e)) / (2f * e),
                     1f, -(FloorHeight(centre + Vector2.up * e) - FloorHeight(centre - Vector2.up * e)) / (2f * e)).normalized;
-                var creature = Instantiate(centipedePrefab, population.transform);
+                var creature = Instantiate(Settings.centipedePrefab, population.transform);
                 creature.name = $"Centipede (Room {room + 1:00})";
                 creature.gameObject.hideFlags = HideFlags.DontSave;
                 creature.transform.localPosition = Surface(centre, 0f);
                 creature.transform.localRotation = Quaternion.FromToRotation(Vector3.up, normal) * Quaternion.Euler(0f, yaw, 0f);
                 creature.SetTarget(player);
                 creature.SetCaveHome(this, room);
+                occupiedContentFootprints.Add(new Vector3(centre.x, centre.y, 0.8f));
             }
         }
 
@@ -543,7 +557,7 @@ namespace CardsUnity.Controllers
             float angle = Mathf.Atan2(delta.y, delta.x);
             float lobes = Mathf.Sin(angle * 3f + noiseOffset + room) * 0.13f
                 + Mathf.Sin(angle * 5f - noiseOffset) * 0.07f;
-            return delta.magnitude < radii[room] * (1f + lobes * irregularity)
+            return delta.magnitude < radii[room] * (1f + lobes * Settings.irregularity)
                 && Mathf.Abs(local.y - FloorHeight(new Vector2(local.x, local.z))) < 3f;
         }
 
@@ -567,31 +581,31 @@ namespace CardsUnity.Controllers
 
         private void ScatterRocks(Vector2 min, Vector2 max)
         {
-            if (rockDensity <= 0f || rockPrefabs == null || rockPrefabs.Length == 0) return;
-            var random = new System.Random(unchecked(seed * 397 ^ 7919));
+            if (Settings.rockDensity <= 0f || Settings.rockPrefabs == null || Settings.rockPrefabs.Length == 0) return;
+            var random = new System.Random(unchecked(Settings.seed * 397 ^ 7919));
             var placed = rockFootprints;
             float area = 0f;
             foreach (float radius in radii) area += Mathf.PI * radius * radius;
             foreach (var route in corridors)
-                for (int j = 1; j < route.Length; j++) area += Vector2.Distance(route[j - 1], route[j]) * corridorWidth;
-            int targetCount = Mathf.Min(600, Mathf.RoundToInt(area * rockDensity / 30f));
+                for (int j = 1; j < route.Length; j++) area += Vector2.Distance(route[j - 1], route[j]) * Settings.corridorWidth;
+            int targetCount = Mathf.Min(600, Mathf.RoundToInt(area * Settings.rockDensity / 30f));
             int attempts = Mathf.Min(12000, Mathf.CeilToInt((max.x - min.x) * (max.y - min.y) / 2f));
             for (int i = 0; i < attempts && placed.Count < targetCount; i++)
             {
                 Vector2 p = new Vector2(Mathf.Lerp(min.x, max.x, (float)random.NextDouble()),
                     Mathf.Lerp(min.y, max.y, (float)random.NextDouble()));
-                float size = Mathf.Lerp(minimumRockSize, maximumRockSize, (float)random.NextDouble());
-                int variant = random.Next(rockPrefabs.Length);
+                float size = Mathf.Lerp(Settings.minimumRockSize, Settings.maximumRockSize, (float)random.NextDouble());
+                int variant = random.Next(Settings.rockPrefabs.Length);
                 float yaw = (float)random.NextDouble() * 360f;
                 float chance = (float)random.NextDouble();
-                if (chance > rockDensity || rockPrefabs[variant] == null) continue;
+                if (chance > Settings.rockDensity || Settings.rockPrefabs[variant] == null) continue;
                 // Prefabs have a unit footprint. Reserve extra space for their slope-aligned silhouette.
                 float radius = size * 0.62f;
                 if (Field(p) < radius + 0.2f || Vector2.Distance(p, entrance) < radius + 3f) continue;
                 bool blocked = false;
                 foreach (var treasurePosition in treasurePositions)
                     if (Vector2.Distance(p, treasurePosition) < radius + 0.75f) { blocked = true; break; }
-                if (bodyPrefab != null && bodyRoomPercentage > 0f)
+                if (Settings.bodyPrefab != null && Settings.bodyRoomPercentage > 0f)
                     foreach (var centre in rooms)
                         if (Vector2.Distance(p, centre) < radius + 2.1f) { blocked = true; break; }
 
@@ -614,8 +628,8 @@ namespace CardsUnity.Controllers
                     if (Field(p + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius) < 0.15f) blocked = true;
                 }
                 if (blocked) continue;
-                var rock = Instantiate(rockPrefabs[variant], generated.transform);
-                rock.name = rockPrefabs[variant].name;
+                var rock = Instantiate(Settings.rockPrefabs[variant], generated.transform);
+                rock.name = Settings.rockPrefabs[variant].name;
                 rock.hideFlags = HideFlags.DontSave;
                 const float e = 0.2f;
                 Vector3 normal = new Vector3(-(FloorHeight(p + Vector2.right * e) - FloorHeight(p - Vector2.right * e)) / (2f * e),
@@ -631,16 +645,16 @@ namespace CardsUnity.Controllers
         {
             // Sunflower packing avoids rows and right-angle junctions.
             float rotation = (float)random.NextDouble() * Mathf.PI * 2f;
-            float spacing = roomRadius * 4.3f;
+            float spacing = Settings.roomRadius * 4.3f;
             var edges = new List<Vector2Int>();
-            for (int i = 0; i < roomCount; i++)
+            for (int i = 0; i < Settings.roomCount; i++)
             {
                 float angle = i * 2.399963f + rotation;
                 float distance = spacing * 0.62f * Mathf.Sqrt(i);
                 rooms.Add(new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * distance);
                 // Stratified sizes guarantee a visible spread even in small layouts.
-                float size = roomCount == 1 ? 0.5f : (i + (float)random.NextDouble()) / roomCount;
-                radii.Add(Mathf.Max(2.5f, roomRadius * (1f + (size * 2f - 1f) * 0.45f * roomSizeVariation)));
+                float size = Settings.roomCount == 1 ? 0.5f : (i + (float)random.NextDouble()) / Settings.roomCount;
+                radii.Add(Mathf.Max(2.5f, Settings.roomRadius * (1f + (size * 2f - 1f) * 0.45f * Settings.roomSizeVariation)));
 
             }
             for (int i = radii.Count - 1; i > 0; i--)
@@ -648,12 +662,12 @@ namespace CardsUnity.Controllers
                 int j = random.Next(i + 1);
                 float radius = radii[i]; radii[i] = radii[j]; radii[j] = radius;
             }
-            for (int i = 0; i < roomCount; i++)
-                for (int j = i + 1; j < roomCount; j++) edges.Add(new Vector2Int(i, j));
+            for (int i = 0; i < Settings.roomCount; i++)
+                for (int j = i + 1; j < Settings.roomCount; j++) edges.Add(new Vector2Int(i, j));
             edges.Sort((a, b) => (rooms[a.x] - rooms[a.y]).sqrMagnitude.CompareTo((rooms[b.x] - rooms[b.y]).sqrMagnitude));
             // Randomized spanning tree guarantees reachability; spare edges add real cycles.
-            var groups = new int[roomCount];
-            for (int i = 0; i < roomCount; i++) groups[i] = i;
+            var groups = new int[Settings.roomCount];
+            for (int i = 0; i < Settings.roomCount; i++) groups[i] = i;
             var spare = new List<Vector2Int>();
             foreach (var edge in edges)
             {
@@ -667,11 +681,11 @@ namespace CardsUnity.Controllers
                 int j = random.Next(i + 1);
                 Vector2Int swap = spare[i]; spare[i] = spare[j]; spare[j] = swap;
             }
-            int loops = Mathf.RoundToInt(Mathf.Min(spare.Count, roomCount / 2f) * extraConnections);
-            if (extraConnections > 0f && spare.Count > 0) loops = Mathf.Max(1, loops);
+            int loops = Mathf.RoundToInt(Mathf.Min(spare.Count, Settings.roomCount / 2f) * Settings.extraConnections);
+            if (Settings.extraConnections > 0f && spare.Count > 0) loops = Mathf.Max(1, loops);
             for (int i = 0; i < loops; i++) AddCorridor(spare[i], random, spacing);
             int mainCount = corridors.Count;
-            int branches = Mathf.RoundToInt(roomCount * branchDensity);
+            int branches = Mathf.RoundToInt(Settings.roomCount * Settings.branchDensity);
             for (int i = 0; i < branches && mainCount > 0; i++)
             {
                 var source = corridors[random.Next(mainCount)];
@@ -684,9 +698,9 @@ namespace CardsUnity.Controllers
             }
             // Start beyond the southernmost chamber, so the entrance cannot cut across the maze.
             int first = 0;
-            for (int i = 1; i < roomCount; i++)
+            for (int i = 1; i < Settings.roomCount; i++)
                 if (rooms[i].y - radii[i] < rooms[first].y - radii[first]) first = i;
-            Vector2 mouth = rooms[first] - Vector2.up * (radii[first] * 1.2f + entranceLength);
+            Vector2 mouth = rooms[first] - Vector2.up * (radii[first] * 1.2f + Settings.entranceLength);
             AddTunnel(mouth, rooms[first], random);
             var entryPath = corridors[corridors.Count - 1];
             entrance = entryPath[2];
@@ -700,7 +714,7 @@ namespace CardsUnity.Controllers
         private void CreateEntranceGrotto()
         {
             var rocks = new MeshData();
-            var random = new System.Random(unchecked(seed * 397 ^ 86028121));
+            var random = new System.Random(unchecked(Settings.seed * 397 ^ 86028121));
             Vector2 right = Vector2.Perpendicular(entranceForward);
             Vector2 portal = entrance - entranceForward * 2.55f;
             Quaternion facing = Quaternion.LookRotation(V(entranceForward, 0f), Vector3.up);
@@ -738,7 +752,7 @@ namespace CardsUnity.Controllers
             }
 
             entranceGrottoMesh = rocks.Build("Entrance grotto rocks");
-            CreateSurface("Entrance grotto", entranceGrottoMesh, wallMaterial);
+            CreateSurface("Entrance grotto", entranceGrottoMesh, Settings.wallMaterial);
         }
 
         private void AddCorridor(Vector2Int edge, System.Random random, float spacing)
@@ -751,7 +765,7 @@ namespace CardsUnity.Controllers
             Vector2 normal = Vector2.Perpendicular((b - a).normalized);
             float length = Vector2.Distance(a, b);
             float sign = random.Next(2) == 0 ? -1f : 1f;
-            float amplitude = Mathf.Min(length * 0.24f, 5f) * corridorWinding;
+            float amplitude = Mathf.Min(length * 0.24f, 5f) * Settings.corridorWinding;
             float asymmetry = Mathf.Lerp(-0.4f, 0.4f, (float)random.NextDouble());
             int steps = Mathf.Max(12, Mathf.CeilToInt(length / 0.9f));
             var points = new Vector2[steps + 1];
@@ -765,7 +779,7 @@ namespace CardsUnity.Controllers
             corridors.Add(points);
             Vector2 min = a, max = a;
             foreach (var point in points) { min = Vector2.Min(min, point); max = Vector2.Max(max, point); }
-            float padding = corridorWidth * 0.5f + 3f;
+            float padding = Settings.corridorWidth * 0.5f + 3f;
             corridorBounds.Add(Rect.MinMaxRect(min.x - padding, min.y - padding, max.x + padding, max.y + padding));
         }
 
@@ -778,7 +792,7 @@ namespace CardsUnity.Controllers
                 float angle = Mathf.Atan2(delta.y, delta.x);
                 float lobes = Mathf.Sin(angle * 3f + noiseOffset + i) * 0.13f
                     + Mathf.Sin(angle * 5f - noiseOffset) * 0.07f;
-                value = Mathf.Max(value, radii[i] * (1f + lobes * irregularity) - delta.magnitude);
+                value = Mathf.Max(value, radii[i] * (1f + lobes * Settings.irregularity) - delta.magnitude);
             }
             for (int c = 0; c < corridors.Count; c++)
             {
@@ -788,7 +802,7 @@ namespace CardsUnity.Controllers
             {
                 Vector2 a = corridor[i - 1], ab = corridor[i] - a;
                 float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude);
-                value = Mathf.Max(value, corridorWidth * 0.5f - Vector2.Distance(p, a + t * ab));
+                value = Mathf.Max(value, Settings.corridorWidth * 0.5f - Vector2.Distance(p, a + t * ab));
             }
             }
             // A broad elliptical pocket around the actual spawn reads as the grotto the knight
@@ -801,7 +815,7 @@ namespace CardsUnity.Controllers
                 value = Mathf.Max(value, (1f - new Vector2(across, along).magnitude) * 3.2f);
             }
             // Perturb only the boundary: minimum corridor clearance remains above 1.8 metres.
-            return value + (Mathf.PerlinNoise(p.x * 0.42f + noiseOffset, p.y * 0.42f + noiseOffset) - 0.5f) * irregularity * 0.7f;
+            return value + (Mathf.PerlinNoise(p.x * 0.42f + noiseOffset, p.y * 0.42f + noiseOffset) - 0.5f) * Settings.irregularity * 0.7f;
         }
         private void CreateSurface(string label, Mesh mesh, Material material, Mesh colliderMesh = null)
         {
@@ -827,7 +841,7 @@ namespace CardsUnity.Controllers
             if (Field(midpoint + outward * 0.1f) > Field(midpoint - outward * 0.1f)) outward = -outward;
             // Shared noise at boundary vertices keeps neighbouring rock panels watertight.
             // Collision follows the carved boundary; decorative outer lips must not block nearby tunnels.
-            collision.Quad(Surface(p, 0f), Surface(q, 0f), Surface(q, wallHeight + 1f), Surface(p, wallHeight + 1f), -V(outward, 0f));
+            collision.Quad(Surface(p, 0f), Surface(q, 0f), Surface(q, Settings.wallHeight + 1f), Surface(p, Settings.wallHeight + 1f), -V(outward, 0f));
             Vector3 p0 = Surface(p, 0f), q0 = Surface(q, 0f);
             Vector3 p1 = p0 + V(RockOffset(p) * 0.35f, VisibleHeight(p) * 0.48f), q1 = q0 + V(RockOffset(q) * 0.35f, VisibleHeight(q) * 0.48f);
             Vector3 p2 = p0 + V(RockOffset(p), VisibleHeight(p)), q2 = q0 + V(RockOffset(q), VisibleHeight(q));
@@ -843,21 +857,21 @@ namespace CardsUnity.Controllers
             const float e = 0.08f;
             Vector2 gradient = new Vector2(Field(p + Vector2.right * e) - Field(p - Vector2.right * e),
                 Field(p + Vector2.up * e) - Field(p - Vector2.up * e));
-            return -gradient.normalized * (0.35f + Mathf.PerlinNoise(p.x + noiseOffset, p.y) * irregularity);
+            return -gradient.normalized * (0.35f + Mathf.PerlinNoise(p.x + noiseOffset, p.y) * Settings.irregularity);
         }
         /// <summary>One height per XZ point keeps all intersections seamless and prevents stacked floors.</summary>
         public float FloorHeight(Vector2 point)
         {
-            if (!enableElevation) return 0f;
-            float amplitude = elevationRange * 0.5f;
+            if (!Settings.enableElevation) return 0f;
+            float amplitude = Settings.elevationRange * 0.5f;
             // Analytic gradient stays below the requested slope, with margin for triangulation.
-            float frequency = Mathf.Tan(maximumSlope * Mathf.Deg2Rad) * 0.85f / amplitude;
+            float frequency = Mathf.Tan(Settings.maximumSlope * Mathf.Deg2Rad) * 0.85f / amplitude;
             return amplitude * 0.5f * (Mathf.Sin(point.x * frequency + noiseOffset)
                 + Mathf.Sin(point.y * frequency * 0.83f + noiseOffset * 0.71f));
         }
         private Vector3 Surface(Vector2 p, float offset) => V(p, FloorHeight(p) + offset);
-        private float VisibleHeight(Vector2 p) => enableElevation ? Mathf.Min(Height(p), cutawayWallHeight) : Height(p);
-        private float Height(Vector2 p) => wallHeight + (Mathf.PerlinNoise(p.x * 0.6f + noiseOffset, p.y * 0.6f) - 0.5f) * 1.3f;
+        private float VisibleHeight(Vector2 p) => Settings.enableElevation ? Mathf.Min(Height(p), Settings.cutawayWallHeight) : Height(p);
+        private float Height(Vector2 p) => Settings.wallHeight + (Mathf.PerlinNoise(p.x * 0.6f + noiseOffset, p.y * 0.6f) - 0.5f) * 1.3f;
         private static Vector3 V(Vector2 p, float y) => new Vector3(p.x, y, p.y);
         private static void Edge(Vector2 a, Vector2 b, float fa, float fb, List<Vector2> polygon, List<Vector2> boundary)
         {

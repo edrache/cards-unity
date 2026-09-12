@@ -5,6 +5,10 @@ namespace CardsUnity.Controllers
     [DefaultExecutionOrder(100)]
     public sealed class HandheldTorch : MonoBehaviour
     {
+        [Header("Balance")]
+        [Tooltip("Optional shared torch balance. Existing fields below are used when empty.")]
+        [SerializeField] private TorchBalanceProfile balanceProfile;
+
         [SerializeField] private Transform character;
         [SerializeField] private Transform upperArm;
         [SerializeField] private Transform forearm;
@@ -12,22 +16,25 @@ namespace CardsUnity.Controllers
         [SerializeField] private ParticleSystem fire;
         [SerializeField] private ParticleSystem smoke;
 
-        [Header("Illumination")]
+        [Header("Local fallback — Illumination")]
         [Tooltip("Brightness of the torch. Zero switches off its illumination.")]
         [SerializeField, Range(0f, 15f)] private float brightness = 5f;
         [Tooltip("Maximum light reach in metres.")]
         [SerializeField, Range(1f, 20f)] private float lightRange = 8f;
+        [Header("Per-instance flame appearance")]
         [SerializeField] private Color lightColor = new Color(1f, 0.48f, 0.16f);
         [SerializeField, Range(0f, 0.6f)] private float flickerAmount = 0.16f;
         [SerializeField, Range(0.1f, 8f)] private float flickerSpeed = 2.5f;
         [SerializeField, Range(0f, 1f)] private float movementFlicker = 0.3f;
 
-        [Header("Burn lifetime")]
+        [Header("Local fallback — Burn lifetime")]
         [Tooltip("Burn duration in seconds of active gameplay.")]
         [SerializeField, Min(0.1f)] private float lifetime = 180f;
         [Tooltip("Fraction of lifetime spent gradually fading out.")]
         [SerializeField, Range(0.05f, 1f)] private float burnoutFraction = 0.4f;
+        [Header("Per-instance burnout appearance")]
         [SerializeField, Range(0f, 2f)] private float dyingFlickerAmount = 1.4f;
+        [Header("Local fallback — Impact fuel costs")]
         [Tooltip("Seconds of burn lifetime spent on a single strike. Zero makes hitting free.")]
         [SerializeField, Range(0f, 60f)] private float strikeLifetimeCost = 5f;
 
@@ -39,7 +46,11 @@ namespace CardsUnity.Controllers
         public bool IsHeld => character != null;
         public bool IsSettled => !IsHeld && !impactPending && dropBody != null
             && (dropBody.IsSleeping() || dropBody.linearVelocity.sqrMagnitude < 0.04f);
-        public float DropLifetimeCost => dropLifetimeCost;
+        public TorchBalanceProfile BalanceProfile => balanceProfile;
+        private TorchIlluminationBalance IlluminationBalance => balanceProfile != null ? balanceProfile.Illumination : null;
+        private TorchFuelBalance FuelBalance => balanceProfile != null ? balanceProfile.Fuel : null;
+        private float Lifetime => FuelBalance?.Lifetime ?? lifetime;
+        public float DropLifetimeCost => FuelBalance?.DropLifetimeCost ?? dropLifetimeCost;
         public Vector3 GripOffset => gripOffset;
 
         public void Drop()
@@ -76,7 +87,7 @@ namespace CardsUnity.Controllers
         {
             if (!impactPending || IsHeld) return;
             impactPending = false;
-            burnAge = Mathf.Min(Mathf.Max(0.1f, lifetime), burnAge + Mathf.Max(0f, dropLifetimeCost));
+            burnAge = Mathf.Min(Mathf.Max(0.1f, Lifetime), burnAge + Mathf.Max(0f, DropLifetimeCost));
         }
 
         public void PickUp(Transform holder, Transform arm, Transform elbow)
@@ -100,10 +111,10 @@ namespace CardsUnity.Controllers
             initialized = false;
         }
 
-        public float RemainingLifetime => Mathf.Max(0f, lifetime - burnAge);
+        public float RemainingLifetime => Mathf.Max(0f, Lifetime - burnAge);
 
         /// <summary>Seconds of burn lifetime a single strike costs.</summary>
-        public float StrikeLifetimeCost => strikeLifetimeCost;
+        public float StrikeLifetimeCost => FuelBalance?.StrikeLifetimeCost ?? strikeLifetimeCost;
 
         /// <summary>
         /// Charges one strike against the remaining fuel. Ages the torch exactly as burning for
@@ -111,8 +122,9 @@ namespace CardsUnity.Controllers
         /// </summary>
         public void ConsumeStrikeFuel()
         {
-            if (strikeLifetimeCost <= 0f) return;
-            burnAge = Mathf.Min(Mathf.Max(0.1f, lifetime), burnAge + strikeLifetimeCost);
+            float cost = StrikeLifetimeCost;
+            if (cost <= 0f) return;
+            burnAge = Mathf.Min(Mathf.Max(0.1f, Lifetime), burnAge + cost);
         }
         public bool IsBurnedOut => RemainingLifetime <= 0f;
         private float burnAge;
@@ -187,9 +199,10 @@ namespace CardsUnity.Controllers
                 smokeEmission = smoke != null ? smoke.emission.rateOverTimeMultiplier : 0f;
                 emissionCached = true;
             }
-            burnAge = Mathf.Min(Mathf.Max(0.1f, lifetime), burnAge + dt);
-            float age = Mathf.Clamp01(burnAge / Mathf.Max(0.1f, lifetime));
-            float dying = Mathf.InverseLerp(1f - burnoutFraction, 1f, age);
+            float effectiveLifetime = Mathf.Max(0.1f, Lifetime);
+            burnAge = Mathf.Min(effectiveLifetime, burnAge + dt);
+            float age = Mathf.Clamp01(burnAge / effectiveLifetime);
+            float dying = Mathf.InverseLerp(1f - (FuelBalance?.BurnoutFraction ?? burnoutFraction), 1f, age);
             float fuel = 1f - Mathf.SmoothStep(0f, 1f, dying);
             Transform motionSource = character != null ? character : transform;
             if (!initialized)
@@ -259,9 +272,23 @@ namespace CardsUnity.Controllers
         private void ApplyLight(float variation)
         {
             if (flameLight == null) return;
-            flameLight.intensity = brightness * variation;
-            flameLight.range = lightRange;
+            flameLight.intensity = (IlluminationBalance?.Brightness ?? brightness) * variation;
+            flameLight.range = IlluminationBalance?.LightRange ?? lightRange;
             flameLight.color = lightColor;
         }
+
+#if UNITY_EDITOR
+        internal void CopyLegacyBalanceTo(TorchIlluminationBalance illumination, TorchFuelBalance fuel)
+        {
+            illumination.Capture(brightness, lightRange);
+            fuel.Capture(lifetime, burnoutFraction, strikeLifetimeCost, dropLifetimeCost);
+        }
+
+        internal void AssignBalanceProfile(TorchBalanceProfile profile)
+        {
+            balanceProfile = profile;
+            UnityEditor.EditorUtility.SetDirty(this);
+        }
+#endif
     }
 }

@@ -6,6 +6,11 @@ namespace CardsUnity.Controllers
     [DisallowMultipleComponent, DefaultExecutionOrder(-50)]
     public sealed class CharacterKnockdown : MonoBehaviour
     {
+        [Header("Balance")]
+        [Tooltip("Optional shared player balance. Existing fields below are used when empty.")]
+        [SerializeField] private PlayerGameplayBalanceProfile balanceProfile;
+
+        [Header("Local fallback — Knockdown")]
         [SerializeField, Min(0.05f)] private float fallDuration = 0.25f;
         [Tooltip("Seconds of actual movement on the knees before starting to stand. Standing still pauses recovery.")]
         [SerializeField, Min(0f)] private float kneelDuration = 1.4f;
@@ -13,6 +18,8 @@ namespace CardsUnity.Controllers
         [SerializeField, Min(0f)] private float immunityAfterStanding = 1.5f;
         private CartoonCharacterGait gait;
         private float elapsed, immunity, movingTime, reportedDistance;
+        public PlayerGameplayBalanceProfile BalanceProfile => balanceProfile;
+        private PlayerKnockdownBalance KnockdownBalance => balanceProfile != null ? balanceProfile.Knockdown : null;
         public bool IsDown { get; private set; }
         public bool CanBeHit => isActiveAndEnabled && !IsDown && immunity <= 0f;
 
@@ -46,17 +53,17 @@ namespace CardsUnity.Controllers
             immunity = Mathf.Max(0f, immunity - dt);
             if (!IsDown) return;
             elapsed += dt;
-            float fall = Mathf.Max(0.05f, fallDuration);
-            float stand = Mathf.Max(0.05f, standDuration);
+            float fall = Mathf.Max(0.05f, KnockdownBalance?.FallDuration ?? fallDuration);
+            float stand = Mathf.Max(0.05f, KnockdownBalance?.StandDuration ?? standDuration);
             if (elapsed >= fall && movementDistance > 0.0001f) movingTime += dt;
-            float holdEnd = Mathf.Max(0f, kneelDuration);
+            float holdEnd = Mathf.Max(0f, KnockdownBalance?.KneelDuration ?? kneelDuration);
             gait.KnockdownWeight = elapsed < fall ? Mathf.SmoothStep(0f, 1f, elapsed / fall)
                 : 1f - PoseEasing.SmootherStep((movingTime - holdEnd) / stand);
             if (movingTime >= holdEnd + stand)
             {
                 IsDown = false;
                 gait.KnockdownWeight = 0f;
-                immunity = immunityAfterStanding;
+                immunity = KnockdownBalance?.ImmunityAfterStanding ?? immunityAfterStanding;
             }
         }
 
@@ -65,5 +72,18 @@ namespace CardsUnity.Controllers
             IsDown = false;
             if (gait != null) gait.KnockdownWeight = 0f;
         }
+
+#if UNITY_EDITOR
+        internal void CopyLegacyBalanceTo(PlayerKnockdownBalance destination)
+        {
+            destination.Capture(fallDuration, kneelDuration, standDuration, immunityAfterStanding);
+        }
+
+        internal void AssignBalanceProfile(PlayerGameplayBalanceProfile profile)
+        {
+            balanceProfile = profile;
+            UnityEditor.EditorUtility.SetDirty(this);
+        }
+#endif
     }
 }

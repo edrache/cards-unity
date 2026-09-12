@@ -10,7 +10,13 @@ namespace CardsUnity.Controllers
         private static readonly List<Treasure> activeTreasures = new List<Treasure>();
         public static IReadOnlyList<Treasure> ActiveTreasures => activeTreasures;
 
+        [Tooltip("Shared item name, value and category. Unassigned preserves legacy prefab tuning.")]
+        [SerializeField] private TreasureDefinition definition;
         [SerializeField, Min(1)] private int value = 100;
+        private bool hasValueOverride;
+        public TreasureDefinition Definition => definition;
+        public bool IsCoin => definition != null ? definition.IsCoin : LegacyName == "Gold Coin";
+        private string LegacyName => name.Split('(')[0].Trim();
         [SerializeField, Min(0.0001f)] private float lightThreshold = 0.005f;
         [SerializeField] private ParticleSystem glints;
         [SerializeField, Min(0.01f)] private float minimumSizeDistance = 10f;
@@ -24,12 +30,13 @@ namespace CardsUnity.Controllers
         private static float nextLightRefresh;
         private readonly RaycastHit[] hits = new RaycastHit[64];
         private float nextSample;
-        public int Value => value;
+        public int Value => hasValueOverride || definition == null ? value : definition.Value;
         public string DisplayName
         {
             get
             {
-                string itemName = name.Split('(')[0].Trim();
+                if (definition != null) return definition.DisplayName;
+                string itemName = LegacyName;
                 switch (itemName)
                 {
                     case "Golden Chalice": return "Złoty kielich";
@@ -45,7 +52,11 @@ namespace CardsUnity.Controllers
         public float Exposure { get; private set; }
         public bool IsIlluminated { get; private set; }
 
-        public void SetValue(int amount) => value = Mathf.Max(1, amount);
+        /// <summary>Overrides this instance's value without changing the shared definition.</summary>
+        public void SetValue(int amount) { value = Mathf.Max(1, amount); hasValueOverride = true; }
+#if UNITY_EDITOR
+        public void AssignDefinition(TreasureDefinition asset) => definition = asset;
+#endif
         private void OnValidate() { value = Mathf.Max(1, value); lightThreshold = Mathf.Max(0.0001f, lightThreshold); }
         private void OnEnable()
         {

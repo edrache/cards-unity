@@ -83,6 +83,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 142a04a0734e748e189e5d3e1475e90c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.ProceduralCharacter
+  balanceProfile: {fileID: 11400000, guid: 3138c25bbcaf14370aa4f273785dff96, type: 2}
   rewiredPlayerName: Player0
   idleThreshold: 0.08
   walkThreshold: 0.35
@@ -305,6 +306,7 @@ MonoBehaviour:
   forearm: {fileID: 4537996985418629761}
   character: {fileID: 3466474160620811249}
   chest: {fileID: 7664271967446964823}
+  balanceProfile: {fileID: 11400000, guid: 3138c25bbcaf14370aa4f273785dff96, type: 2}
   windupDuration: 0.14
   strikeDuration: 0.1
   recoverDuration: 0.3
@@ -327,10 +329,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.TorchInteraction
   torch: {fileID: 0}
+  balanceProfile: {fileID: 11400000, guid: 3138c25bbcaf14370aa4f273785dff96, type: 2}
   pickupRange: 1
   pickupDuration: 0.75
   recoveryDuration: 0.45
   showPrompt: 1
+  boulderCarryHeight: 0.72
+  boulderCarryForward: 0.3
+  boulderSideClearance: 0.16
 --- !u!114 &2261660506157653080
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -343,6 +349,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71df801d69fbc46518c37577929007cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterKnockdown
+  balanceProfile: {fileID: 11400000, guid: 3138c25bbcaf14370aa4f273785dff96, type: 2}
   fallDuration: 0.25
   kneelDuration: 1.4
   standDuration: 0.65
@@ -359,6 +366,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dfa35d8412bc4a13b945544993f81e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterStress
+  balanceProfile: {fileID: 11400000, guid: 3138c25bbcaf14370aa4f273785dff96, type: 2}
   stress: 0
   encounterStress: 8
   hitStress: 25
@@ -381,6 +389,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8e57f9d06b8bc4cbe9638ee3e846f6c1, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterHealth
+  balanceProfile: {fileID: 11400000, guid: 3138c25bbcaf14370aa4f273785dff96, type: 2}
   slotCount: 3
   refillSecondsPerSlot: 10
   fullFillColor: {r: 1, g: 0.55, b: 0.16, a: 1}
@@ -398,6 +407,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d07402d83d784dda85537a5722e3695, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterDeath
+  balanceProfile: {fileID: 11400000, guid: 3138c25bbcaf14370aa4f273785dff96, type: 2}
   defeatDelay: 3
 --- !u!1 &689539237441915602
 GameObject:
