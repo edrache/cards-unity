@@ -61,6 +61,7 @@ namespace CardsUnity.Controllers
             bool running;
             bool attackHeld;
             bool interactPressed;
+            bool interactHeld;
             if (ReInput.isReady)
             {
                 Player player = ReInput.players.GetPlayer(rewiredPlayerName);
@@ -73,7 +74,9 @@ namespace CardsUnity.Controllers
                 // Run stays a held action on every controller, so it also works alongside the stick.
                 running = player.GetButton("Run");
                 attackHeld = player.GetButton("Attack");
-                interactPressed = ReInput.mapping.GetActionId("TorchInteract") >= 0 && player.GetButtonDown("TorchInteract");
+                bool hasInteractAction = ReInput.mapping.GetActionId("TorchInteract") >= 0;
+                interactPressed = hasInteractAction && player.GetButtonDown("TorchInteract");
+                interactHeld = hasInteractAction && player.GetButton("TorchInteract");
                 if (player.GetButtonDown("Sneak") && player.IsCurrentInputSource("Sneak", ControllerType.Keyboard))
                 {
                     sneaking = !sneaking;
@@ -87,12 +90,14 @@ namespace CardsUnity.Controllers
                 if (UnityEngine.InputSystem.Keyboard.current?.cKey.wasPressedThisFrame == true) sneaking = !sneaking;
                 attackHeld = UnityEngine.InputSystem.Keyboard.current?.spaceKey.isPressed == true;
                 interactPressed = UnityEngine.InputSystem.Keyboard.current?.eKey.wasPressedThisFrame == true;
+                interactHeld = UnityEngine.InputSystem.Keyboard.current?.eKey.isPressed == true;
             }
             var knockdown = GetComponent<CharacterKnockdown>();
             if (knockdown != null && knockdown.IsDown)
             {
-                running = attackHeld = interactPressed = false;
+                running = attackHeld = interactPressed = interactHeld = false;
             }
+            if (torchInteraction != null) torchInteraction.SetInteractHeld(interactHeld);
             if (interactPressed && torchInteraction != null) torchInteraction.TryInteract();
             // Completing the expedition disables control during this interaction.
             if (!enabled) return;
@@ -207,6 +212,16 @@ namespace CardsUnity.Controllers
         {
             idleThreshold = Mathf.Clamp(idleThreshold, 0.01f, 0.5f);
             walkThreshold = Mathf.Clamp(walkThreshold, idleThreshold + 0.01f, 0.99f);
+        }
+
+        private void OnDisable()
+        {
+            torchInteraction?.SetInteractHeld(false);
+        }
+
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            if (!hasFocus) torchInteraction?.SetInteractHeld(false);
         }
 
         private void ReadLegacyInput(out Vector2 input, out bool running, out bool analog)

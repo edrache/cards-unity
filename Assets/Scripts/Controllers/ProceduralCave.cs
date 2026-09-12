@@ -27,6 +27,22 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0f, 1f)] private float rockDensity = 0.45f;
         [SerializeField, Range(1f, 4f)] private float minimumRockSize = 1.2f;
         [SerializeField, Range(1f, 4f)] private float maximumRockSize = 2.6f;
+        [Header("Corridor rockfall traps")]
+        [Tooltip("Percentage of eligible corridors with one rockfall stretch. The entrance and rooms stay clear. Zero disables traps.")]
+        [SerializeField, Range(0f, 100f)] private float rockfallCorridorPercentage = 25f;
+        [SerializeField, Min(1f)] private float minimumRockfallLength = 2f;
+        [SerializeField, Min(1f)] private float maximumRockfallLength = 6f;
+        [Tooltip("Height above the corridor floor from which debris falls, independent of the cutaway walls.")]
+        [SerializeField, Min(2f)] private float rockfallCeilingHeight = 3.5f;
+        [Tooltip("Time after entering the trap before heavy rocks begin to fall. Leaving does not cancel it.")]
+        [SerializeField, Min(0.1f)] private float rockfallWarningSeconds = 2.5f;
+        [Tooltip("Time over which the heavy rocks are released, once the warning ends.")]
+        [SerializeField, Min(0.1f)] private float rockfallCollapseSeconds = 1f;
+        [SerializeField, Min(0f)] private float rockfallIdlePebblesPerSecond = 4f;
+        [SerializeField, Min(0f)] private float rockfallActivePebblesPerSecond = 55f;
+        [SerializeField, Min(0.1f)] private float rockfallPebbleLifetime = 2f;
+        [Tooltip("Optional material with a PickupOutline pass. Unassigned uses a generated rock-colored Dither Accent material.")]
+        [SerializeField] private Material rockfallMaterial;
         [Header("Centipedes")]
         [SerializeField] private ProceduralCentipede centipedePrefab;
         [Tooltip("Percentage of rooms receiving one centipede. Rounded to the nearest whole room; zero disables spawning. Selection is repeatable for Seed.")]
@@ -71,6 +87,7 @@ namespace CardsUnity.Controllers
         private Vector2 exit;
         private GameObject generated;
         private Mesh floorMesh, wallMesh, wallCollisionMesh, entranceGrottoMesh;
+        private Material generatedRockfallMaterial;
         private bool rebuildPending;
         private float noiseOffset;
         public int RoomCount => roomCount;
@@ -108,6 +125,15 @@ namespace CardsUnity.Controllers
             centipedeRoomPercentage = Mathf.Clamp(centipedeRoomPercentage, 0f, 100f);
             minimumRockSize = Mathf.Clamp(minimumRockSize, 1f, 4f);
             maximumRockSize = Mathf.Clamp(maximumRockSize, minimumRockSize, 4f);
+            rockfallCorridorPercentage = Mathf.Clamp(rockfallCorridorPercentage, 0f, 100f);
+            minimumRockfallLength = Mathf.Max(1f, minimumRockfallLength);
+            maximumRockfallLength = Mathf.Max(minimumRockfallLength, maximumRockfallLength);
+            rockfallCeilingHeight = Mathf.Max(2f, rockfallCeilingHeight);
+            rockfallWarningSeconds = Mathf.Max(0.1f, rockfallWarningSeconds);
+            rockfallCollapseSeconds = Mathf.Max(0.1f, rockfallCollapseSeconds);
+            rockfallIdlePebblesPerSecond = Mathf.Max(0f, rockfallIdlePebblesPerSecond);
+            rockfallActivePebblesPerSecond = Mathf.Max(rockfallIdlePebblesPerSecond, rockfallActivePebblesPerSecond);
+            rockfallPebbleLifetime = Mathf.Max(0.1f, rockfallPebbleLifetime);
             elevationRange = Mathf.Clamp(elevationRange, 1f, 12f);
             maximumSlope = Mathf.Clamp(maximumSlope, 5f, 20f);
             cutawayWallHeight = Mathf.Clamp(cutawayWallHeight, 0.5f, 1.5f);
@@ -124,6 +150,8 @@ namespace CardsUnity.Controllers
         {
             if (generated != null) generated.SetActive(false);
             Dispose(generated); Dispose(floorMesh); Dispose(wallMesh); Dispose(wallCollisionMesh); Dispose(entranceGrottoMesh);
+            Dispose(generatedRockfallMaterial);
+            generatedRockfallMaterial = null;
             generated = null; floorMesh = null; wallMesh = null; wallCollisionMesh = null; entranceGrottoMesh = null;
         }
 
@@ -194,6 +222,106 @@ namespace CardsUnity.Controllers
             }
             SpawnCentipedes();
             SpawnBodies();
+            SpawnRockfallTraps();
+        }
+
+        private void SpawnRockfallTraps()
+        {
+            if (rockfallCorridorPercentage <= 0f || corridors.Count <= 1) return;
+            // Selection and debris have their own stream; trap tuning cannot rearrange the cave.
+            var random = new System.Random(unchecked(seed * 397 ^ 91827361));
+            var eligible = new List<(int corridor, Vector3[] path)>();
+            for (int c = 0; c < corridors.Count - 1; c++)
+            {
+                var route = corridors[c];
+                var distances = new float[route.Length];
+                for (int i = 1; i < route.Length; i++)
+                    distances[i] = distances[i - 1] + Vector2.Distance(route[i - 1], route[i]);
+                float available = distances[distances.Length - 1] - 4f;
+                float minimum = Mathf.Max(1f, minimumRockfallLength);
+                if (available < minimum) continue;
+                float maximum = Mathf.Min(available, Mathf.Max(minimum, maximumRockfallLength));
+                for (int attempt = 0; attempt < 32; attempt++)
+                {
+                    float length = Mathf.Lerp(minimum, maximum, (float)random.NextDouble());
+                    float start = 2f + (available - length) * (float)random.NextDouble();
+                    int steps = Mathf.Max(2, Mathf.CeilToInt(length / 0.65f));
+                    var path = new Vector3[steps + 1];
+                    bool clear = true;
+                    for (int i = 0; i <= steps; i++)
+                    {
+                        Vector2 point = PointAlongRoute(route, distances, start + length * i / steps);
+                        if (!IsRockfallCorridorPoint(point, c)) { clear = false; break; }
+                        path[i] = transform.TransformPoint(Surface(point, 0f));
+                    }
+                    if (!clear) continue;
+                    eligible.Add((c, path));
+                    break;
+                }
+            }
+            for (int i = eligible.Count - 1; i > 0; i--)
+            {
+                int j = random.Next(i + 1);
+                (eligible[i], eligible[j]) = (eligible[j], eligible[i]);
+            }
+            int count = Mathf.Clamp(Mathf.FloorToInt(eligible.Count * rockfallCorridorPercentage / 100f + 0.5f), 0, eligible.Count);
+            if (count == 0) return;
+            Material material = rockfallMaterial;
+            if (material == null || material.FindPass("PickupOutline") < 0)
+            {
+                generatedRockfallMaterial = new Material(Shader.Find("CardsUnity/Dither Accent"))
+                {
+                    name = "Generated rockfall stone", hideFlags = HideFlags.DontSave
+                };
+                generatedRockfallMaterial.SetColor("_BaseColor", new Color(0.32f, 0.29f, 0.25f));
+                generatedRockfallMaterial.SetFloat("_AccentEnabled", 0f);
+                generatedRockfallMaterial.SetFloat("_Smoothness", 0.12f);
+                generatedRockfallMaterial.SetFloat("_PickupOutlineWidth", 2f);
+                material = generatedRockfallMaterial;
+            }
+            var population = new GameObject("Generated Rockfall Traps") { hideFlags = HideFlags.DontSave };
+            population.transform.SetParent(generated.transform, false);
+            for (int i = 0; i < count; i++)
+            {
+                var selected = eligible[i];
+                var root = new GameObject($"Rockfall (Corridor {selected.corridor + 1:00})") { hideFlags = HideFlags.DontSave };
+                root.transform.SetParent(population.transform, false);
+                root.transform.position = selected.path[selected.path.Length / 2];
+                root.AddComponent<CaveRockfallTrap>().Configure(this, selected.path, corridorWidth - 0.25f,
+                    player, rockfallCeilingHeight, rockfallWarningSeconds, rockfallCollapseSeconds,
+                    rockfallIdlePebblesPerSecond, rockfallActivePebblesPerSecond, rockfallPebbleLifetime,
+                    material, random.Next());
+            }
+        }
+
+        private bool IsRockfallCorridorPoint(Vector2 point, int corridor)
+        {
+            if (Vector2.Distance(point, entrance) < 6f) return false;
+            for (int i = 0; i < rooms.Count; i++)
+                if (Vector2.Distance(point, rooms[i]) < radii[i] * 1.15f + 0.5f) return false;
+            foreach (var rock in rockFootprints)
+                if (Vector2.Distance(point, new Vector2(rock.x, rock.y)) < rock.z + 0.8f) return false;
+            // Keep junctions clear and prevent two neighbouring traps from covering the same floor.
+            for (int c = 0; c < corridors.Count; c++)
+            {
+                if (c == corridor) continue;
+                var route = corridors[c];
+                for (int i = 1; i < route.Length; i++)
+                {
+                    Vector2 edge = route[i] - route[i - 1];
+                    float t = Mathf.Clamp01(Vector2.Dot(point - route[i - 1], edge) / Mathf.Max(0.0001f, edge.sqrMagnitude));
+                    if (Vector2.Distance(point, route[i - 1] + edge * t) < corridorWidth * 0.75f) return false;
+                }
+            }
+            return Field(point) >= 0.85f;
+        }
+
+        private static Vector2 PointAlongRoute(Vector2[] route, float[] distances, float distance)
+        {
+            for (int i = 1; i < route.Length; i++)
+                if (distance <= distances[i])
+                    return Vector2.Lerp(route[i - 1], route[i], Mathf.InverseLerp(distances[i - 1], distances[i], distance));
+            return route[route.Length - 1];
         }
 
         private void SpawnTreasures()

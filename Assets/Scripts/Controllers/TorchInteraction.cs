@@ -5,7 +5,7 @@ using TMPro;
 
 namespace CardsUnity.Controllers
 {
-    /// <summary>Contextual treasure collection and torch handling with the available hand.</summary>
+    /// <summary>Contextual treasure, torch and boulder handling with the available hand.</summary>
     [DefaultExecutionOrder(175)]
     public sealed class TorchInteraction : MonoBehaviour
     {
@@ -18,11 +18,17 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0.15f, 1f)] private float recoveryDuration = 0.45f;
         [SerializeField] private bool showPrompt = true;
 
+        [Header("Boulder carrying")]
+        [SerializeField, Range(0.2f, 1.5f)] private float boulderCarryHeight = 0.72f;
+        [SerializeField, Range(0f, 0.8f)] private float boulderCarryForward = 0.3f;
+        [SerializeField, Range(0f, 0.5f)] private float boulderSideClearance = 0.16f;
+
         private TextMeshProUGUI prompt;
         private RectTransform promptPanel;
         private Transform arm, elbow;
         private Treasure treasure;
-        private bool collecting, useLeftHand;
+        private CaveBoulder boulder;
+        private bool collecting, liftingBoulder, carryingBoulder, useLeftHand, interactHeld;
         private CharacterInventory inventory;
         private CaveExit caveExit;
         private Vector3 gripOffset;
@@ -33,6 +39,8 @@ namespace CardsUnity.Controllers
         private float recoveryStarted, recoveryArmWeight, recoveryCrouchWeight;
         private Vector3 reachTarget, recoveryLocalTarget;
         private Quaternion groundRotation;
+        private Vector3 boulderLiftStart;
+        private Quaternion boulderCarryLocalRotation;
         public bool IsBusy { get; private set; }
         /// <summary>The currently reachable item that E would collect, for contextual presentation.</summary>
         public Transform PickupTarget { get; private set; }
@@ -107,7 +115,14 @@ namespace CardsUnity.Controllers
             }
 
             FindPickupTorch();
-            if (HasEligiblePickupTorch()) PickupTarget = torch.transform;
+            if (HasEligiblePickupTorch())
+            {
+                PickupTarget = torch.transform;
+                return;
+            }
+
+            FindBoulder();
+            if (boulder != null) PickupTarget = boulder.transform;
         }
 
         private void FindTreasure()
@@ -123,6 +138,26 @@ namespace CardsUnity.Controllers
                 distance = d;
             }
         }
+
+        private void FindBoulder()
+        {
+            boulder = null;
+            float distance = pickupRange;
+            foreach (var candidate in CaveBoulder.ActiveBoulders)
+            {
+                if (candidate == null || !candidate.isActiveAndEnabled || !candidate.CanPickUp
+                    || candidate.IsHeld || candidate.gameObject.scene != gameObject.scene) continue;
+                float d = DistanceToBoulder(candidate);
+                if (d > distance || !HasClearReach(candidate.transform)) continue;
+                boulder = candidate;
+                distance = d;
+            }
+        }
+
+        private float DistanceToBoulder(CaveBoulder candidate)
+        {
+            return Mathf.Max(0f, Vector3.Distance(transform.position, candidate.ReachPoint) - candidate.Radius);
+        }
         private Transform Part(string partName)
         {
             foreach (var part in GetComponentsInChildren<Transform>())
@@ -133,9 +168,12 @@ namespace CardsUnity.Controllers
         {
             get
             {
+                if (carryingBoulder) return "Puść, aby upuścić głaz";
                 RefreshPickupTarget();
                 if (PickupTarget == null) return CanUseExit() ? "Wyjdź z jaskini" : string.Empty;
-                return treasure != null ? "Podnieś: " + treasure.DisplayName : "Podnieś: pochodnię";
+                if (treasure != null) return "Podnieś: " + treasure.DisplayName;
+                return boulder != null && PickupTarget == boulder.transform
+                    ? "Przytrzymaj, aby podnieść głaz" : "Podnieś: pochodnię";
             }
         }
 
@@ -175,20 +213,27 @@ namespace CardsUnity.Controllers
             RefreshPickupTarget();
             if (PickupTarget == null) return CanUseExit() && caveExit.TryExit(inventory);
             collecting = treasure != null && PickupTarget == treasure.transform;
-            useLeftHand = collecting && HoldsTorch;
+            liftingBoulder = boulder != null && PickupTarget == boulder.transform;
+            useLeftHand = (collecting || liftingBoulder) && HoldsTorch;
             string side = useLeftHand ? "Left" : "Right";
             arm = Part(side + " Arm");
             elbow = Part(side + " Forearm");
             var hand = Part(side + " Hand");
             if (arm == null || elbow == null || hand == null) return false;
             gripOffset = hand.localPosition;
-            if (!collecting && !HasEligiblePickupTorch()) return false;
+            if (!collecting && !liftingBoulder && !HasEligiblePickupTorch()) return false;
             IsBusy = true;
             PickupTarget = null;
-            recovering = attachedTorch = false;
+            recovering = attachedTorch = carryingBoulder = false;
             elapsed = weight = crouchWeight = 0f;
-            reachTarget = collecting ? treasure.transform.position : torch.transform.position;
+            reachTarget = CurrentGroundTarget();
             return true;
+        }
+
+        /// <summary>Supplies the current state of the contextual interaction button.</summary>
+        public void SetInteractHeld(bool held)
+        {
+            interactHeld = held;
         }
 
         private bool CanUseExit()
@@ -200,10 +245,20 @@ namespace CardsUnity.Controllers
 
         private bool HasValidTarget()
         {
+            if (liftingBoulder)
+                return boulder != null && boulder.isActiveAndEnabled && boulder.CanPickUp && !boulder.IsHeld
+                    && DistanceToBoulder(boulder) <= pickupRange
+                    && HasClearReach(boulder.transform);
             if (!collecting) return HasEligiblePickupTorch();
             return treasure != null && treasure.isActiveAndEnabled
-                && Vector3.Distance(transform.position, treasure.transform.position) <= pickupRange
-                && HasClearReach(treasure.transform);
+                   && Vector3.Distance(transform.position, treasure.transform.position) <= pickupRange
+                   && HasClearReach(treasure.transform);
+        }
+
+        private Vector3 CurrentGroundTarget()
+        {
+            if (collecting) return treasure.transform.position;
+            return liftingBoulder ? boulder.ReachPoint : torch.transform.position;
         }
 
         private void BeginRecovery()
@@ -227,8 +282,13 @@ namespace CardsUnity.Controllers
         {
             if (!IsBusy) return;
             elapsed += Mathf.Max(0f, dt);
+            if (liftingBoulder && !recovering && !interactHeld)
+            {
+                ReleaseBoulder();
+                BeginRecovery();
+            }
             // Once lost, this attempt stays cancelled even if the player comes back into range.
-            if (!recovering && !HasValidTarget()) BeginRecovery();
+            if (!recovering && !carryingBoulder && !HasValidTarget()) BeginRecovery();
             float duration = Mathf.Max(0.0001f, pickupDuration);
             float progress = elapsed / duration;
             float recovery = (elapsed - recoveryStarted) / Mathf.Max(0.0001f, recoveryDuration);
@@ -236,10 +296,11 @@ namespace CardsUnity.Controllers
             // Both tracks still reach full contact at the original transfer deadline.
             weight = !recovering ? PoseEasing.Window(progress, 0.12f, 1f)
                 : recoveryArmWeight * (1f - PoseEasing.Window(recovery, 0f, 0.9f));
-            crouchWeight = !recovering ? PoseEasing.Window(progress, 0f, 0.85f)
+            float lift = carryingBoulder
+                ? PoseEasing.Window((elapsed - pickupDuration) / Mathf.Max(0.0001f, recoveryDuration), 0f, 1f) : 0f;
+            crouchWeight = !recovering ? PoseEasing.Window(progress, 0f, 0.85f) * (1f - lift)
                 : recoveryCrouchWeight * (1f - PoseEasing.Window(recovery, 0.12f, 1f));
-            if (!recovering)
-                reachTarget = collecting ? treasure.transform.position : torch.transform.position;
+            if (!recovering && !carryingBoulder) reachTarget = CurrentGroundTarget();
             if (gait != null) gait.InteractionCrouch = crouchWeight;
             if (torch != null && !useLeftHand) torch.SetPoseSuppression(weight);
         }
@@ -250,10 +311,27 @@ namespace CardsUnity.Controllers
         {
             if (!IsBusy) return;
             // Movement and target availability may have changed since Update.
-            if (!recovering && !HasValidTarget()) BeginRecovery();
+            if (!recovering && !carryingBoulder && !HasValidTarget()) BeginRecovery();
+            if (!recovering && carryingBoulder && !OwnsCarriedBoulder())
+            {
+                carryingBoulder = false;
+                BeginRecovery();
+            }
+            else if (!recovering && carryingBoulder)
+            {
+                // A blocked sweep leaves the boulder at its last safe position. Keep the
+                // hold active while it remains within reach, so the player can step back
+                // and continue without clipping it or holding it remotely through a wall.
+                bool moved = MoveCarriedBoulder();
+                if (!moved && !IsCarriedBoulderWithinReach())
+                {
+                    ReleaseBoulder();
+                    BeginRecovery();
+                }
+            }
             // Refresh after Update as Rigidbody interpolation may have moved the visible grip.
             reachTarget = recovering ? transform.TransformPoint(recoveryLocalTarget)
-                : collecting ? treasure.transform.position : torch.transform.position;
+                : carryingBoulder ? BoulderHandTarget() : CurrentGroundTarget();
             // Two-bone reach keeps the hand on the physical grip until it is attached.
             Vector3 shoulder = arm.position;
             float upper = Vector3.Distance(shoulder, elbow.position);
@@ -267,11 +345,21 @@ namespace CardsUnity.Controllers
             arm.rotation = Quaternion.Slerp(arm.rotation, Quaternion.FromToRotation(Vector3.down, joint - shoulder), weight);
             elbow.rotation = Quaternion.Slerp(elbow.rotation, Quaternion.FromToRotation(Vector3.down, reachTarget - elbow.position), weight);
 
-            if (!recovering && elapsed >= pickupDuration)
+            if (!recovering && !carryingBoulder && elapsed >= pickupDuration)
             {
                 // Gameplay collection is independent of visual IK accuracy. Keep the selected
                 // treasure locked, but recheck availability, range and obstruction at transfer.
-                if (collecting)
+                if (liftingBoulder)
+                {
+                    if (HasValidTarget() && boulder.TryCarry(transform))
+                    {
+                        carryingBoulder = true;
+                        boulderLiftStart = boulder.ReachPoint;
+                        boulderCarryLocalRotation = Quaternion.Inverse(transform.rotation) * boulder.transform.rotation;
+                    }
+                    else BeginRecovery();
+                }
+                else if (collecting)
                 {
                     if (treasure != null && treasure.isActiveAndEnabled
                         && Vector3.Distance(transform.position, treasure.transform.position) <= pickupRange
@@ -286,7 +374,7 @@ namespace CardsUnity.Controllers
                     attack?.SetTorch(torch);
                     attachedTorch = true;
                 }
-                BeginRecovery();
+                if (!liftingBoulder) BeginRecovery();
             }
             if (attachedTorch && HoldsTorch)
                 torch.transform.rotation = Quaternion.Slerp(groundRotation, transform.rotation, 1f - weight);
@@ -295,9 +383,50 @@ namespace CardsUnity.Controllers
 
         public void CancelInteraction() => Finish();
 
+        private bool MoveCarriedBoulder()
+        {
+            if (!OwnsCarriedBoulder()) return false;
+            float lift = PoseEasing.Window((elapsed - pickupDuration) / Mathf.Max(0.0001f, recoveryDuration), 0f, 1f);
+            float side = useLeftHand ? -1f : 1f;
+            Vector3 carryLocal = new Vector3(side * (boulderSideClearance + boulder.Radius * 0.25f),
+                Mathf.Max(boulderCarryHeight, boulder.Radius + 0.25f), boulder.Radius + boulderCarryForward);
+            Vector3 position = Vector3.Lerp(boulderLiftStart, transform.TransformPoint(carryLocal), lift);
+            Quaternion rotation = Quaternion.Slerp(boulder.transform.rotation,
+                transform.rotation * boulderCarryLocalRotation, lift);
+            return boulder.MoveCarried(position, rotation);
+        }
+
+        private bool OwnsCarriedBoulder()
+        {
+            return boulder != null && boulder.IsHeld && boulder.Holder == transform;
+        }
+
+        private bool IsCarriedBoulderWithinReach()
+        {
+            if (!OwnsCarriedBoulder()) return false;
+            Vector3 reachOrigin = transform.position + transform.up * 0.72f;
+            return Vector3.Distance(reachOrigin, boulder.ReachPoint) <= boulder.Radius + 1.1f;
+        }
+
+        private Vector3 BoulderHandTarget()
+        {
+            Vector3 center = boulder != null ? boulder.ReachPoint : reachTarget;
+            Vector3 towardShoulder = arm != null ? arm.position - center : Vector3.up;
+            return center + towardShoulder.normalized * (boulder != null ? boulder.Radius * 0.72f : 0f);
+        }
+
+        private void ReleaseBoulder()
+        {
+            if (carryingBoulder && OwnsCarriedBoulder())
+                boulder.Drop();
+            carryingBoulder = false;
+        }
+
         private void Finish()
         {
+            ReleaseBoulder();
             IsBusy = false;
+            collecting = liftingBoulder = recovering = attachedTorch = false;
             weight = crouchWeight = 0f;
             if (torch != null) torch.SetPoseSuppression(0f);
             if (gait != null) gait.InteractionCrouch = 0f;
@@ -306,6 +435,7 @@ namespace CardsUnity.Controllers
         private void OnDisable()
         {
             Finish();
+            interactHeld = false;
             PickupTarget = null;
             activeInteractions.Remove(this);
             if (promptPanel != null) promptPanel.gameObject.SetActive(false);
@@ -313,7 +443,13 @@ namespace CardsUnity.Controllers
 
         private void OnDestroy()
         {
+            Finish();
             if (promptPanel != null) Destroy(promptPanel.gameObject);
+        }
+
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            if (!hasFocus && liftingBoulder) Finish();
         }
 
         private void UpdatePrompt()
