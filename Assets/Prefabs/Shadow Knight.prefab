@@ -387,7 +387,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8e57f9d06b8bc4cbe9638ee3e846f6c1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterHealth
   balanceProfile: {fileID: 11400000, guid: 3138c25bbcaf14370aa4f273785dff96, type: 2}
   slotCount: 3
@@ -405,7 +405,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5d07402d83d784dda85537a5722e3695, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterDeath
   balanceProfile: {fileID: 11400000, guid: 3138c25bbcaf14370aa4f273785dff96, type: 2}
   defeatDelay: 3
