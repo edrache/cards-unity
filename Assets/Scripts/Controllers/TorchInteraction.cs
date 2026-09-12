@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 
 namespace CardsUnity.Controllers
 {
@@ -16,6 +18,8 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0.15f, 1f)] private float recoveryDuration = 0.45f;
         [SerializeField] private bool showPrompt = true;
 
+        private TextMeshProUGUI prompt;
+        private RectTransform promptPanel;
         private Transform arm, elbow;
         private Treasure treasure;
         private bool collecting, useLeftHand;
@@ -196,6 +200,7 @@ namespace CardsUnity.Controllers
         {
             Tick(Time.deltaTime);
             RefreshPickupTarget();
+            UpdatePrompt();
         }
 
         public void Tick(float dt)
@@ -283,16 +288,53 @@ namespace CardsUnity.Controllers
             Finish();
             PickupTarget = null;
             activeInteractions.Remove(this);
+            if (promptPanel != null) promptPanel.gameObject.SetActive(false);
         }
 
-        private void OnGUI()
+        private void OnDestroy()
         {
-            if (GetComponent<CharacterKnockdown>()?.IsDown == true) return;
-            if (!showPrompt || IsBusy || (attack != null && attack.IsAttacking)) return;
-            string label = ActionLabel;
-            if (string.IsNullOrEmpty(label)) return;
-            float width = Mathf.Min(420f, Screen.width - 24f);
-            GUI.Box(new Rect((Screen.width - width) * 0.5f, Screen.height - 76f, width, 40f), "[E]  " + label);
+            if (promptPanel != null) Destroy(promptPanel.gameObject);
+        }
+
+        private void UpdatePrompt()
+        {
+            string label = showPrompt ? ActionLabel : string.Empty;
+            if (string.IsNullOrEmpty(label))
+            {
+                if (promptPanel != null) promptPanel.gameObject.SetActive(false);
+                return;
+            }
+            if (prompt == null)
+            {
+                if (inventory == null || inventory.UiCanvas == null) return;
+                var panel = new GameObject("Pickup Prompt", typeof(RectTransform), typeof(Image));
+                panel.layer = LayerMask.NameToLayer("UI");
+                promptPanel = panel.GetComponent<RectTransform>();
+                promptPanel.SetParent(inventory.UiCanvas.transform, false);
+                promptPanel.anchorMin = promptPanel.anchorMax = new Vector2(0.5f, 0);
+                promptPanel.pivot = new Vector2(0.5f, 0);
+                promptPanel.anchoredPosition = new Vector2(0, 24);
+                var background = panel.GetComponent<Image>();
+                background.color = new Color(0, 0, 0, 0.8f);
+                background.raycastTarget = false;
+                var textObject = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+                textObject.layer = panel.layer;
+                prompt = textObject.GetComponent<TextMeshProUGUI>();
+                prompt.rectTransform.SetParent(promptPanel, false);
+                prompt.rectTransform.anchorMin = Vector2.zero;
+                prompt.rectTransform.anchorMax = Vector2.one;
+                prompt.rectTransform.offsetMin = new Vector2(12, 4);
+                prompt.rectTransform.offsetMax = new Vector2(-12, -4);
+                prompt.font = inventory.UiFont;
+                prompt.fontSize = 18;
+                prompt.alignment = TextAlignmentOptions.Center;
+                prompt.richText = false;
+                prompt.raycastTarget = false;
+            }
+            float width = ((RectTransform)inventory.UiCanvas.transform).rect.width;
+            promptPanel.sizeDelta = new Vector2(Mathf.Min(420, Mathf.Max(1, width - 24)), 48);
+            promptPanel.gameObject.SetActive(true);
+            prompt.text = "[E]  " + label;
         }
     }
 }

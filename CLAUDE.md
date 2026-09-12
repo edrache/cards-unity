@@ -8,6 +8,10 @@ Apply the task tiers from AGENTS.md using models actually exposed by the current
 
 Delegate only when it saves total work, pass minimal context, and explicitly select a child model when supported. Otherwise continue locally. Do not claim to switch the active parent model. Keep one owner for editor mutations and let the parent integrate and commit.
 
+## UI text
+
+Use only TextMeshPro for project-owned game UI text (`TextMeshProUGUI` / `TMP_Text`), including runtime labels and prompts. Follow the migration and Polish glyph checks in [AGENTS.md](AGENTS.md#ui-text); do not introduce legacy uGUI Text or IMGUI game labels.
+
 ## Entry checklist
 
 1. Inspect `git status --short`, then relevant source and serialized settings.

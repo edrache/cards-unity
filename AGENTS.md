@@ -58,6 +58,11 @@ Gameplay entry points (filenames below are under `Assets/Scripts/Controllers/`):
 - Cave/creatures: `ProceduralCave.cs`, `CrawlSurfaceMesh.cs`, `ProceduralCentipede.cs`, `ProceduralCentipede.Attack.cs`, `CaveBody.cs`.
 - Collection/audio: `Treasure.cs`, `CharacterInventory.cs`, `FootstepAudio.cs`, `CentipedeLegAudio.cs`, `MusicPlayer.cs`.
 
+## UI text
+
+- Use TextMeshPro for all project-owned game UI text: `TextMeshProUGUI` components and `TMP_Text` references, including runtime-created labels and prompts. Do not add legacy `UnityEngine.UI.Text`, `TextMesh`, or IMGUI text (`GUI.Label`, `GUI.Box`, `GUILayout`) to game UI. Editor inspectors and third-party packages are outside this rule.
+- Preserve layout, serialized references, masking and input when migrating text. Verify Polish glyph coverage, wrapping and overflow with the assigned TMP font and fallbacks.
+
 ## Behavior to preserve
 
 - Camera-relative WASD/arrows/stick; held Run overrides Walk/Sneak, C toggles keyboard Sneak. Stick deflection selects Sneak/Walk, never Run; centered sticks release automatic style control. Sprint restores the custom mix of all twelve styles.

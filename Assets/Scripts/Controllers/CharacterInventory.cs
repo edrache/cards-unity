@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 
@@ -23,11 +24,13 @@ namespace CardsUnity.Controllers
         [Header("Inventory UI")]
         [SerializeField] private Canvas inventoryCanvas;
         [SerializeField] private RectTransform inventoryPanel;
-        [SerializeField] private Text heading, contents, total;
+        [SerializeField] private TMP_Text heading, contents, total;
         private bool ownsCanvas;
         private GameObject ownedEventSystem;
         private readonly System.Text.StringBuilder text = new System.Text.StringBuilder();
         public IReadOnlyList<Entry> Items => items;
+        public Canvas UiCanvas => inventoryCanvas;
+        public TMP_FontAsset UiFont => heading != null ? heading.font : Resources.Load<TMP_FontAsset>("Fonts/CaveUI");
         public int TotalValue { get; private set; }
         public int TotalCount { get; private set; }
 
@@ -115,17 +118,18 @@ namespace CardsUnity.Controllers
             return rect;
         }
 
-        private static Text Label(RectTransform rect, int size, Font font)
+        private static TMP_Text Label(RectTransform rect, int size, TMP_FontAsset font)
         {
-            var label = rect.gameObject.AddComponent<Text>();
+            var label = rect.gameObject.AddComponent<TextMeshProUGUI>();
             label.font = font;
             label.fontSize = size;
-            label.fontStyle = FontStyle.Bold;
+            label.fontStyle = FontStyles.Bold;
             label.color = Color.white;
             label.raycastTarget = false;
-            label.supportRichText = false;
-            label.horizontalOverflow = HorizontalWrapMode.Wrap;
-            label.verticalOverflow = VerticalWrapMode.Overflow;
+            label.richText = false;
+            label.alignment = TextAlignmentOptions.TopLeft;
+            label.textWrappingMode = TextWrappingModes.Normal;
+            label.overflowMode = TextOverflowModes.Overflow;
             return label;
         }
 
@@ -151,7 +155,7 @@ namespace CardsUnity.Controllers
                 new Vector2(16, -286), new Vector2(316, -16));
             inventoryPanel = panel;
             panel.gameObject.AddComponent<Image>().color = Color.black;
-            var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            var font = UiFont;
             heading = Label(Rect("Heading", panel, new Vector2(0, 1), Vector2.one,
                 new Vector2(16, -46), new Vector2(-16, -14)), 24, font);
             total = Label(Rect("Total Value", panel, Vector2.zero, new Vector2(1, 0),
