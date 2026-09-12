@@ -184,15 +184,24 @@ Shader "CardsUnity/One Bit Dither"
                 float reach = _ShadowReach * lerp(0.12, 1.0, anxiety) * finger * breath;
                 if (reach < 0.01) return 0;
                 float darkness = 0;
+                float continuity = 1;
                 [unroll] for (int i = 1; i <= 4; i++)
                 {
                     float3 outside = world + float3(delta.x, 0, delta.y) / max(radius, 0.001) * reach * (i * 0.25);
                     float4 clip = TransformWorldToHClip(outside);
                     float4 screen = ComputeScreenPos(clip);
                     float2 sampleUV = screen.xy / max(screen.w, 0.0001);
-                    if (clip.w <= 0 || any(sampleUV <= 0) || any(sampleUV >= 1) || IsCameraUI(sampleUV)) continue;
+                    if (clip.w <= 0 || any(sampleUV <= 0) || any(sampleUV >= 1) ||
+                        IsCameraUI(sampleUV) || !HasSurface(sampleUV)) break;
+                    // A projected point may land on a nearer rock or a distant wall.
+                    // Accept only geometry close to the expected world-space sample;
+                    // never let later taps jump across an intervening discontinuity.
+                    float3 visible = PaperWorldPosition(sampleUV);
+                    float mismatch = distance(visible, outside);
+                    continuity = min(continuity, 1.0 - smoothstep(0.08, 0.35, mismatch));
+                    if (continuity <= 0) break;
                     float tone = saturate((Luma(sampleUV) * _Exposure - 0.5) * _Contrast + 0.5);
-                    darkness = max(darkness, 1.0 - smoothstep(0.04, 0.23, tone));
+                    darkness = max(darkness, continuity * (1.0 - smoothstep(0.04, 0.23, tone)));
                 }
                 return darkness * finger * protection * smoothstep(0.0, 0.025, _LivingShadowSource.w);
             }
