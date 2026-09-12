@@ -9,7 +9,7 @@ Shader "CardsUnity/Cave Crawlers Lit"
 
         [Header(Crawlers)]
         _CrawlerColor ("Crawler Color", Color) = (0.015, 0.008, 0.004, 1)
-        _CrawlerDensity ("Cells Per Metre", Range(0.2, 2)) = 0.75
+        _CrawlerDensity ("Cells Per Metre", Range(0.2, 64)) = 0.75
         _CrawlerPopulation ("Occupied Cells", Range(0, 1)) = 0.7
         _CrawlerSize ("Crawler Length (Metres)", Range(0.04, 0.5)) = 0.18
         _CrawlerSpeed ("Movement Speed", Range(0, 0.5)) = 0.075
@@ -96,13 +96,16 @@ Shader "CardsUnity/Cave Crawlers Lit"
         // Keep the crawler inside its cell for the whole cycle. The previous one-way traversal
         // spent most of its time beyond the cell edge, making sparse populations appear absent.
         float travel = sin(phase * twoPi) * cellSize * 0.34;
-        float pathOffset = cos(phase * twoPi + seed * 11.0) * _CrawlerWiggle;
+        // At high densities, keep motion and the silhouette within the current cell. This
+        // avoids neighbour-cell samples, so increasing density does not increase shader cost.
+        float effectiveWiggle = min(_CrawlerWiggle, cellSize * 0.1);
+        float pathOffset = cos(phase * twoPi + seed * 11.0) * effectiveWiggle;
         float2 centre = direction * travel + perpendicular * pathOffset;
 
         float2 delta = localPosition - centre;
         float2 crawler = float2(dot(delta, direction), dot(delta, perpendicular));
-        float size = max(_CrawlerSize, 0.001);
-        crawler.y += sin(crawler.x * 24.0 / size + phase * twoPi * 2.0) * _CrawlerWiggle * 0.12;
+        float size = min(max(_CrawlerSize, 0.001), cellSize * 0.22);
+        crawler.y += sin(crawler.x * 24.0 / size + phase * twoPi * 2.0) * effectiveWiggle * 0.12;
 
         float body = CrawlerCapsuleDistance(crawler, float2(-size * 0.38, 0),
             float2(size * 0.34, 0), size * 0.16);
