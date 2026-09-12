@@ -16,7 +16,8 @@ Use only TextMeshPro for project-owned game UI text (`TextMeshProUGUI` / `TMP_Te
 
 1. Inspect `git status --short`, then relevant source and serialized settings.
 2. Choose CLI for file work; use Unity MCP when live editor state or reference-preserving edits are needed. Documentation-only tasks do not need Unity.
-3. Verify the affected behavior, review the full working tree and commit all outstanding non-ignored changes as authorized in AGENTS.md; respect requests to leave changes uncommitted.
-4. Report changes, verification/limitations and commit ID in Polish. Do not push unless requested.
+3. For every game design change, update the [HTML designer handbook](docs/designer-guide/index.html) in the same change and commit, following [Designer documentation](AGENTS.md#designer-documentation). Keep system descriptions, configuration guidance and the generated catalog aligned with the implementation.
+4. Verify the affected behavior, review the full working tree and commit all outstanding non-ignored changes as authorized in AGENTS.md; respect requests to leave changes uncommitted.
+5. Report changes, verification/limitations and commit ID in Polish. Do not push unless requested.
 
 Keep shared project rules in AGENTS.md rather than duplicating them here.

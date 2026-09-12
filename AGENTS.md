@@ -109,6 +109,11 @@ Use the shortest reliable route for the required evidence; a task may use both.
 - Let Unity create `.meta` files; preserve GUIDs and commit new assets with their metadata. Preserve serialized field names or use migration attributes. Respect `.gitignore`, including Library/Temp; never force-add build outputs.
 - Avoid broad edits to DOTween, Rewired, Feel/MMFeedbacks, Quibli, TrueShadow, FMOD or other packages. Installed packages are not proof that a gameplay feature uses them.
 
+## Designer documentation
+
+- Every addition, change or removal affecting game design must update the HTML handbook at [docs/designer-guide/index.html](docs/designer-guide/index.html) in the same change and commit. This includes mechanics, balance, level generation, characters, enemies, traps, items and designer settings or workflows. Replace obsolete descriptions and explain how to configure new elements, their parameters and their interactions with existing systems.
+- Update `docs/designer-guide/system-notes.json` for system descriptions and run `python3 docs/designer-guide/generate_inventory.py` after component or serialized configuration changes. Keep the explanatory handbook sections current as well as the generated catalog. Before completing work, check that the documentation matches the implemented behavior and that its links work.
+
 ## Maintaining these instructions
 
 Keep shared workflow rules and the concise current map here. Keep `CLAUDE.md` focused on its host. Update relevant sections of `docs/gameplay-reference.md` for implementation detail; replace stale claims rather than appending repeated narratives. Store long verification evidence in task-specific documentation, not the always-loaded guide. Current code/assets take precedence over historical checks.
