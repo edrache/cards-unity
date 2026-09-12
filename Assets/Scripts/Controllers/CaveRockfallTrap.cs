@@ -41,6 +41,10 @@ namespace CardsUnity.Controllers
         private float idlePebbleRate;
         private float activePebbleRate;
         private float pebbleLifetime;
+        private float minimumPebbleSize;
+        private float maximumPebbleSize;
+        private float minimumBoulderRadius;
+        private float maximumBoulderRadius;
         private float stateTime;
         private float pebbleAccumulator;
         private int nextBoulder;
@@ -54,7 +58,9 @@ namespace CardsUnity.Controllers
 
         public void Configure(ProceduralCave owner, Vector3[] path, float corridorWidth, Transform target,
             float height, float warningDuration, float collapseDuration, float ambientPebbles,
-            float warningPebbles, float particleLifetime, Material material, int seed)
+            float warningPebbles, float particleLifetime, Material material, int seed,
+            float minPebbleSize = 0.025f, float maxPebbleSize = 0.085f,
+            float minBoulderRadius = 0.55f, float maxBoulderRadius = 0.67f)
         {
             cave = owner;
             floorPath = path != null ? (Vector3[])path.Clone() : Array.Empty<Vector3>();
@@ -66,6 +72,10 @@ namespace CardsUnity.Controllers
             idlePebbleRate = Mathf.Max(0f, ambientPebbles);
             activePebbleRate = Mathf.Max(idlePebbleRate, warningPebbles);
             pebbleLifetime = Mathf.Max(0.1f, particleLifetime);
+            minimumPebbleSize = Mathf.Max(0.001f, minPebbleSize);
+            maximumPebbleSize = Mathf.Max(minimumPebbleSize, maxPebbleSize);
+            minimumBoulderRadius = Mathf.Max(0.1f, minBoulderRadius);
+            maximumBoulderRadius = Mathf.Max(minimumBoulderRadius, maxBoulderRadius);
             boulderMaterial = material;
             random = new System.Random(seed);
             State = RockfallState.Dormant;
@@ -171,8 +181,8 @@ namespace CardsUnity.Controllers
             float length = PathLength();
             int across = Mathf.Clamp(Mathf.RoundToInt(width / 1.1f), 2, 3);
             int rows = Mathf.Clamp(Mathf.CeilToInt(length / 2f), 1, 3);
-            float maximumRadius = Mathf.Min(0.67f, width / (2f * (across - 0.15f)));
-            float minimumRadius = Mathf.Max(0.38f, maximumRadius - 0.12f);
+            float maximumRadius = Mathf.Min(maximumBoulderRadius, width / (2f * (across - 0.15f)));
+            float minimumRadius = Mathf.Min(minimumBoulderRadius, maximumRadius);
             float sideExtent = Mathf.Max(0f, width * 0.5f - maximumRadius - 0.06f);
             var result = new BoulderPlan[across * rows];
             int index = 0;
@@ -318,7 +328,7 @@ namespace CardsUnity.Controllers
                     position = floor + side * NextFloat(-width * 0.42f, width * 0.42f)
                         + Vector3.up * NextFloat(ceilingHeight * 0.72f, ceilingHeight * 0.98f),
                     velocity = new Vector3(NextFloat(-0.2f, 0.2f), NextFloat(-0.55f, -0.1f), NextFloat(-0.2f, 0.2f)),
-                    startSize = NextFloat(0.025f, 0.085f),
+                    startSize = NextFloat(minimumPebbleSize, maximumPebbleSize),
                     startLifetime = pebbleLifetime * NextFloat(0.7f, 1.1f),
                     rotation3D = new Vector3(NextFloat(0f, 360f), NextFloat(0f, 360f), NextFloat(0f, 360f))
                 };

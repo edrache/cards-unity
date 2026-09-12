@@ -41,6 +41,12 @@ namespace CardsUnity.Controllers
         [SerializeField, Min(0f)] private float rockfallIdlePebblesPerSecond = 4f;
         [SerializeField, Min(0f)] private float rockfallActivePebblesPerSecond = 55f;
         [SerializeField, Min(0.1f)] private float rockfallPebbleLifetime = 2f;
+        [Tooltip("Particle size in world units, before shrinking near the end of its lifetime.")]
+        [SerializeField, Min(0.001f)] private float minimumRockfallPebbleSize = 0.025f;
+        [SerializeField, Min(0.001f)] private float maximumRockfallPebbleSize = 0.085f;
+        [Tooltip("Boulder radius in meters. Both bounds are reduced when necessary to fit the corridor.")]
+        [SerializeField, Min(0.1f)] private float minimumRockfallBoulderRadius = 0.55f;
+        [SerializeField, Min(0.1f)] private float maximumRockfallBoulderRadius = 0.67f;
         [Tooltip("Optional material with a PickupOutline pass. Unassigned uses a generated rock-colored Dither Accent material.")]
         [SerializeField] private Material rockfallMaterial;
         [Header("Centipedes")]
@@ -134,6 +140,10 @@ namespace CardsUnity.Controllers
             rockfallIdlePebblesPerSecond = Mathf.Max(0f, rockfallIdlePebblesPerSecond);
             rockfallActivePebblesPerSecond = Mathf.Max(rockfallIdlePebblesPerSecond, rockfallActivePebblesPerSecond);
             rockfallPebbleLifetime = Mathf.Max(0.1f, rockfallPebbleLifetime);
+            minimumRockfallPebbleSize = Mathf.Max(0.001f, minimumRockfallPebbleSize);
+            maximumRockfallPebbleSize = Mathf.Max(minimumRockfallPebbleSize, maximumRockfallPebbleSize);
+            minimumRockfallBoulderRadius = Mathf.Max(0.1f, minimumRockfallBoulderRadius);
+            maximumRockfallBoulderRadius = Mathf.Max(minimumRockfallBoulderRadius, maximumRockfallBoulderRadius);
             elevationRange = Mathf.Clamp(elevationRange, 1f, 12f);
             maximumSlope = Mathf.Clamp(maximumSlope, 5f, 20f);
             cutawayWallHeight = Mathf.Clamp(cutawayWallHeight, 0.5f, 1.5f);
@@ -290,7 +300,8 @@ namespace CardsUnity.Controllers
                 root.AddComponent<CaveRockfallTrap>().Configure(this, selected.path, corridorWidth - 0.25f,
                     player, rockfallCeilingHeight, rockfallWarningSeconds, rockfallCollapseSeconds,
                     rockfallIdlePebblesPerSecond, rockfallActivePebblesPerSecond, rockfallPebbleLifetime,
-                    material, random.Next());
+                    material, random.Next(), minimumRockfallPebbleSize, maximumRockfallPebbleSize,
+                    minimumRockfallBoulderRadius, maximumRockfallBoulderRadius);
             }
         }
 
