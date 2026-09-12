@@ -18,6 +18,14 @@ namespace CardsUnity.Controllers
         [Min(0.01f)]
         [SerializeField] private float shakeOrbitSmoothTime = 0.4f;
 
+        [Header("Damage shake")]
+        [Tooltip("World-space shake amplitude on each accepted hit, including fatal hits. Zero disables damage shake.")]
+        [SerializeField, Min(0f)] private float damageShakeAmplitude = 0.18f;
+        [SerializeField, Min(0f)] private float damageShakeDuration = 0.3f;
+        [SerializeField, Min(0.1f)] private float damageShakeFrequency = 24f;
+
+        private CharacterHealth targetHealth;
+        private Transform subscribedTarget;
         private Vector3 appliedShake;
         private float shakeRemaining;
         private float shakeDuration;
@@ -44,8 +52,35 @@ namespace CardsUnity.Controllers
             shakeOrbitTarget = Mathf.DeltaAngle(0f, shakeOrbitTarget + step);
         }
 
+        private void OnEnable() => BindTargetHealth();
+
+        private void BindTargetHealth()
+        {
+            if (subscribedTarget == target && targetHealth != null) return;
+            UnsubscribeHealth();
+            subscribedTarget = target;
+            targetHealth = target != null ? target.GetComponentInParent<CharacterHealth>() : null;
+            if (targetHealth == null) return;
+            targetHealth.Damaged += ShakeOnDamage;
+            targetHealth.Died += ShakeOnDamage;
+        }
+
+        private void UnsubscribeHealth()
+        {
+            if (targetHealth != null)
+            {
+                targetHealth.Damaged -= ShakeOnDamage;
+                targetHealth.Died -= ShakeOnDamage;
+            }
+            targetHealth = null;
+            subscribedTarget = null;
+        }
+
+        private void ShakeOnDamage() => Shake(damageShakeAmplitude, damageShakeDuration, damageShakeFrequency);
+
         private void OnDisable()
         {
+            UnsubscribeHealth();
             transform.position -= appliedShake;
             appliedShake = Vector3.zero;
             shakeRemaining = 0f;
@@ -55,6 +90,7 @@ namespace CardsUnity.Controllers
 
         private void LateUpdate()
         {
+            BindTargetHealth();
             // Remove the previous visual offset so it never feeds back into follow smoothing.
             transform.position -= appliedShake;
             appliedShake = Vector3.zero;

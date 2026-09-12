@@ -1276,8 +1276,11 @@ MonoBehaviour:
   offset: {x: 0, y: 16, z: -7}
   orbitAngle: 0
   smoothing: 8
-  shakeOrbitDegrees: {x: 4, y: 7}
+  shakeOrbitDegrees: {x: 10, y: 20}
   shakeOrbitSmoothTime: 0.2
+  damageShakeAmplitude: 0.18
+  damageShakeDuration: 0.3
+  damageShakeFrequency: 24
 --- !u!81 &990240587
 AudioListener:
   m_ObjectHideFlags: 0
@@ -2473,7 +2476,7 @@ MonoBehaviour:
   lightExposure: {fileID: 0}
   stress: {fileID: 0}
   rollInterval: 5
-  damageChanceXIn6: 1
+  damageChanceXIn6: 3
   fullDarknessExposure: 0.0001
   torchRefreshInterval: 1
 --- !u!1 &1914908111
