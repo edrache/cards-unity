@@ -144,6 +144,40 @@ namespace CardsUnity.Controllers.Editor
                 Check(new SerializedObject(torchProfile).FindProperty("fuel.lifetime").floatValue == 20f,
                     "Burning does not mutate shared profile", ref assertions);
 
+                torch.Extinguish();
+                torch.enabled = false;
+                torch.enabled = true;
+                torch.Tick(0.1f, 3f);
+                Check(torch.IsBurnedOut && torch.RemainingLifetime == 0f,
+                    "Water extinguishing survives disable and enable", ref assertions);
+                Check(new SerializedObject(torchProfile).FindProperty("fuel.lifetime").floatValue == 20f,
+                    "Water does not mutate shared torch balance", ref assertions);
+
+                var waterRule = new CaveRoomContentRule { contentType = CaveRoomContentType.Water };
+                waterRule.water.width = float.NaN;
+                waterRule.Validate();
+                var waterClone = waterRule.Clone();
+                waterClone.water.height = 6f;
+                Check(waterRule.water.width == 0.8f && waterRule.water.height == 2.5f,
+                    "Water validates dimensions and owns its snapshot", ref assertions);
+                var waterObject = new GameObject("Test water");
+                SceneManager.MoveGameObjectToScene(waterObject, scene);
+                var water = waterObject.AddComponent<CaveWater>();
+                water.Configure(null, 1f, 3f, 0.4f);
+                Check(water.IntersectsFlameSegment(new Vector3(-2f, 1f, 0f), new Vector3(2f, 1f, 0f), 0.08f),
+                    "Fast flame crossing intersects water", ref assertions);
+                Check(water.IntersectsFlameSegment(Vector3.up, Vector3.up, 0.08f),
+                    "Stationary flame inside water intersects", ref assertions);
+                Check(!water.IntersectsFlameSegment(new Vector3(-2f, 4f, 0f), new Vector3(2f, 4f, 0f), 0.08f),
+                    "Flame above stream stays dry", ref assertions);
+                Check(!water.IntersectsFlameSegment(new Vector3(-2f, 1f, 0.5f), new Vector3(2f, 1f, 0.5f), 0.08f),
+                    "Flame beside stream stays dry", ref assertions);
+                water.transform.SetPositionAndRotation(new Vector3(5f, 2f, -4f), Quaternion.Euler(0f, 73f, 0f));
+                water.transform.localScale = new Vector3(2f, 1f, 0.5f);
+                Check(water.IntersectsFlameSegment(water.transform.TransformPoint(new Vector3(-2f, 1f, 0f)),
+                    water.transform.TransformPoint(new Vector3(2f, 1f, 0f)), 0.08f),
+                    "Water contact supports transformed streams", ref assertions);
+
                 var treasureObject = new GameObject("Renamed collectible");
                 SceneManager.MoveGameObjectToScene(treasureObject, scene);
                 var treasure = treasureObject.AddComponent<Treasure>();

@@ -9,6 +9,7 @@ namespace CardsUnity.Controllers.Editor
     {
         private static IEnumerable<SerializedProperty> VisibleFields(SerializedProperty property)
         {
+            bool water = property.FindPropertyRelative("contentType").enumValueIndex == (int)CaveRoomContentType.Water;
             bool grass = property.FindPropertyRelative("contentType").enumValueIndex == (int)CaveRoomContentType.Grass;
             foreach (string name in new[] { "label", "enabled", "contentType", "seedSalt", "roomPercentage" })
                 yield return property.FindPropertyRelative(name);
@@ -17,10 +18,15 @@ namespace CardsUnity.Controllers.Editor
                 yield return property.FindPropertyRelative("grass");
                 yield break;
             }
+            if (water) yield return property.FindPropertyRelative("water");
             foreach (string name in new[] { "prefabs", "minimumPerSelectedRoom", "maximumPerSelectedRoom",
                 "footprintRadius", "wallClearance", "routeClearance", "surfaceOffset", "wallPlacementPercentage",
                 "minimumWallHeight", "maximumWallHeight", "wallEmbedDepth", "alignToFloor", "randomYaw" })
+            {
+                if (water && (name == "prefabs" || name == "wallPlacementPercentage" || name == "minimumWallHeight"
+                    || name == "maximumWallHeight" || name == "wallEmbedDepth" || name == "alignToFloor")) continue;
                 yield return property.FindPropertyRelative(name);
+            }
         }
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)

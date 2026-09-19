@@ -133,10 +133,43 @@ namespace CardsUnity.Controllers
 
         private void OnDisable() => activeTorches.Remove(this);
 
-        private float BurnoutProgress => Mathf.InverseLerp(1f - (FuelBalance?.BurnoutFraction ?? burnoutFraction),
+        private bool waterExtinguished;
+        private Vector3 previousFlamePosition;
+        private int previousWaterFrame = -2;
+        private static int waterCheckFrame = -1;
+
+        /// <summary>Checks final flame poses once per frame, after attack and pickup overlays.</summary>
+        public static void CheckWaterContacts()
+        {
+            if (waterCheckFrame == Time.frameCount) return;
+            waterCheckFrame = Time.frameCount;
+            foreach (var torch in activeTorches)
+            {
+                if (torch == null || torch.IsBurnedOut) continue;
+                Vector3 current = torch.fire != null ? torch.fire.transform.position
+                    : torch.flameLight != null ? torch.flameLight.transform.position
+                    : torch.transform.TransformPoint(new Vector3(0f, 0.62f, 0f));
+                Vector3 previous = torch.previousWaterFrame == Time.frameCount - 1
+                    ? torch.previousFlamePosition : current;
+                if (CaveWater.TouchesWater(previous, current, 0.08f)) torch.Extinguish();
+                torch.previousFlamePosition = current;
+                torch.previousWaterFrame = Time.frameCount;
+            }
+        }
+
+        /// <summary>Water permanently extinguishes this instance for the current session.</summary>
+        public void Extinguish()
+        {
+            waterExtinguished = true;
+            ApplyLight(0f);
+            if (fire != null) fire.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            if (smoke != null) smoke.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        private float BurnoutProgress => waterExtinguished ? 1f : Mathf.InverseLerp(1f - (FuelBalance?.BurnoutFraction ?? burnoutFraction),
             1f, Mathf.Clamp01(burnAge / Mathf.Max(0.1f, Lifetime)));
 
-        public float RemainingLifetime => Mathf.Max(0f, Lifetime - burnAge);
+        public float RemainingLifetime => waterExtinguished ? 0f : Mathf.Max(0f, Lifetime - burnAge);
 
         /// <summary>Seconds of burn lifetime a single strike costs.</summary>
         public float StrikeLifetimeCost => FuelBalance?.StrikeLifetimeCost ?? strikeLifetimeCost;
@@ -204,6 +237,7 @@ namespace CardsUnity.Controllers
         {
             if (!activeTorches.Contains(this)) activeTorches.Add(this);
             initialized = false;
+            previousWaterFrame = -2;
             ApplyLight(IsBurnedOut ? 0f : 1f);
         }
 

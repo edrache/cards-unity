@@ -17,13 +17,15 @@ namespace CardsUnity.Controllers
             for (int ruleIndex = 0; ruleIndex < rules.Count; ruleIndex++)
             {
                 CaveRoomContentRule rule = rules[ruleIndex];
-                if (rule == null || !rule.enabled || rule.contentType != CaveRoomContentType.Prefabs || rule.roomPercentage <= 0f) continue;
+                if (rule == null || !rule.enabled || rule.contentType == CaveRoomContentType.Grass || rule.roomPercentage <= 0f) continue;
 
+                bool water = rule.contentType == CaveRoomContentType.Water;
+                if (water && rule.water.material == null) continue;
                 var prefabs = new List<GameObject>();
                 if (rule.prefabs != null)
                     foreach (GameObject prefab in rule.prefabs)
                         if (prefab != null && !prefabs.Contains(prefab)) prefabs.Add(prefab);
-                if (prefabs.Count == 0) continue;
+                if (!water && prefabs.Count == 0) continue;
 
                 int selectedRoomCount = Mathf.Clamp(
                     Mathf.FloorToInt(rooms.Count * rule.roomPercentage / 100f + 0.5f), 0, rooms.Count);
@@ -54,7 +56,7 @@ namespace CardsUnity.Controllers
                     for (int i = 0; i < count; i++)
                     {
                         Vector2 point = default, inward = default;
-                        bool onWall = rule.wallPlacementPercentage > 0f
+                        bool onWall = !water && rule.wallPlacementPercentage > 0f
                             && wallRandom.NextDouble() * 100d < rule.wallPlacementPercentage
                             && TryFindWallContentPosition(rule, room, wallRandom, out point, out inward);
                         if (!onWall && !TryFindRoomContentPosition(rule, room, placementRandom, out point)) continue;
@@ -72,17 +74,18 @@ namespace CardsUnity.Controllers
                             ruleRoot.SetActive(false);
                         }
 
-                        GameObject prefab = prefabs[prefabRandom.Next(prefabs.Count)];
-                        GameObject instance = Instantiate(prefab, ruleRoot.transform);
-                        instance.name = $"{prefab.name} (Room {room + 1:00}, {i + 1})";
+                        GameObject prefab = water ? null : prefabs[prefabRandom.Next(prefabs.Count)];
+                        GameObject instance = water ? new GameObject("Falling Water") : Instantiate(prefab, ruleRoot.transform);
+                        if (water) instance.transform.SetParent(ruleRoot.transform, false);
+                        instance.name = $"{(water ? "Falling Water" : prefab.name)} (Room {room + 1:00}, {i + 1})";
                         instance.hideFlags = HideFlags.DontSave;
-                        Vector3 normal = rule.alignToFloor ? FloorNormal(point) : Vector3.up;
+                        Vector3 normal = !water && rule.alignToFloor ? FloorNormal(point) : Vector3.up;
                         Quaternion surfaceRotation = Quaternion.FromToRotation(Vector3.up, normal);
                         Quaternion yaw = rule.randomYaw
                             ? Quaternion.Euler(0f, (float)placementRandom.NextDouble() * 360f, 0f)
                             : Quaternion.identity;
                         instance.transform.localPosition = Surface(point, rule.surfaceOffset);
-                        instance.transform.localRotation = surfaceRotation * yaw * prefab.transform.localRotation;
+                        instance.transform.localRotation = surfaceRotation * yaw * (water ? Quaternion.identity : prefab.transform.localRotation);
                         if (onWall)
                         {
                             float visibleHeight = Settings.enableElevation ? Settings.cutawayWallHeight : Settings.wallHeight;
@@ -93,6 +96,9 @@ namespace CardsUnity.Controllers
                                 * prefab.transform.localRotation;
                             instance.name += " [Wall]";
                         }
+
+                        if (water) instance.AddComponent<CaveWater>().Configure(rule.water.material,
+                            rule.water.width, rule.water.height, rule.water.depth);
 
                         int instanceSeed = participantRandom.Next();
                         var context = new CaveSpawnContext(this, rule, player, room, instanceIndex, instanceSeed);

@@ -178,6 +178,21 @@ namespace CardsUnity.Rendering
                     builder.SetRenderFunc((PassData pass, RasterGraphContext context) =>
                         context.cmd.DrawRendererList(pass.renderers));
                 }
+                // Water and other opt-in transparent accents composite over the opaque palette.
+                var transparentDrawing = RenderingUtils.CreateDrawingSettings(AccentTag, rendering, camera, lights,
+                    SortingCriteria.CommonTransparent);
+                var transparentFiltering = new FilteringSettings(RenderQueueRange.transparent, camera.camera.cullingMask);
+                var transparentList = graph.CreateRendererList(new RendererListParams(
+                    rendering.cullResults, transparentDrawing, transparentFiltering));
+                using (var builder = graph.AddRasterRenderPass<PassData>("Transparent Dither Accents", out var data))
+                {
+                    data.renderers = transparentList;
+                    builder.UseRendererList(transparentList);
+                    builder.SetRenderAttachment(texture, 0, AccessFlags.ReadWrite);
+                    builder.SetRenderAttachmentDepth(resources.activeDepthTexture, AccessFlags.Read);
+                    builder.SetRenderFunc((PassData pass, RasterGraphContext context) =>
+                        context.cmd.DrawRendererList(pass.renderers));
+                }
             }
         }
 
