@@ -196,6 +196,8 @@ namespace CardsUnity.Controllers
         private void Clear()
         {
             if (generated != null) generated.SetActive(false);
+            if (generated != null)
+                foreach (var grass in generated.GetComponentsInChildren<CaveGrass>(true)) grass.ReleaseGeneratedResources();
             Dispose(generated); Dispose(floorMesh); Dispose(wallMesh); Dispose(wallCollisionMesh); Dispose(entranceGrottoMesh);
             Dispose(generatedRockfallMaterial);
             generatedRockfallMaterial = null;
@@ -273,6 +275,7 @@ namespace CardsUnity.Controllers
             SpawnBodies();
             SpawnRockfallTraps();
             SpawnRoomContent();
+            SpawnGrass();
         }
 
         private void SpawnRockfallTraps()

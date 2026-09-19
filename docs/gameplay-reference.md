@@ -12,6 +12,14 @@ Open **Tools > Cards Unity > Designer Hub** for shared tuning assets and source 
 
 `CaveGenerationProfile` is cloned at each rebuild. `ProceduralCave.player` remains a scene reference. Additional `CaveRoomContentRule` entries spawn arbitrary prefabs after built-in populations with independent seed salts and explicit footprint/route-clearance settings. `ICaveSpawnParticipant` provides cave/player/room context before activation; existing centipedes implement it. Placement is bounded and may produce fewer instances in crowded rooms.
 
+### Cave grass
+
+The generation profile can add seeded cave grass as a pure visual layer. `grassRoomPercentage` selects rooms exactly after rounding (35% on the current profile; default 0), and `grassBladesPerSquareMetre` (0–48, default 18) requests stratified floor samples in those rooms. Samples follow `FloorHeight` and reject walls, rocks, other room content and treasures. `grassMaximumBlades` (0–120,000, default 60,000) is a global safety cap; zero percentage or density disables generation. `grassHeight` is 0.3–2.5 m (default 1.2), `grassDrawDistance` is 8–80 m (default 32), and `grassBendRadius` is 0.3–3 m (default 1.1). `grassMaterial` uses the `Cards Unity/Cave Grass` shader/material family.
+
+The blade budget reduces density across all selected rooms before wall/obstacle rejection, so the final count can be below the cap. Height is nominal; individual blades vary from 70% to 125%. A missing material also disables grass. Legacy capture preserves the profile-only grass settings.
+
+The generator combines opaque, double-sided tapered blades into disposable 6 m mesh chunks. There are no per-blade objects, colliders or per-frame Update work. The vertex shader bends grass around the player with a short trailing wake of about 0.35 s; distance culling and shrink fade manage the far field. Grass receives URP torch lighting but casts no shadows. It has no effect on movement, enemy exposure, pickup, fuel or concealment AI, and does not persistently flatten: only the player produces the transient wake. Configure the profile through Designer Hub and use `Rebuild Cave`; changing the asset is snapshotted at rebuild start.
+
 ## Controls and animation behavior
 
 - WASD/arrows or the gamepad left stick move relative to the camera.

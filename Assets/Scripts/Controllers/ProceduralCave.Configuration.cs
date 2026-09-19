@@ -100,6 +100,13 @@ namespace CardsUnity.Controllers
                 foreach (var rule in profile.Settings.roomContentRules)
                     captured.roomContentRules.Add(rule != null ? rule.Clone() : null);
             }
+            captured.grassRoomPercentage = profile.Settings.grassRoomPercentage;
+            captured.grassBladesPerSquareMetre = profile.Settings.grassBladesPerSquareMetre;
+            captured.grassHeight = profile.Settings.grassHeight;
+            captured.grassMaximumBlades = profile.Settings.grassMaximumBlades;
+            captured.grassDrawDistance = profile.Settings.grassDrawDistance;
+            captured.grassBendRadius = profile.Settings.grassBendRadius;
+            captured.grassMaterial = profile.Settings.grassMaterial;
             profile.ReplaceSettings(captured);
         }
 

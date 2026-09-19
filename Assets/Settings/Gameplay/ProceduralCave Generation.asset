@@ -75,6 +75,13 @@ MonoBehaviour:
     wallHeight: 20
     floorMaterial: {fileID: 2100000, guid: ced424ebf33254a28922610737d84fac, type: 2}
     wallMaterial: {fileID: 2100000, guid: 2855f7a024e6d433a8a6935c01394c70, type: 2}
+    grassRoomPercentage: 35
+    grassBladesPerSquareMetre: 18
+    grassHeight: 1.2
+    grassMaximumBlades: 60000
+    grassDrawDistance: 32
+    grassBendRadius: 1.1
+    grassMaterial: {fileID: 2100000, guid: 728c514ae5d184917acda80a39b95c4e, type: 2}
     roomContentRules:
     - label: Stone Pillars
       enabled: 1
@@ -103,9 +110,9 @@ MonoBehaviour:
       - {fileID: 6307854898323304001, guid: f5ac47f09d16a4340b38cbe6f07edea3, type: 3}
       - {fileID: 3944237365202134501, guid: 7c6ccabf653464abea69c239ec92e006, type: 3}
       - {fileID: 5098021573500757134, guid: 2dc91656b92e745148e69e94b3bb7e92, type: 3}
-      roomPercentage: 65
-      minimumPerSelectedRoom: 1
-      maximumPerSelectedRoom: 3
+      roomPercentage: 78.5
+      minimumPerSelectedRoom: 4
+      maximumPerSelectedRoom: 42
       footprintRadius: 2.2
       wallClearance: 0.2
       routeClearance: 0.7

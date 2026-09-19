@@ -132,6 +132,18 @@ namespace CardsUnity.Controllers
         public Material floorMaterial;
         public Material wallMaterial;
 
+        [Header("Tall grass")]
+        [Tooltip("Percentage of rooms filled with visual grass. Zero disables it; selection uses an independent seeded stream.")]
+        [Range(0f, 100f)] public float grassRoomPercentage;
+        [Range(0f, 48f)] public float grassBladesPerSquareMetre = 18f;
+        [Range(0.3f, 2.5f)] public float grassHeight = 1.2f;
+        [Tooltip("Total blade budget across the cave. Large rooms share a reduced density to stay within this limit.")]
+        [Range(0, 120000)] public int grassMaximumBlades = 60000;
+        [Range(8f, 80f)] public float grassDrawDistance = 32f;
+        [Range(0.3f, 3f)] public float grassBendRadius = 1.1f;
+        [Tooltip("Assign a Cards Unity/Cave Grass material. Missing material disables grass, including in builds.")]
+        public Material grassMaterial;
+
         [Header("Extensible room content")]
         [Tooltip("Independent, seeded rules evaluated after all built-in cave populations have been placed.")]
         public List<CaveRoomContentRule> roomContentRules = new List<CaveRoomContentRule>();
@@ -191,6 +203,12 @@ namespace CardsUnity.Controllers
             cutawayWallHeight = Mathf.Clamp(Finite(cutawayWallHeight, 1.2f), 0.5f, 1.5f);
             irregularity = Mathf.Clamp01(Finite(irregularity, 0.65f));
             wallHeight = Mathf.Clamp(Finite(wallHeight, 3.2f), 2f, 20f);
+            grassRoomPercentage = Mathf.Clamp(Finite(grassRoomPercentage, 0f), 0f, 100f);
+            grassBladesPerSquareMetre = Mathf.Clamp(Finite(grassBladesPerSquareMetre, 18f), 0f, 48f);
+            grassHeight = Mathf.Clamp(Finite(grassHeight, 1.2f), 0.3f, 2.5f);
+            grassMaximumBlades = Mathf.Clamp(grassMaximumBlades, 0, 120000);
+            grassDrawDistance = Mathf.Clamp(Finite(grassDrawDistance, 32f), 8f, 80f);
+            grassBendRadius = Mathf.Clamp(Finite(grassBendRadius, 1.1f), 0.3f, 3f);
             if (roomContentRules == null) roomContentRules = new List<CaveRoomContentRule>();
             foreach (var rule in roomContentRules) rule?.Validate();
         }
