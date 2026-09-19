@@ -15,7 +15,7 @@ MonoBehaviour:
   settings:
     roomCount: 17
     seed: 2
-    roomRadius: 6.65
+    roomRadius: 8
     roomSizeVariation: 1
     extraConnections: 0.074
     corridorWidth: 3.12

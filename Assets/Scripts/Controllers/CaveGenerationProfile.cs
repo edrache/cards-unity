@@ -35,7 +35,8 @@ namespace CardsUnity.Controllers
         [Header("Layout")]
         [Range(1, 24)] public int roomCount = 6;
         public int seed = 173;
-        [Range(4f, 8f)] public float roomRadius = 5.5f;
+        [Tooltip("Base room radius in metres. 16 gives four times the area of radius 8; 32 gives four times its diameter. Larger rooms also increase layout spacing and rebuild cost.")]
+        [Range(4f, 32f)] public float roomRadius = 5.5f;
         [Tooltip("Radius variation around Room Radius. Zero gives equal base sizes; one ranges from 55% to 145%.")]
         [Range(0f, 1f)] public float roomSizeVariation = 0.85f;
         [Tooltip("Fraction of spare neighbouring connections opened as loops. Zero makes a branching tree.")]
@@ -130,7 +131,7 @@ namespace CardsUnity.Controllers
         public void Validate()
         {
             roomCount = Mathf.Clamp(roomCount, 1, 24);
-            roomRadius = Mathf.Clamp(Finite(roomRadius, 5.5f), 4f, 8f);
+            roomRadius = Mathf.Clamp(Finite(roomRadius, 5.5f), 4f, 32f);
             roomSizeVariation = Mathf.Clamp01(Finite(roomSizeVariation, 0.85f));
             extraConnections = Mathf.Clamp01(Finite(extraConnections, 0.4f));
             corridorWidth = Mathf.Clamp(Finite(corridorWidth, 3.5f), 2.5f, 5f);
