@@ -194,7 +194,7 @@ MonoBehaviour:
       randomYaw: 1
     - label: Falling Water
       enabled: 1
-      contentType: 2
+      contentType: 0
       grass:
         grassBladesPerSquareMetre: 18
         grassHeight: 1.2
@@ -211,7 +211,8 @@ MonoBehaviour:
         height: 2.5
         depth: 0.35
       seedSalt: 47023
-      prefabs: []
+      prefabs:
+      - {fileID: 274222535509208919, guid: c7a9b060b8f374285a63c838edc18ad7, type: 3}
       roomPercentage: 35
       minimumPerSelectedRoom: 1
       maximumPerSelectedRoom: 2

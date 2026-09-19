@@ -323,7 +323,9 @@ CharacterFollowCamera subscribes to its target health Damaged and Died events: e
 
 ## Falling cave water
 
-`CaveRoomContentType.Water` uses the same seeded room selection and safe floor placement as prefab rules, with independent `CaveWaterSettings` snapshots. Streams stay upright and use width, height, depth and a shared material. Missing material skips generation. Water does not use wall attachment. Generated meshes and children are disposable.
+The default Falling Water rule uses `CaveRoomContentType.Prefabs` with `Assets/Prefabs/Falling Water.prefab`. The prefab component owns dimensions (0.8 m wide, 5 m tall, 0.35 m deep) and material; its runtime mesh is rebuilt on enable. The rule disables floor alignment and wall placement, and reserves a 0.6 m footprint. Edit the prefab and rebuild the cave to apply changes.
+
+Legacy `CaveRoomContentType.Water` uses the same seeded room selection and safe floor placement as prefab rules, with independent `CaveWaterSettings` snapshots. Streams stay upright and use width, height, depth and a shared material. Missing material skips generation. Water does not use wall attachment. Generated meshes and children are disposable.
 
 `CaveWater` renders crossed ribbons and floor ripples using a procedural URP shader and DitherAccent palette pass. No particles, fluid simulation, shadow casting, refraction or extra lights are needed. Stream geometry reserves a minimum placement footprint. The shader remains depth-tested against cave rocks.
 
