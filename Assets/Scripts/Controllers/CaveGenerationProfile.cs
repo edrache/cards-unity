@@ -49,8 +49,16 @@ namespace CardsUnity.Controllers
         [Range(0f, 1f)] public float extraConnections = 0.4f;
         [Range(2.5f, 5f)] public float corridorWidth = 3.5f;
         [Range(0f, 1f)] public float corridorWinding = 0.8f;
+        [Tooltip("Random extra bends on room-to-room corridors. Zero preserves existing paths; one allows broad detours. Actual length still depends on room positions.")]
+        [Range(0f, 1f)] public float corridorLengthVariation = 0f;
         [Tooltip("Side tunnels branching from the middle of existing passages, including dead ends.")]
         [Range(0f, 1f)] public float branchDensity = 0.5f;
+        [Tooltip("Minimum straight-line reach of a side branch in metres. Winding makes the walked route longer.")]
+        [Range(2f, 64f)] public float minimumBranchLength = 7f;
+        [Tooltip("Maximum straight-line reach of a side branch in metres. Branches may meet other passages or rooms.")]
+        [Range(2f, 64f)] public float maximumBranchLength = 12f;
+        [Tooltip("Allow side branches to start from earlier branches as well as main corridors. Branch Density still limits the total count.")]
+        public bool allowNestedBranches = false;
         [Range(8f, 20f)] public float entranceLength = 12f;
 
         [Header("Scattered rocks")]
@@ -145,6 +153,9 @@ namespace CardsUnity.Controllers
             corridorWidth = Mathf.Clamp(Finite(corridorWidth, 3.5f), 2.5f, 5f);
             corridorWinding = Mathf.Clamp01(Finite(corridorWinding, 0.8f));
             branchDensity = Mathf.Clamp01(Finite(branchDensity, 0.5f));
+            corridorLengthVariation = Mathf.Clamp01(Finite(corridorLengthVariation, 0f));
+            minimumBranchLength = Mathf.Clamp(Finite(minimumBranchLength, 7f), 2f, 64f);
+            maximumBranchLength = Mathf.Clamp(Finite(maximumBranchLength, 12f), minimumBranchLength, 64f);
             entranceLength = Mathf.Clamp(Finite(entranceLength, 12f), 8f, 20f);
             rockDensity = Mathf.Clamp01(Finite(rockDensity, 0.45f));
             minimumRockSize = Mathf.Clamp(Finite(minimumRockSize, 1.2f), 1f, 4f);

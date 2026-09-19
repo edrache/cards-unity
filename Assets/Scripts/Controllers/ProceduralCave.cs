@@ -29,8 +29,16 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0f, 1f)] private float extraConnections = 0.4f;
         [SerializeField, Range(2.5f, 5f)] private float corridorWidth = 3.5f;
         [SerializeField, Range(0f, 1f)] private float corridorWinding = 0.8f;
+        [Tooltip("Random extra bends on room-to-room corridors. Zero preserves existing paths; one allows broad detours. Actual length still depends on room positions.")]
+        [SerializeField, Range(0f, 1f)] private float corridorLengthVariation = 0f;
         [Tooltip("Side tunnels branching from the middle of existing passages, including dead ends.")]
         [SerializeField, Range(0f, 1f)] private float branchDensity = 0.5f;
+        [Tooltip("Minimum straight-line reach of a side branch in metres. Winding makes the walked route longer.")]
+        [SerializeField, Range(2f, 64f)] private float minimumBranchLength = 7f;
+        [Tooltip("Maximum straight-line reach of a side branch in metres. Branches may meet other passages or rooms.")]
+        [SerializeField, Range(2f, 64f)] private float maximumBranchLength = 12f;
+        [Tooltip("Allow side branches to start from earlier branches as well as main corridors. Branch Density still limits the total count.")]
+        [SerializeField] private bool allowNestedBranches = false;
         [SerializeField, Range(8f, 20f)] private float entranceLength = 12f;
         [Header("Scattered rocks")]
         [SerializeField] private GameObject[] rockPrefabs;
@@ -140,6 +148,9 @@ namespace CardsUnity.Controllers
             wallHeight = Mathf.Clamp(wallHeight, 2f, 20f);
             corridorWinding = Mathf.Clamp01(corridorWinding);
             branchDensity = Mathf.Clamp01(branchDensity);
+            corridorLengthVariation = Mathf.Clamp01(corridorLengthVariation);
+            minimumBranchLength = Mathf.Clamp(minimumBranchLength, 2f, 64f);
+            maximumBranchLength = Mathf.Clamp(maximumBranchLength, minimumBranchLength, 64f);
             entranceLength = Mathf.Clamp(entranceLength, 8f, 20f);
             rockDensity = Mathf.Clamp01(rockDensity);
             coinsPerRoom = Mathf.Clamp(coinsPerRoom, 0, 8);
@@ -655,6 +666,7 @@ namespace CardsUnity.Controllers
             // Sunflower packing avoids rows and right-angle junctions.
             float rotation = (float)random.NextDouble() * Mathf.PI * 2f;
             float spacing = (Settings.useRoomRadiusRange ? Settings.maximumRoomRadius : Settings.roomRadius) * 4.3f;
+            var lengthRandom = new System.Random(unchecked(Settings.seed * 397 ^ 928371));
             var edges = new List<Vector2Int>();
             for (int i = 0; i < Settings.roomCount; i++)
             {
@@ -684,7 +696,7 @@ namespace CardsUnity.Controllers
             {
                 int from = groups[edge.x], to = groups[edge.y];
                 if (from == to) { if (Vector2.Distance(rooms[edge.x], rooms[edge.y]) < spacing * 1.15f) spare.Add(edge); continue; }
-                AddCorridor(edge, random, spacing);
+                AddCorridor(edge, random, lengthRandom);
                 for (int i = 0; i < groups.Length; i++) if (groups[i] == to) groups[i] = from;
             }
             for (int i = spare.Count - 1; i > 0; i--)
@@ -694,17 +706,17 @@ namespace CardsUnity.Controllers
             }
             int loops = Mathf.RoundToInt(Mathf.Min(spare.Count, Settings.roomCount / 2f) * Settings.extraConnections);
             if (Settings.extraConnections > 0f && spare.Count > 0) loops = Mathf.Max(1, loops);
-            for (int i = 0; i < loops; i++) AddCorridor(spare[i], random, spacing);
+            for (int i = 0; i < loops; i++) AddCorridor(spare[i], random, lengthRandom);
             int mainCount = corridors.Count;
             int branches = Mathf.RoundToInt(Settings.roomCount * Settings.branchDensity);
             for (int i = 0; i < branches && mainCount > 0; i++)
             {
-                var source = corridors[random.Next(mainCount)];
+                var source = corridors[random.Next(Settings.allowNestedBranches ? corridors.Count : mainCount)];
                 int index = random.Next(source.Length / 3, source.Length * 2 / 3);
                 Vector2 start = source[index];
                 Vector2 side = Vector2.Perpendicular((source[index + 1] - source[index - 1]).normalized);
                 if (random.Next(2) == 0) side = -side;
-                Vector2 end = start + side * Mathf.Lerp(7f, 12f, (float)random.NextDouble());
+                Vector2 end = start + side * Mathf.Lerp(Settings.minimumBranchLength, Settings.maximumBranchLength, (float)random.NextDouble());
                 AddTunnel(start, end, random);
             }
             // Start beyond the southernmost chamber, so the entrance cannot cut across the maze.
@@ -766,25 +778,28 @@ namespace CardsUnity.Controllers
             CreateSurface("Entrance grotto", entranceGrottoMesh, Settings.wallMaterial);
         }
 
-        private void AddCorridor(Vector2Int edge, System.Random random, float spacing)
+        private void AddCorridor(Vector2Int edge, System.Random random, System.Random lengthRandom)
         {
-            AddTunnel(rooms[edge.x], rooms[edge.y], random);
+            // Independent draws preserve the original layout stream when variation is disabled.
+            float detour = Vector2.Distance(rooms[edge.x], rooms[edge.y])
+                * 0.65f * Settings.corridorLengthVariation * (float)lengthRandom.NextDouble();
+            AddTunnel(rooms[edge.x], rooms[edge.y], random, detour);
         }
 
-        private void AddTunnel(Vector2 a, Vector2 b, System.Random random)
+        private void AddTunnel(Vector2 a, Vector2 b, System.Random random, float detour = 0f)
         {
             Vector2 normal = Vector2.Perpendicular((b - a).normalized);
             float length = Vector2.Distance(a, b);
             float sign = random.Next(2) == 0 ? -1f : 1f;
             float amplitude = Mathf.Min(length * 0.24f, 5f) * Settings.corridorWinding;
             float asymmetry = Mathf.Lerp(-0.4f, 0.4f, (float)random.NextDouble());
-            int steps = Mathf.Max(12, Mathf.CeilToInt(length / 0.9f));
+            int steps = Mathf.Max(12, Mathf.CeilToInt((length + 4f * detour) / 0.9f));
             var points = new Vector2[steps + 1];
             for (int i = 0; i <= steps; i++)
             {
                 float t = i / (float)steps;
                 float wave = Mathf.Sin(t * Mathf.PI * 2f) + asymmetry * Mathf.Sin(t * Mathf.PI * 3f);
-                points[i] = Vector2.Lerp(a, b, t) + normal * (wave * amplitude * sign);
+                points[i] = Vector2.Lerp(a, b, t) + normal * ((wave * amplitude + Mathf.Sin(t * Mathf.PI) * detour) * sign);
             }
             points[0] = a; points[steps] = b;
             corridors.Add(points);
