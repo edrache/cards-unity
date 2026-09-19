@@ -19,14 +19,15 @@ MonoBehaviour:
     roomSizeVariation: 1
     useRoomRadiusRange: 1
     minimumRoomRadius: 4
-    maximumRoomRadius: 17.4
+    maximumRoomRadius: 20.9
+    roomSpacingMultiplier: 0.535
     extraConnections: 0.647
     corridorWidth: 3.12
-    corridorWinding: 0.469
-    corridorLengthVariation: 1
+    corridorWinding: 0.173
+    corridorLengthVariation: 0.207
     branchDensity: 1
-    minimumBranchLength: 21.9
-    maximumBranchLength: 64
+    minimumBranchLength: 7.5
+    maximumBranchLength: 27.4
     allowNestedBranches: 1
     branchConnectionPercentage: 59.3
     branchConnectionDistance: 16
@@ -54,7 +55,7 @@ MonoBehaviour:
     maximumRockfallBoulderRadius: 1
     rockfallMaterial: {fileID: 0}
     centipedePrefab: {fileID: 8402668057444636402, guid: b4f4b46d9a579409ba14a9d3563f22e8, type: 3}
-    centipedeRoomPercentage: 30.5
+    centipedeRoomPercentage: 0
     treasurePrefab: {fileID: 5334899008198995573, guid: b931fd32a89184c268b6ab0154d103e4, type: 3}
     treasureVariants:
     - {fileID: 7716414664649281885, guid: 48db3a9e2c0604f53b79acda53dba4f4, type: 3}
@@ -72,6 +73,6 @@ MonoBehaviour:
     cutawayWallHeight: 1.5
     irregularity: 1
     wallHeight: 20
-    floorMaterial: {fileID: 2100000, guid: 14fbd045c7f4f429a92d26e9ec18cafa, type: 2}
-    wallMaterial: {fileID: 2100000, guid: aa05295aa904a4ff3a64f766e3627ec9, type: 2}
+    floorMaterial: {fileID: 2100000, guid: ced424ebf33254a28922610737d84fac, type: 2}
+    wallMaterial: {fileID: 2100000, guid: 2855f7a024e6d433a8a6935c01394c70, type: 2}
     roomContentRules: []
