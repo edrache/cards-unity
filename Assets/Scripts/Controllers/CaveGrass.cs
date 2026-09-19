@@ -24,7 +24,7 @@ namespace CardsUnity.Controllers
         public int BladeCount { get; private set; }
         public int ChunkCount => chunks.Count;
 
-        public void Initialize(Dictionary<Vector2Int, List<Vector3>> patches, CaveGenerationSettings settings,
+        public void Initialize(Dictionary<Vector2Int, List<Vector3>> patches, CaveGrassSettings settings,
             Transform target, System.Random random)
         {
             player = target;

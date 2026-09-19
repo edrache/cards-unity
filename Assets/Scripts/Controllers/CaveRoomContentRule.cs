@@ -3,12 +3,16 @@ using UnityEngine;
 
 namespace CardsUnity.Controllers
 {
+    public enum CaveRoomContentType { Prefabs = 0, Grass = 1 }
+
     /// <summary>One independent, seeded population rule for arbitrary room content.</summary>
     [Serializable]
     public sealed class CaveRoomContentRule
     {
         public string label = "Room Content";
         public bool enabled = true;
+        public CaveRoomContentType contentType;
+        public CaveGrassSettings grass = new CaveGrassSettings();
         [Tooltip("Stable salt for this rule's random stream. Keep it unique when rules must vary independently.")]
         public int seedSalt = 1;
         public GameObject[] prefabs;
@@ -35,12 +39,15 @@ namespace CardsUnity.Controllers
         public CaveRoomContentRule Clone()
         {
             var clone = (CaveRoomContentRule)MemberwiseClone();
+            clone.grass = grass != null ? grass.Clone() : new CaveGrassSettings();
             clone.prefabs = prefabs != null ? (GameObject[])prefabs.Clone() : null;
             return clone;
         }
 
         public void Validate()
         {
+            if (grass == null) grass = new CaveGrassSettings();
+            grass.Validate();
             roomPercentage = Mathf.Clamp(Finite(roomPercentage, 25f), 0f, 100f);
             minimumPerSelectedRoom = Mathf.Clamp(minimumPerSelectedRoom, 0, 64);
             maximumPerSelectedRoom = Mathf.Clamp(maximumPerSelectedRoom, minimumPerSelectedRoom, 64);

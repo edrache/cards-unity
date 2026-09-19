@@ -85,9 +85,21 @@ MonoBehaviour:
     grassDrawDistance: 32
     grassBendRadius: 0.98
     grassMaterial: {fileID: 2100000, guid: 728c514ae5d184917acda80a39b95c4e, type: 2}
+    grassRulesMigrated: 1
     roomContentRules:
     - label: Stone Pillars
       enabled: 1
+      contentType: 0
+      grass:
+        grassBladesPerSquareMetre: 18
+        grassHeight: 1.2
+        grassHeightVariation: 0.55
+        grassWidth: 0.1
+        grassWidthVariation: 0.65
+        grassMaximumBlades: 60000
+        grassDrawDistance: 32
+        grassBendRadius: 1.1
+        grassMaterial: {fileID: 0}
       seedSalt: 47021
       prefabs:
       - {fileID: 4276480792276774365, guid: 99dbc3a8e6bd54b61acd7f2aefd8e196, type: 3}
@@ -108,6 +120,17 @@ MonoBehaviour:
       randomYaw: 1
     - label: Ancient Roots
       enabled: 1
+      contentType: 0
+      grass:
+        grassBladesPerSquareMetre: 18
+        grassHeight: 1.2
+        grassHeightVariation: 0.55
+        grassWidth: 0.1
+        grassWidthVariation: 0.65
+        grassMaximumBlades: 60000
+        grassDrawDistance: 32
+        grassBendRadius: 1.1
+        grassMaterial: {fileID: 0}
       seedSalt: 47022
       prefabs:
       - {fileID: 6307854898323304001, guid: f5ac47f09d16a4340b38cbe6f07edea3, type: 3}
@@ -124,5 +147,33 @@ MonoBehaviour:
       minimumWallHeight: 0.25
       maximumWallHeight: 0.75
       wallEmbedDepth: 0.18
+      alignToFloor: 1
+      randomYaw: 1
+    - label: Tall grass
+      enabled: 1
+      contentType: 1
+      grass:
+        grassBladesPerSquareMetre: 41.2
+        grassHeight: 0.64
+        grassHeightVariation: 0.819
+        grassWidth: 0.065
+        grassWidthVariation: 0.65
+        grassMaximumBlades: 60000
+        grassDrawDistance: 32
+        grassBendRadius: 0.98
+        grassMaterial: {fileID: 2100000, guid: 728c514ae5d184917acda80a39b95c4e, type: 2}
+      seedSalt: 982451653
+      prefabs: []
+      roomPercentage: 35
+      minimumPerSelectedRoom: 1
+      maximumPerSelectedRoom: 1
+      footprintRadius: 0.5
+      wallClearance: 0.3
+      routeClearance: 0
+      surfaceOffset: 0
+      wallPlacementPercentage: 0
+      minimumWallHeight: 0.25
+      maximumWallHeight: 0.8
+      wallEmbedDepth: 0.12
       alignToFloor: 1
       randomYaw: 1

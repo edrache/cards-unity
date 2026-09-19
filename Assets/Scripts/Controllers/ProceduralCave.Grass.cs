@@ -7,9 +7,17 @@ namespace CardsUnity.Controllers
     {
         private void SpawnGrass()
         {
-            int count = Mathf.Clamp(Mathf.FloorToInt(rooms.Count * Settings.grassRoomPercentage / 100f + 0.5f), 0, rooms.Count);
-            if (count == 0 || Settings.grassMaterial == null || Settings.grassBladesPerSquareMetre <= 0f || Settings.grassMaximumBlades == 0) return;
-            var random = new System.Random(unchecked(Settings.seed * 397 ^ 982451653));
+            foreach (var rule in Settings.roomContentRules)
+                if (rule != null && rule.enabled && rule.contentType == CaveRoomContentType.Grass)
+                    SpawnGrass(rule);
+        }
+
+        private void SpawnGrass(CaveRoomContentRule rule)
+        {
+            CaveGrassSettings grass = rule.grass;
+            int count = Mathf.Clamp(Mathf.FloorToInt(rooms.Count * rule.roomPercentage / 100f + 0.5f), 0, rooms.Count);
+            if (count == 0 || grass.grassMaterial == null || grass.grassBladesPerSquareMetre <= 0f || grass.grassMaximumBlades == 0) return;
+            var random = new System.Random(unchecked(Settings.seed * 397 ^ rule.seedSalt));
             var order = new int[rooms.Count];
             for (int i = 0; i < order.Length; i++) order[i] = i;
             for (int i = order.Length - 1; i > 0; i--)
@@ -20,7 +28,7 @@ namespace CardsUnity.Controllers
             // Budget the enclosing squares, so every selected room gets coverage even at the cap.
             float area = 0f;
             for (int i = 0; i < count; i++) area += Mathf.Pow(radii[order[i]] * 2.5f, 2f);
-            float density = Mathf.Min(Settings.grassBladesPerSquareMetre, Settings.grassMaximumBlades / Mathf.Max(area, 1f));
+            float density = Mathf.Min(grass.grassBladesPerSquareMetre, grass.grassMaximumBlades / Mathf.Max(area, 1f));
             float spacing = 1f / Mathf.Sqrt(density);
             var patches = new Dictionary<Vector2Int, List<Vector3>>();
             var occupied = new HashSet<Vector2Int>();
@@ -39,7 +47,7 @@ namespace CardsUnity.Controllers
                         if (!IsInsideRoomLocal(p, room, 0.35f) || Field(p) < 0.4f) continue;
                         if (OverlapsFootprints(p, 0.12f, rockFootprints) || OverlapsFootprints(p, 0.15f, occupiedContentFootprints)
                             || OverlapsPointFootprints(p, 0.55f, treasurePositions)) continue;
-                        if (blades >= Settings.grassMaximumBlades) break;
+                        if (blades >= grass.grassMaximumBlades) break;
                         occupied.Add(cell);
                         var key = new Vector2Int(Mathf.FloorToInt(p.x / CaveGrass.ChunkSize), Mathf.FloorToInt(p.y / CaveGrass.ChunkSize));
                         if (!patches.TryGetValue(key, out var roots)) patches.Add(key, roots = new List<Vector3>());
@@ -47,9 +55,9 @@ namespace CardsUnity.Controllers
                         blades++;
                     }
             }
-            var root = new GameObject("Tall grass");
+            var root = new GameObject(string.IsNullOrWhiteSpace(rule.label) ? "Tall grass" : rule.label.Trim());
             root.transform.SetParent(generated.transform, false);
-            root.AddComponent<CaveGrass>().Initialize(patches, Settings, player, random);
+            root.AddComponent<CaveGrass>().Initialize(patches, grass, player, random);
         }
     }
 }

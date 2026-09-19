@@ -47,6 +47,34 @@ namespace CardsUnity.Controllers.Editor
                     && !ReferenceEquals(settings.roomContentRules[0].prefabs, clone.roomContentRules[0].prefabs),
                     "Cave snapshot deep copy", ref assertions);
 
+                var legacyGrass = new CaveGenerationSettings
+                {
+                    grassRoomPercentage = 35f,
+                    grassHeight = 0.64f,
+                    grassWidth = 0.065f,
+                    grassHeightVariation = 0.819f
+                };
+                legacyGrass.Validate();
+                legacyGrass.Validate();
+                var grassRule = legacyGrass.roomContentRules[0];
+                Check(legacyGrass.roomContentRules.Count == 1 && grassRule.contentType == CaveRoomContentType.Grass
+                    && grassRule.seedSalt == 982451653 && grassRule.roomPercentage == 35f
+                    && grassRule.grass.grassHeight == 0.64f && grassRule.grass.grassWidth == 0.065f,
+                    "Grass migration preserves dimensions and seed exactly once", ref assertions);
+                var grassClone = legacyGrass.Clone();
+                grassClone.roomContentRules[0].grass.grassHeight = 2f;
+                Check(grassRule.grass.grassHeight == 0.64f,
+                    "Grass rule snapshot owns its nested settings", ref assertions);
+                legacyGrass.roomContentRules.Clear();
+                legacyGrass.Validate();
+                Check(legacyGrass.roomContentRules.Count == 0,
+                    "Deleting migrated grass does not recreate legacy content", ref assertions);
+                grassRule.grass.grassWidth = float.NaN;
+                grassRule.grass.grassHeightVariation = 10f;
+                grassRule.Validate();
+                Check(grassRule.grass.grassWidth == 0.1f && grassRule.grass.grassHeightVariation == 0.85f,
+                    "Grass rule validates nested authoring values", ref assertions);
+
                 var root = new GameObject("Configuration checks");
                 SceneManager.MoveGameObjectToScene(root, scene);
                 var health = root.AddComponent<CharacterHealth>();

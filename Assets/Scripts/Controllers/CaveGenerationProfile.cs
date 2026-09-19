@@ -132,23 +132,19 @@ namespace CardsUnity.Controllers
         public Material floorMaterial;
         public Material wallMaterial;
 
-        [Header("Tall grass")]
-        [Tooltip("Percentage of rooms filled with visual grass. Zero disables it; selection uses an independent seeded stream.")]
-        [Range(0f, 100f)] public float grassRoomPercentage;
-        [Range(0f, 48f)] public float grassBladesPerSquareMetre = 18f;
-        [Range(0.3f, 2.5f)] public float grassHeight = 1.2f;
-        [Tooltip("Independent per-blade height variation around Grass Height. 0.55 gives 45%-155%; zero gives equal heights.")]
-        [Range(0f, 0.85f)] public float grassHeightVariation = 0.55f;
-        [Tooltip("Nominal full blade width at the root, in metres. Tips taper independently of height.")]
-        [Range(0.02f, 0.25f)] public float grassWidth = 0.1f;
-        [Tooltip("Independent per-blade width variation around Grass Width. 0.65 gives 35%-165%; zero gives equal widths.")]
-        [Range(0f, 0.85f)] public float grassWidthVariation = 0.65f;
-        [Tooltip("Total blade budget across the cave. Large rooms share a reduced density to stay within this limit.")]
-        [Range(0, 120000)] public int grassMaximumBlades = 60000;
-        [Range(8f, 80f)] public float grassDrawDistance = 32f;
-        [Range(0.3f, 3f)] public float grassBendRadius = 1.1f;
-        [Tooltip("Assign a Cards Unity/Cave Grass material. Missing material disables grass, including in builds.")]
-        public Material grassMaterial;
+        // Retained for one-time migration of existing serialized profiles.
+        [HideInInspector] [Range(0f, 100f)] public float grassRoomPercentage;
+        [HideInInspector] [Range(0f, 48f)] public float grassBladesPerSquareMetre = 18f;
+        [HideInInspector] [Range(0.3f, 2.5f)] public float grassHeight = 1.2f;
+        [HideInInspector] [Range(0f, 0.85f)] public float grassHeightVariation = 0.55f;
+        [HideInInspector] [Range(0.02f, 0.25f)] public float grassWidth = 0.1f;
+        [HideInInspector] [Range(0f, 0.85f)] public float grassWidthVariation = 0.65f;
+        [HideInInspector] [Range(0, 120000)] public int grassMaximumBlades = 60000;
+        [HideInInspector] [Range(8f, 80f)] public float grassDrawDistance = 32f;
+        [HideInInspector] [Range(0.3f, 3f)] public float grassBendRadius = 1.1f;
+        [HideInInspector] public Material grassMaterial;
+
+        [HideInInspector] public bool grassRulesMigrated;
 
         [Header("Extensible room content")]
         [Tooltip("Independent, seeded rules evaluated after all built-in cave populations have been placed.")]
@@ -219,7 +215,37 @@ namespace CardsUnity.Controllers
             grassDrawDistance = Mathf.Clamp(Finite(grassDrawDistance, 32f), 8f, 80f);
             grassBendRadius = Mathf.Clamp(Finite(grassBendRadius, 1.1f), 0.3f, 3f);
             if (roomContentRules == null) roomContentRules = new List<CaveRoomContentRule>();
+            MigrateLegacyGrassToRules();
             foreach (var rule in roomContentRules) rule?.Validate();
+        }
+
+        /// <summary>Moves legacy grass authoring into a rule once, preserving the original random stream.</summary>
+        public void MigrateLegacyGrassToRules()
+        {
+            if (grassRulesMigrated) return;
+            if (roomContentRules == null) roomContentRules = new List<CaveRoomContentRule>();
+            bool hasGrassRule = roomContentRules.Exists(rule => rule != null && rule.contentType == CaveRoomContentType.Grass);
+            if (!hasGrassRule && (grassRoomPercentage > 0f || grassMaterial != null))
+                roomContentRules.Add(new CaveRoomContentRule
+                {
+                    label = "Tall grass",
+                    contentType = CaveRoomContentType.Grass,
+                    seedSalt = 982451653,
+                    roomPercentage = grassRoomPercentage,
+                    grass = new CaveGrassSettings
+                    {
+                        grassBladesPerSquareMetre = grassBladesPerSquareMetre,
+                        grassHeight = grassHeight,
+                        grassHeightVariation = grassHeightVariation,
+                        grassWidth = grassWidth,
+                        grassWidthVariation = grassWidthVariation,
+                        grassMaximumBlades = grassMaximumBlades,
+                        grassDrawDistance = grassDrawDistance,
+                        grassBendRadius = grassBendRadius,
+                        grassMaterial = grassMaterial,
+                    }
+                });
+            grassRulesMigrated = true;
         }
 
         private static float Finite(float value, float fallback) =>

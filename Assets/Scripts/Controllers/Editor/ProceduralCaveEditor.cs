@@ -124,7 +124,8 @@ namespace CardsUnity.Controllers.Editor
 
             DrawSeedSaltWarnings(profile.Settings.roomContentRules);
             EditorGUILayout.HelpBox(
-                "Room content rules use a circular XZ footprint and bounded placement attempts. Set Route Clearance above zero for blocking props or traps. " +
+                "Grass rules generate combined meshes after prefab populations and require no prefab. Each grass rule has its own blade budget. " +
+                "Prefab room content rules use a circular XZ footprint and bounded placement attempts. Set Route Clearance above zero for blocking props or traps. " +
                 "Moving actors and ambient content can use zero. Prefab collider size and navigation behaviour are not inferred.",
                 MessageType.None);
         }

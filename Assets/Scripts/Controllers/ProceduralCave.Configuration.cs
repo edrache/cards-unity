@@ -93,6 +93,7 @@ namespace CardsUnity.Controllers
         public void CopyLegacySettingsTo(CaveGenerationProfile profile, bool preserveRoomContentRules = true)
         {
             if (profile == null) throw new System.ArgumentNullException(nameof(profile));
+            profile.Settings.MigrateLegacyGrassToRules();
             CaveGenerationSettings captured = CaptureLegacySettings();
             if (preserveRoomContentRules && profile.Settings.roomContentRules != null)
             {
@@ -100,6 +101,7 @@ namespace CardsUnity.Controllers
                 foreach (var rule in profile.Settings.roomContentRules)
                     captured.roomContentRules.Add(rule != null ? rule.Clone() : null);
             }
+            captured.grassRulesMigrated = profile.Settings.grassRulesMigrated;
             captured.grassRoomPercentage = profile.Settings.grassRoomPercentage;
             captured.grassBladesPerSquareMetre = profile.Settings.grassBladesPerSquareMetre;
             captured.grassHeight = profile.Settings.grassHeight;

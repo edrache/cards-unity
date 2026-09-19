@@ -17,7 +17,7 @@ namespace CardsUnity.Controllers
             for (int ruleIndex = 0; ruleIndex < rules.Count; ruleIndex++)
             {
                 CaveRoomContentRule rule = rules[ruleIndex];
-                if (rule == null || !rule.enabled || rule.roomPercentage <= 0f) continue;
+                if (rule == null || !rule.enabled || rule.contentType != CaveRoomContentType.Prefabs || rule.roomPercentage <= 0f) continue;
 
                 var prefabs = new List<GameObject>();
                 if (rule.prefabs != null)
