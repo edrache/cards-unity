@@ -33,6 +33,7 @@ namespace CardsUnity.Controllers
                 var roomRandom = new System.Random(unchecked(baseSeed ^ 73856093));
                 var placementRandom = new System.Random(unchecked(baseSeed ^ 19349663));
                 var prefabRandom = new System.Random(unchecked(baseSeed ^ 83492791));
+                var wallRandom = new System.Random(unchecked(baseSeed ^ 492731));
                 var participantRandom = new System.Random(unchecked(baseSeed ^ 15485863));
                 var order = new int[rooms.Count];
                 for (int i = 0; i < order.Length; i++) order[i] = i;
@@ -52,7 +53,11 @@ namespace CardsUnity.Controllers
                         count += placementRandom.Next(rule.maximumPerSelectedRoom - rule.minimumPerSelectedRoom + 1);
                     for (int i = 0; i < count; i++)
                     {
-                        if (!TryFindRoomContentPosition(rule, room, placementRandom, out Vector2 point)) continue;
+                        Vector2 point = default, inward = default;
+                        bool onWall = rule.wallPlacementPercentage > 0f
+                            && wallRandom.NextDouble() * 100d < rule.wallPlacementPercentage
+                            && TryFindWallContentPosition(rule, room, wallRandom, out point, out inward);
+                        if (!onWall && !TryFindRoomContentPosition(rule, room, placementRandom, out point)) continue;
                         if (population == null)
                         {
                             population = new GameObject("Generated Room Content") { hideFlags = HideFlags.DontSave };
@@ -78,6 +83,16 @@ namespace CardsUnity.Controllers
                             : Quaternion.identity;
                         instance.transform.localPosition = Surface(point, rule.surfaceOffset);
                         instance.transform.localRotation = surfaceRotation * yaw * prefab.transform.localRotation;
+                        if (onWall)
+                        {
+                            float visibleHeight = Settings.enableElevation ? Settings.cutawayWallHeight : Settings.wallHeight;
+                            float height = Mathf.Min(Mathf.Lerp(rule.minimumWallHeight, rule.maximumWallHeight,
+                                (float)wallRandom.NextDouble()), Mathf.Max(0f, visibleHeight - 0.2f));
+                            instance.transform.localPosition = Surface(point, height);
+                            instance.transform.localRotation = Quaternion.LookRotation(new Vector3(inward.x, 0f, inward.y), Vector3.up)
+                                * prefab.transform.localRotation;
+                            instance.name += " [Wall]";
+                        }
 
                         int instanceSeed = participantRandom.Next();
                         var context = new CaveSpawnContext(this, rule, player, room, instanceIndex, instanceSeed);
@@ -112,17 +127,60 @@ namespace CardsUnity.Controllers
             return false;
         }
 
-        private bool IsRoomContentPositionAvailable(Vector2 point, int room, CaveRoomContentRule rule)
+        private bool TryFindWallContentPosition(CaveRoomContentRule rule, int room, System.Random random,
+            out Vector2 point, out Vector2 inward)
         {
-            float requiredField = rule.wallClearance;
-            if (!IsInsideRoomLocal(point, room, rule.footprintRadius + rule.wallClearance)) return false;
-            if (Field(point) < requiredField) return false;
-            const int perimeterSamples = 12;
-            for (int i = 0; i < perimeterSamples; i++)
+            for (int attempt = 0; attempt < 128; attempt++)
             {
-                float angle = i * Mathf.PI * 2f / perimeterSamples;
-                Vector2 edge = point + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * rule.footprintRadius;
-                if (Field(edge) < requiredField) return false;
+                float angle = (float)random.NextDouble() * Mathf.PI * 2f;
+                Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                Vector2 centre = rooms[room];
+                float limit = radii[room] * 1.3f + 2f;
+                float inside = 0f, outside = 0f;
+                for (float distance = 0.4f; distance <= limit; distance += 0.4f)
+                {
+                    if (Field(centre + direction * distance) < 0f) { outside = distance; break; }
+                    inside = distance;
+                }
+                if (outside == 0f) continue; // An opening into a corridor or another room is not a wall.
+                for (int step = 0; step < 12; step++)
+                {
+                    float middle = (inside + outside) * 0.5f;
+                    if (Field(centre + direction * middle) >= 0f) inside = middle;
+                    else outside = middle;
+                }
+                Vector2 boundary = centre + direction * ((inside + outside) * 0.5f);
+                if (!IsInsideRoomLocal(boundary, room, -0.8f)) continue;
+                const float e = 0.2f;
+                Vector2 normal = new Vector2(
+                    Field(boundary + Vector2.right * e) - Field(boundary - Vector2.right * e),
+                    Field(boundary + Vector2.up * e) - Field(boundary - Vector2.up * e)).normalized;
+                if (normal.sqrMagnitude < 0.5f || Field(boundary + normal * 0.5f) <= 0f) continue;
+                Vector2 anchor = boundary - normal * rule.wallEmbedDepth;
+                if (!IsRoomContentPositionAvailable(anchor, room, rule, true)) continue;
+                point = anchor;
+                inward = normal;
+                return true;
+            }
+            point = inward = default;
+            return false;
+        }
+
+        private bool IsRoomContentPositionAvailable(Vector2 point, int room, CaveRoomContentRule rule, bool onWall = false)
+        {
+            if (!onWall)
+            {
+                float requiredField = rule.wallClearance;
+                if (!IsInsideRoomLocal(point, room, rule.footprintRadius + rule.wallClearance)) return false;
+                if (Field(point) < requiredField) return false;
+                const int perimeterSamples = 12;
+                for (int i = 0; i < perimeterSamples; i++)
+                {
+                    float angle = i * Mathf.PI * 2f / perimeterSamples;
+                    Vector2 edge = point + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * rule.footprintRadius;
+                    if (Field(edge) < requiredField) return false;
+                }
+
             }
 
             if (rule.routeClearance > 0f)

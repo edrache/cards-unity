@@ -23,6 +23,12 @@ namespace CardsUnity.Controllers
         [Tooltip("Additional distance from corridor centre lines. Use zero for mobile or non-blocking content.")]
         [Min(0f)] public float routeClearance;
         [Range(-10f, 10f)] public float surfaceOffset;
+        [Tooltip("Chance to attach content to a room wall instead of the floor. Prefab +Z points into the room; origin is the attachment point. Failed wall attempts fall back to floor placement.")]
+        [Range(0f, 100f)] public float wallPlacementPercentage;
+        [Min(0f)] public float minimumWallHeight = 0.25f;
+        [Min(0f)] public float maximumWallHeight = 0.8f;
+        [Tooltip("How far the attachment origin is embedded behind the wall surface. Wall placement ignores Wall Clearance and Surface Offset.")]
+        [Range(0f, 0.5f)] public float wallEmbedDepth = 0.12f;
         public bool alignToFloor = true;
         public bool randomYaw = true;
 
@@ -41,6 +47,10 @@ namespace CardsUnity.Controllers
             footprintRadius = Mathf.Max(0f, Finite(footprintRadius, 0.5f));
             wallClearance = Mathf.Max(0f, Finite(wallClearance, 0.3f));
             routeClearance = Mathf.Max(0f, Finite(routeClearance, 0f));
+            wallPlacementPercentage = Mathf.Clamp(Finite(wallPlacementPercentage, 0f), 0f, 100f);
+            minimumWallHeight = Mathf.Max(0f, Finite(minimumWallHeight, 0.25f));
+            maximumWallHeight = Mathf.Max(minimumWallHeight, Finite(maximumWallHeight, 0.8f));
+            wallEmbedDepth = Mathf.Clamp(Finite(wallEmbedDepth, 0.12f), 0f, 0.5f);
             surfaceOffset = Mathf.Clamp(Finite(surfaceOffset, 0f), -10f, 10f);
         }
 

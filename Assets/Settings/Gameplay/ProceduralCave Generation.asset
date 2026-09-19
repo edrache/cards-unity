@@ -83,12 +83,36 @@ MonoBehaviour:
       - {fileID: 4276480792276774365, guid: 99dbc3a8e6bd54b61acd7f2aefd8e196, type: 3}
       - {fileID: 491490537110691257, guid: 97040c0e9d58f48a4b6abc72b3485dc7, type: 3}
       - {fileID: 7887796515476547934, guid: 2be4dce2a727b4388a8bba0d69b67f36, type: 3}
-      roomPercentage: 40
+      roomPercentage: 65.5
       minimumPerSelectedRoom: 1
-      maximumPerSelectedRoom: 3
+      maximumPerSelectedRoom: 10
       footprintRadius: 1.5
-      wallClearance: 0.45
+      wallClearance: 2.12
       routeClearance: 1.2
       surfaceOffset: -0.08
+      wallPlacementPercentage: 0
+      minimumWallHeight: 0.25
+      maximumWallHeight: 0.8
+      wallEmbedDepth: 0.12
+      alignToFloor: 1
+      randomYaw: 1
+    - label: Ancient Roots
+      enabled: 1
+      seedSalt: 47022
+      prefabs:
+      - {fileID: 6307854898323304001, guid: f5ac47f09d16a4340b38cbe6f07edea3, type: 3}
+      - {fileID: 3944237365202134501, guid: 7c6ccabf653464abea69c239ec92e006, type: 3}
+      - {fileID: 5098021573500757134, guid: 2dc91656b92e745148e69e94b3bb7e92, type: 3}
+      roomPercentage: 65
+      minimumPerSelectedRoom: 1
+      maximumPerSelectedRoom: 3
+      footprintRadius: 2.2
+      wallClearance: 0.2
+      routeClearance: 0.7
+      surfaceOffset: -0.05
+      wallPlacementPercentage: 55
+      minimumWallHeight: 0.25
+      maximumWallHeight: 0.75
+      wallEmbedDepth: 0.18
       alignToFloor: 1
       randomYaw: 1
