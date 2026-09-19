@@ -5,6 +5,7 @@ Shader "Cards Unity/Cave Grass"
         _BaseColor("Root color", Color) = (0.075, 0.12, 0.035, 1)
         _TipColor("Tip color", Color) = (0.32, 0.40, 0.12, 1)
         [HideInInspector] _GrassDrawDistance("Grass draw distance", Float) = 32
+        [HideInInspector] _GrassViewOrigin("Grass view origin", Vector) = (0, 0, 0, 0)
         [HideInInspector] _GrassPlayer("Grass player", Vector) = (0, 0, 0, 0)
         [HideInInspector] _GrassTrail("Grass trail", Vector) = (0, 0, 0, 0)
     }
@@ -18,6 +19,7 @@ Shader "Cards Unity/Cave Grass"
                 half4 _BaseColor;
                 half4 _TipColor;
                 float4 _GrassPlayer;
+                float4 _GrassViewOrigin;
                 float4 _GrassTrail;
                 float _GrassDrawDistance;
             CBUFFER_END
@@ -43,7 +45,7 @@ Shader "Cards Unity/Cave Grass"
                 // A tiny independent sway breaks up static silhouettes; roots stay anchored.
                 float phase = dot(root.xz, float2(1.73, 2.37));
                 position.xz += float2(sin(_Time.y * 1.3 + phase), cos(_Time.y + phase)) * 0.025 * t * t;
-                float fade = 1 - smoothstep(_GrassDrawDistance * 0.78, _GrassDrawDistance, distance(root, _WorldSpaceCameraPos));
+                float fade = 1 - smoothstep(_GrassDrawDistance * 0.78, _GrassDrawDistance, distance(root, _GrassViewOrigin.xyz));
                 position = root + (position - root) * fade;
                 output.positionWS = position;
                 output.positionCS = TransformWorldToHClip(position);

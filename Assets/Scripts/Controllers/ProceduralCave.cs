@@ -195,6 +195,9 @@ namespace CardsUnity.Controllers
         }
         private void Clear()
         {
+#if UNITY_EDITOR
+            RedirectGeneratedSelection();
+#endif
             if (generated != null) generated.SetActive(false);
             if (generated != null)
                 foreach (var grass in generated.GetComponentsInChildren<CaveGrass>(true)) grass.ReleaseGeneratedResources();

@@ -11,6 +11,7 @@ namespace CardsUnity.Controllers
         public const float ChunkSize = 6f;
         private static readonly int PlayerId = Shader.PropertyToID("_GrassPlayer");
         private static readonly int TrailId = Shader.PropertyToID("_GrassTrail");
+        private static readonly int ViewOriginId = Shader.PropertyToID("_GrassViewOrigin");
         private static readonly int DistanceId = Shader.PropertyToID("_GrassDrawDistance");
         private readonly List<Mesh> meshes = new List<Mesh>();
         private readonly List<MeshRenderer> chunks = new List<MeshRenderer>();
@@ -91,10 +92,15 @@ namespace CardsUnity.Controllers
             UpdateBend(0f);
         }
 
-        private void OnEnable() => RenderPipelineManager.beginCameraRendering += CullForCamera;
+        private void OnEnable()
+        {
+            RenderPipelineManager.beginCameraRendering += CullForCamera;
+            RenderPipelineManager.endCameraRendering += RestoreAfterCamera;
+        }
         private void OnDisable()
         {
             RenderPipelineManager.beginCameraRendering -= CullForCamera;
+            RenderPipelineManager.endCameraRendering -= RestoreAfterCamera;
             foreach (var chunk in chunks) if (chunk != null) chunk.enabled = false;
         }
         private void LateUpdate() => UpdateBend(Time.deltaTime);
@@ -111,9 +117,17 @@ namespace CardsUnity.Controllers
         private void CullForCamera(ScriptableRenderContext context, Camera camera)
         {
             if (material == null) return;
-            Vector3 position = camera.transform.position;
+            // The gameplay camera can sit farther away than the entire grass draw radius.
+            Vector3 position = camera.cameraType == CameraType.Game && player != null
+                ? player.position : camera.transform.position;
+            material.SetVector(ViewOriginId, new Vector4(position.x, position.y, position.z, 1f));
             foreach (var chunk in chunks)
                 if (chunk != null) chunk.enabled = chunk.bounds.SqrDistance(position) < drawDistanceSquared;
+        }
+        private void RestoreAfterCamera(ScriptableRenderContext context, Camera camera)
+        {
+            // A UI/Scene camera must not leave a persistent enabled state for another view or Inspector.
+            foreach (var chunk in chunks) if (chunk != null) chunk.enabled = true;
         }
         private void OnDestroy() => ReleaseGeneratedResources();
 
