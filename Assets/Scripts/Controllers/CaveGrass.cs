@@ -48,20 +48,25 @@ namespace CardsUnity.Controllers
                     Vector3 normal = Vector3.Cross(side, Vector3.up);
                     float height = settings.grassHeight * Mathf.Lerp(1f - settings.grassHeightVariation, 1f + settings.grassHeightVariation, (float)random.NextDouble());
                     float width = settings.grassWidth * 0.5f * Mathf.Lerp(1f - settings.grassWidthVariation, 1f + settings.grassWidthVariation, (float)random.NextDouble());
-                    Vector3 lean = normal * height * Mathf.Lerp(-0.18f, 0.18f, (float)random.NextDouble());
+                    Vector3 lean = normal * height * Mathf.Lerp(-0.25f, 0.25f, (float)random.NextDouble());
                     int start = vertices.Count;
-                    for (int level = 0; level < 3; level++)
+                    for (int level = 0; level < 4; level++)
                     {
-                        float t = level * 0.5f;
+                        // Keep the leaf broad up to a short, bevelled cap instead of a long needle tip.
+                        // Cap depth follows width, so tall narrow blades still have a rounded silhouette.
+                        float shoulder = 1f - Mathf.Min(0.2f, width * 0.75f / height);
+                        float t = level == 0 ? 0f : level == 1 ? 0.55f : level == 2 ? shoulder : 1f;
+                        float widthScale = level == 0 ? 1f : level == 1 ? 0.95f : level == 2 ? 0.85f : 0.35f;
                         for (int edge = 0; edge < 2; edge++)
                         {
-                            vertices.Add(root - origin + Vector3.up * (height * t) + lean * t * t + side * ((edge * 2 - 1) * width * (1f - t * 0.9f)));
+                            vertices.Add(root - origin + Vector3.up * (height * t) + lean * t * t + side * ((edge * 2 - 1) * width * widthScale));
                             normals.Add(normal);
                             roots.Add(new Vector4(root.x - origin.x, root.y, root.z - origin.z, height));
-                            uv.Add(new Vector2((float)random.NextDouble(), t));
+                            // Preserve the original six random draws per blade when adding the cap vertices.
+                            uv.Add(new Vector2(level < 3 ? (float)random.NextDouble() : 0f, t));
                         }
                     }
-                    for (int level = 0; level < 2; level++)
+                    for (int level = 0; level < 3; level++)
                     {
                         int a = start + level * 2;
                         indices.Add(a); indices.Add(a + 2); indices.Add(a + 1);
