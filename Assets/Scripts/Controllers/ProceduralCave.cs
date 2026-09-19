@@ -39,6 +39,10 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(2f, 64f)] private float maximumBranchLength = 12f;
         [Tooltip("Allow side branches to start from earlier branches as well as main corridors. Branch Density still limits the total count.")]
         [SerializeField] private bool allowNestedBranches = false;
+        [Tooltip("Chance for each branch tip to connect to a nearby branch from a different root. Zero disables added links; 100 connects every eligible tip.")]
+        [SerializeField, Range(0f, 100f)] private float branchConnectionPercentage = 0f;
+        [Tooltip("Maximum straight-line gap bridged between different branch families, in metres. Existing intersections need no extra tunnel.")]
+        [SerializeField, Range(2f, 64f)] private float branchConnectionDistance = 16f;
         [SerializeField, Range(8f, 20f)] private float entranceLength = 12f;
         [Header("Scattered rocks")]
         [SerializeField] private GameObject[] rockPrefabs;
@@ -149,6 +153,8 @@ namespace CardsUnity.Controllers
             corridorWinding = Mathf.Clamp01(corridorWinding);
             branchDensity = Mathf.Clamp01(branchDensity);
             corridorLengthVariation = Mathf.Clamp01(corridorLengthVariation);
+            branchConnectionPercentage = Mathf.Clamp(branchConnectionPercentage, 0f, 100f);
+            branchConnectionDistance = Mathf.Clamp(branchConnectionDistance, 2f, 64f);
             minimumBranchLength = Mathf.Clamp(minimumBranchLength, 2f, 64f);
             maximumBranchLength = Mathf.Clamp(maximumBranchLength, minimumBranchLength, 64f);
             entranceLength = Mathf.Clamp(entranceLength, 8f, 20f);
@@ -709,9 +715,12 @@ namespace CardsUnity.Controllers
             for (int i = 0; i < loops; i++) AddCorridor(spare[i], random, lengthRandom);
             int mainCount = corridors.Count;
             int branches = Mathf.RoundToInt(Settings.roomCount * Settings.branchDensity);
+            var branchRoots = new List<int>();
             for (int i = 0; i < branches && mainCount > 0; i++)
             {
-                var source = corridors[random.Next(Settings.allowNestedBranches ? corridors.Count : mainCount)];
+                int sourceIndex = random.Next(Settings.allowNestedBranches ? corridors.Count : mainCount);
+                var source = corridors[sourceIndex];
+                branchRoots.Add(sourceIndex < mainCount ? i : branchRoots[sourceIndex - mainCount]);
                 int index = random.Next(source.Length / 3, source.Length * 2 / 3);
                 Vector2 start = source[index];
                 Vector2 side = Vector2.Perpendicular((source[index + 1] - source[index - 1]).normalized);
@@ -719,6 +728,7 @@ namespace CardsUnity.Controllers
                 Vector2 end = start + side * Mathf.Lerp(Settings.minimumBranchLength, Settings.maximumBranchLength, (float)random.NextDouble());
                 AddTunnel(start, end, random);
             }
+            ConnectBranchFamilies(mainCount, branchRoots);
             // Start beyond the southernmost chamber, so the entrance cannot cut across the maze.
             int first = 0;
             for (int i = 1; i < Settings.roomCount; i++)
@@ -732,6 +742,45 @@ namespace CardsUnity.Controllers
             // to return to, while the clear centre continues to point into the generated cave.
             Vector2 portal = entrance - entranceForward * 2.55f;
             exit = portal + entranceForward * 0.65f;
+        }
+
+        private void ConnectBranchFamilies(int mainCount, List<int> branchRoots)
+        {
+            if (Settings.branchConnectionPercentage <= 0f || branchRoots.Count < 2) return;
+            // Links use their own stream and never become candidates for further links.
+            var random = new System.Random(unchecked(Settings.seed * 397 ^ 671203));
+            var linkedPairs = new HashSet<int>();
+            for (int i = 0; i < branchRoots.Count; i++)
+            {
+                if (random.NextDouble() * 100d >= Settings.branchConnectionPercentage) continue;
+                var source = corridors[mainCount + i];
+                Vector2 start = source[source.Length - 1];
+                Vector2 end = start;
+                float nearest = Settings.branchConnectionDistance * Settings.branchConnectionDistance;
+                int target = -1;
+                for (int j = 0; j < branchRoots.Count; j++)
+                {
+                    if (branchRoots[i] == branchRoots[j]) continue;
+                    int pair = Mathf.Min(i, j) * branchRoots.Count + Mathf.Max(i, j);
+                    if (linkedPairs.Contains(pair)) continue;
+                    var candidate = corridors[mainCount + j];
+                    for (int k = 1; k < candidate.Length; k++)
+                    {
+                        Vector2 a = candidate[k - 1], segment = candidate[k] - a;
+                        if (segment.sqrMagnitude < 0.000001f) continue;
+                        Vector2 point = a + segment * Mathf.Clamp01(Vector2.Dot(start - a, segment) / segment.sqrMagnitude);
+                        float distance = (point - start).sqrMagnitude;
+                        if (distance > nearest) continue;
+                        nearest = distance;
+                        end = point;
+                        target = j;
+                    }
+                }
+                // A tip already overlapping another branch does not need a duplicate link.
+                if (target < 0 || nearest <= Settings.corridorWidth * Settings.corridorWidth) continue;
+                AddTunnel(start, end, random);
+                linkedPairs.Add(Mathf.Min(i, target) * branchRoots.Count + Mathf.Max(i, target));
+            }
         }
 
         private void CreateEntranceGrotto()

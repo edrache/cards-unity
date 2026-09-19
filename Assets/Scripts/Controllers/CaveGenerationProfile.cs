@@ -59,6 +59,10 @@ namespace CardsUnity.Controllers
         [Range(2f, 64f)] public float maximumBranchLength = 12f;
         [Tooltip("Allow side branches to start from earlier branches as well as main corridors. Branch Density still limits the total count.")]
         public bool allowNestedBranches = false;
+        [Tooltip("Chance for each branch tip to connect to a nearby branch from a different root. Zero disables added links; 100 connects every eligible tip.")]
+        [Range(0f, 100f)] public float branchConnectionPercentage = 0f;
+        [Tooltip("Maximum straight-line gap bridged between different branch families, in metres. Existing intersections need no extra tunnel.")]
+        [Range(2f, 64f)] public float branchConnectionDistance = 16f;
         [Range(8f, 20f)] public float entranceLength = 12f;
 
         [Header("Scattered rocks")]
@@ -154,6 +158,8 @@ namespace CardsUnity.Controllers
             corridorWinding = Mathf.Clamp01(Finite(corridorWinding, 0.8f));
             branchDensity = Mathf.Clamp01(Finite(branchDensity, 0.5f));
             corridorLengthVariation = Mathf.Clamp01(Finite(corridorLengthVariation, 0f));
+            branchConnectionPercentage = Mathf.Clamp(Finite(branchConnectionPercentage, 0f), 0f, 100f);
+            branchConnectionDistance = Mathf.Clamp(Finite(branchConnectionDistance, 16f), 2f, 64f);
             minimumBranchLength = Mathf.Clamp(Finite(minimumBranchLength, 7f), 2f, 64f);
             maximumBranchLength = Mathf.Clamp(Finite(maximumBranchLength, 12f), minimumBranchLength, 64f);
             entranceLength = Mathf.Clamp(Finite(entranceLength, 12f), 8f, 20f);

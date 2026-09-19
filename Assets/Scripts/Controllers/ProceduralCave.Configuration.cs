@@ -46,6 +46,8 @@ namespace CardsUnity.Controllers
                 minimumBranchLength = minimumBranchLength,
                 maximumBranchLength = maximumBranchLength,
                 allowNestedBranches = allowNestedBranches,
+                branchConnectionPercentage = branchConnectionPercentage,
+                branchConnectionDistance = branchConnectionDistance,
                 entranceLength = entranceLength,
                 rockPrefabs = rockPrefabs != null ? (UnityEngine.GameObject[])rockPrefabs.Clone() : null,
                 rockDensity = rockDensity,
