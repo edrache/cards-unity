@@ -75,4 +75,20 @@ MonoBehaviour:
     wallHeight: 20
     floorMaterial: {fileID: 2100000, guid: ced424ebf33254a28922610737d84fac, type: 2}
     wallMaterial: {fileID: 2100000, guid: 2855f7a024e6d433a8a6935c01394c70, type: 2}
-    roomContentRules: []
+    roomContentRules:
+    - label: Stone Pillars
+      enabled: 1
+      seedSalt: 47021
+      prefabs:
+      - {fileID: 4276480792276774365, guid: 99dbc3a8e6bd54b61acd7f2aefd8e196, type: 3}
+      - {fileID: 491490537110691257, guid: 97040c0e9d58f48a4b6abc72b3485dc7, type: 3}
+      - {fileID: 7887796515476547934, guid: 2be4dce2a727b4388a8bba0d69b67f36, type: 3}
+      roomPercentage: 40
+      minimumPerSelectedRoom: 1
+      maximumPerSelectedRoom: 3
+      footprintRadius: 1.5
+      wallClearance: 0.45
+      routeClearance: 1.2
+      surfaceOffset: -0.08
+      alignToFloor: 1
+      randomYaw: 1
