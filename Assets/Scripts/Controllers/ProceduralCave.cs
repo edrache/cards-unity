@@ -19,6 +19,12 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(4f, 32f)] private float roomRadius = 5.5f;
         [Tooltip("Radius variation around Room Radius. Zero gives equal base sizes; one ranges from 55% to 145%.")]
         [SerializeField, Range(0f, 1f)] private float roomSizeVariation = 0.85f;
+        [Tooltip("Use explicit minimum/maximum base radii instead of Room Radius and Room Size Variation. Existing layouts keep the legacy sizing until enabled.")]
+        [SerializeField] private bool useRoomRadiusRange = false;
+        [Tooltip("Smallest base room radius in metres, before irregular wall shaping.")]
+        [SerializeField, Range(2.5f, 32f)] private float minimumRoomRadius = 4f;
+        [Tooltip("Largest base room radius in metres. Also sets layout spacing when the range is enabled.")]
+        [SerializeField, Range(2.5f, 32f)] private float maximumRoomRadius = 16f;
         [Tooltip("Fraction of spare neighbouring connections opened as loops. Zero makes a branching tree.")]
         [SerializeField, Range(0f, 1f)] private float extraConnections = 0.4f;
         [SerializeField, Range(2.5f, 5f)] private float corridorWidth = 3.5f;
@@ -126,6 +132,8 @@ namespace CardsUnity.Controllers
             roomCount = Mathf.Clamp(roomCount, 1, 24);
             roomRadius = Mathf.Clamp(roomRadius, 4f, 32f);
             roomSizeVariation = Mathf.Clamp01(roomSizeVariation);
+            minimumRoomRadius = Mathf.Clamp(minimumRoomRadius, 2.5f, 32f);
+            maximumRoomRadius = Mathf.Clamp(maximumRoomRadius, minimumRoomRadius, 32f);
             extraConnections = Mathf.Clamp01(extraConnections);
             corridorWidth = Mathf.Clamp(corridorWidth, 2.5f, 5f);
             irregularity = Mathf.Clamp01(irregularity);
@@ -646,7 +654,7 @@ namespace CardsUnity.Controllers
         {
             // Sunflower packing avoids rows and right-angle junctions.
             float rotation = (float)random.NextDouble() * Mathf.PI * 2f;
-            float spacing = Settings.roomRadius * 4.3f;
+            float spacing = (Settings.useRoomRadiusRange ? Settings.maximumRoomRadius : Settings.roomRadius) * 4.3f;
             var edges = new List<Vector2Int>();
             for (int i = 0; i < Settings.roomCount; i++)
             {
@@ -655,7 +663,9 @@ namespace CardsUnity.Controllers
                 rooms.Add(new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * distance);
                 // Stratified sizes guarantee a visible spread even in small layouts.
                 float size = Settings.roomCount == 1 ? 0.5f : (i + (float)random.NextDouble()) / Settings.roomCount;
-                radii.Add(Mathf.Max(2.5f, Settings.roomRadius * (1f + (size * 2f - 1f) * 0.45f * Settings.roomSizeVariation)));
+                radii.Add(Settings.useRoomRadiusRange
+                    ? Mathf.Lerp(Settings.minimumRoomRadius, Settings.maximumRoomRadius, size)
+                    : Mathf.Max(2.5f, Settings.roomRadius * (1f + (size * 2f - 1f) * 0.45f * Settings.roomSizeVariation)));
 
             }
             for (int i = radii.Count - 1; i > 0; i--)

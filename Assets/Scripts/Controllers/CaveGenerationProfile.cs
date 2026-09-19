@@ -39,6 +39,12 @@ namespace CardsUnity.Controllers
         [Range(4f, 32f)] public float roomRadius = 5.5f;
         [Tooltip("Radius variation around Room Radius. Zero gives equal base sizes; one ranges from 55% to 145%.")]
         [Range(0f, 1f)] public float roomSizeVariation = 0.85f;
+        [Tooltip("Use explicit minimum/maximum base radii instead of Room Radius and Room Size Variation. Existing layouts keep the legacy sizing until enabled.")]
+        public bool useRoomRadiusRange = false;
+        [Tooltip("Smallest base room radius in metres, before irregular wall shaping.")]
+        [Range(2.5f, 32f)] public float minimumRoomRadius = 4f;
+        [Tooltip("Largest base room radius in metres. Also sets layout spacing when the range is enabled.")]
+        [Range(2.5f, 32f)] public float maximumRoomRadius = 16f;
         [Tooltip("Fraction of spare neighbouring connections opened as loops. Zero makes a branching tree.")]
         [Range(0f, 1f)] public float extraConnections = 0.4f;
         [Range(2.5f, 5f)] public float corridorWidth = 3.5f;
@@ -133,6 +139,8 @@ namespace CardsUnity.Controllers
             roomCount = Mathf.Clamp(roomCount, 1, 24);
             roomRadius = Mathf.Clamp(Finite(roomRadius, 5.5f), 4f, 32f);
             roomSizeVariation = Mathf.Clamp01(Finite(roomSizeVariation, 0.85f));
+            minimumRoomRadius = Mathf.Clamp(Finite(minimumRoomRadius, 4f), 2.5f, 32f);
+            maximumRoomRadius = Mathf.Clamp(Finite(maximumRoomRadius, 16f), minimumRoomRadius, 32f);
             extraConnections = Mathf.Clamp01(Finite(extraConnections, 0.4f));
             corridorWidth = Mathf.Clamp(Finite(corridorWidth, 3.5f), 2.5f, 5f);
             corridorWinding = Mathf.Clamp01(Finite(corridorWinding, 0.8f));
