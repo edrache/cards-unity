@@ -48,7 +48,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CaveWater
   waterMaterial: {fileID: 2100000, guid: 582604b19404f4cb4838d3462f8598db, type: 2}
   width: 0.8
-  height: 5
+  height: 10
   depth: 0.35
 --- !u!33 &6368682675112127820
 MeshFilter:

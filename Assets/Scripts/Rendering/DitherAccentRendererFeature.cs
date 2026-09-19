@@ -16,7 +16,8 @@ namespace CardsUnity.Rendering
         public override void Create()
         {
             accentPass = new AccentPass { renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing };
-            ditherPass = new DitherPass { renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing };
+            // Equal events preserve enqueue order: accent masks, then dither, then URP post-processing.
+            ditherPass = new DitherPass { renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing };
         }
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
