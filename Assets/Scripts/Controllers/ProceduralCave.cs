@@ -25,6 +25,8 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(2.5f, 32f)] private float minimumRoomRadius = 4f;
         [Tooltip("Largest base room radius in metres. Also sets layout spacing when the range is enabled.")]
         [SerializeField, Range(2.5f, 32f)] private float maximumRoomRadius = 16f;
+        [Tooltip("Room centre spacing multiplier, independent of room size. One preserves the original layout; lower values shorten gaps and may merge rooms. Does not scale branch or entrance lengths.")]
+        [SerializeField, Range(0.25f, 2f)] private float roomSpacingMultiplier = 1f;
         [Tooltip("Fraction of spare neighbouring connections opened as loops. Zero makes a branching tree.")]
         [SerializeField, Range(0f, 1f)] private float extraConnections = 0.4f;
         [SerializeField, Range(2.5f, 5f)] private float corridorWidth = 3.5f;
@@ -146,6 +148,7 @@ namespace CardsUnity.Controllers
             roomSizeVariation = Mathf.Clamp01(roomSizeVariation);
             minimumRoomRadius = Mathf.Clamp(minimumRoomRadius, 2.5f, 32f);
             maximumRoomRadius = Mathf.Clamp(maximumRoomRadius, minimumRoomRadius, 32f);
+            roomSpacingMultiplier = Mathf.Clamp(roomSpacingMultiplier, 0.25f, 2f);
             extraConnections = Mathf.Clamp01(extraConnections);
             corridorWidth = Mathf.Clamp(corridorWidth, 2.5f, 5f);
             irregularity = Mathf.Clamp01(irregularity);
@@ -671,7 +674,7 @@ namespace CardsUnity.Controllers
         {
             // Sunflower packing avoids rows and right-angle junctions.
             float rotation = (float)random.NextDouble() * Mathf.PI * 2f;
-            float spacing = (Settings.useRoomRadiusRange ? Settings.maximumRoomRadius : Settings.roomRadius) * 4.3f;
+            float spacing = (Settings.useRoomRadiusRange ? Settings.maximumRoomRadius : Settings.roomRadius) * 4.3f * Settings.roomSpacingMultiplier;
             var lengthRandom = new System.Random(unchecked(Settings.seed * 397 ^ 928371));
             var edges = new List<Vector2Int>();
             for (int i = 0; i < Settings.roomCount; i++)

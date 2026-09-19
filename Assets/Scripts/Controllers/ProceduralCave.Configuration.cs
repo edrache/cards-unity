@@ -38,6 +38,7 @@ namespace CardsUnity.Controllers
                 useRoomRadiusRange = useRoomRadiusRange,
                 minimumRoomRadius = minimumRoomRadius,
                 maximumRoomRadius = maximumRoomRadius,
+                roomSpacingMultiplier = roomSpacingMultiplier,
                 extraConnections = extraConnections,
                 corridorWidth = corridorWidth,
                 corridorWinding = corridorWinding,

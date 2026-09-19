@@ -13,14 +13,23 @@ MonoBehaviour:
   m_Name: ProceduralCave Generation
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CaveGenerationProfile
   settings:
-    roomCount: 17
-    seed: 2
-    roomRadius: 8
+    roomCount: 20
+    seed: 5
+    roomRadius: 23.4
     roomSizeVariation: 1
-    extraConnections: 0.074
+    useRoomRadiusRange: 1
+    minimumRoomRadius: 4
+    maximumRoomRadius: 17.4
+    extraConnections: 0.647
     corridorWidth: 3.12
-    corridorWinding: 0.8
-    branchDensity: 0.5
+    corridorWinding: 0.469
+    corridorLengthVariation: 1
+    branchDensity: 1
+    minimumBranchLength: 21.9
+    maximumBranchLength: 64
+    allowNestedBranches: 1
+    branchConnectionPercentage: 59.3
+    branchConnectionDistance: 16
     entranceLength: 17.97
     rockPrefabs:
     - {fileID: 8415648801953113749, guid: 4859b83be67da4cfc94150c8d9bf7909, type: 3}

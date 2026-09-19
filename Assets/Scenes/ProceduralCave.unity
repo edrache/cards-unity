@@ -1944,10 +1944,19 @@ MonoBehaviour:
   seed: 1
   roomRadius: 6.65
   roomSizeVariation: 1
+  useRoomRadiusRange: 0
+  minimumRoomRadius: 4
+  maximumRoomRadius: 16
   extraConnections: 0.074
   corridorWidth: 3.12
   corridorWinding: 0.8
+  corridorLengthVariation: 0
   branchDensity: 0.5
+  minimumBranchLength: 7
+  maximumBranchLength: 12
+  allowNestedBranches: 0
+  branchConnectionPercentage: 0
+  branchConnectionDistance: 16
   entranceLength: 17.97
   rockPrefabs:
   - {fileID: 8415648801953113749, guid: 4859b83be67da4cfc94150c8d9bf7909, type: 3}
@@ -2264,19 +2273,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.0004573
+      value: 34.06999
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.14032209
+      value: 2.5114517
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -89.229935
+      value: -212.48587
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.9388015
+      value: 0.98166835
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalRotation.x
@@ -2284,11 +2293,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.34445864
+      value: 0.19059713
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3466474160620811249, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
