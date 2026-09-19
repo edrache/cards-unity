@@ -76,11 +76,14 @@ MonoBehaviour:
     floorMaterial: {fileID: 2100000, guid: ced424ebf33254a28922610737d84fac, type: 2}
     wallMaterial: {fileID: 2100000, guid: 2855f7a024e6d433a8a6935c01394c70, type: 2}
     grassRoomPercentage: 35
-    grassBladesPerSquareMetre: 18
+    grassBladesPerSquareMetre: 32.9
     grassHeight: 1.2
+    grassHeightVariation: 0.55
+    grassWidth: 0.1
+    grassWidthVariation: 0.65
     grassMaximumBlades: 60000
     grassDrawDistance: 32
-    grassBendRadius: 1.1
+    grassBendRadius: 0.9
     grassMaterial: {fileID: 2100000, guid: 728c514ae5d184917acda80a39b95c4e, type: 2}
     roomContentRules:
     - label: Stone Pillars

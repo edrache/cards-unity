@@ -46,8 +46,8 @@ namespace CardsUnity.Controllers
                     float angle = (float)random.NextDouble() * Mathf.PI * 2f;
                     Vector3 side = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
                     Vector3 normal = Vector3.Cross(side, Vector3.up);
-                    float height = settings.grassHeight * Mathf.Lerp(0.7f, 1.25f, (float)random.NextDouble());
-                    float width = Mathf.Lerp(0.035f, 0.065f, (float)random.NextDouble());
+                    float height = settings.grassHeight * Mathf.Lerp(1f - settings.grassHeightVariation, 1f + settings.grassHeightVariation, (float)random.NextDouble());
+                    float width = settings.grassWidth * 0.5f * Mathf.Lerp(1f - settings.grassWidthVariation, 1f + settings.grassWidthVariation, (float)random.NextDouble());
                     Vector3 lean = normal * height * Mathf.Lerp(-0.18f, 0.18f, (float)random.NextDouble());
                     int start = vertices.Count;
                     for (int level = 0; level < 3; level++)
@@ -73,7 +73,7 @@ namespace CardsUnity.Controllers
                 mesh.SetVertices(vertices); mesh.SetNormals(normals); mesh.SetUVs(0, uv); mesh.SetUVs(1, roots);
                 mesh.SetTriangles(indices, 0); mesh.RecalculateBounds();
                 Bounds bounds = mesh.bounds;
-                bounds.Expand(settings.grassHeight * 2f + 0.5f); // Include shader displacement in culling bounds.
+                bounds.Expand(settings.grassHeight * (1f + settings.grassHeightVariation) * 1.7f + 0.1f); // Include shader displacement in culling bounds.
                 mesh.bounds = bounds;
                 mesh.UploadMeshData(true);
                 meshes.Add(mesh);

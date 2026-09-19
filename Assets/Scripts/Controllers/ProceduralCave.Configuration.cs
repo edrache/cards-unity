@@ -103,6 +103,9 @@ namespace CardsUnity.Controllers
             captured.grassRoomPercentage = profile.Settings.grassRoomPercentage;
             captured.grassBladesPerSquareMetre = profile.Settings.grassBladesPerSquareMetre;
             captured.grassHeight = profile.Settings.grassHeight;
+            captured.grassHeightVariation = profile.Settings.grassHeightVariation;
+            captured.grassWidth = profile.Settings.grassWidth;
+            captured.grassWidthVariation = profile.Settings.grassWidthVariation;
             captured.grassMaximumBlades = profile.Settings.grassMaximumBlades;
             captured.grassDrawDistance = profile.Settings.grassDrawDistance;
             captured.grassBendRadius = profile.Settings.grassBendRadius;
