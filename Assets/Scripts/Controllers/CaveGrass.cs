@@ -18,6 +18,7 @@ namespace CardsUnity.Controllers
         private Transform player;
         private Vector3 trail;
         private float bendRadius;
+        private float drawDistanceSquared;
         private bool resourcesReleased;
         public int BladeCount { get; private set; }
         public int ChunkCount => chunks.Count;
@@ -30,6 +31,7 @@ namespace CardsUnity.Controllers
             bendRadius = settings.grassBendRadius;
             material = new Material(settings.grassMaterial) { name = "Cave grass (runtime)", hideFlags = HideFlags.DontSave };
             material.SetFloat(DistanceId, settings.grassDrawDistance);
+            drawDistanceSquared = settings.grassDrawDistance * settings.grassDrawDistance;
             foreach (var patch in patches)
             {
                 Vector3 origin = new Vector3(patch.Key.x * ChunkSize, 0f, patch.Key.y * ChunkSize);
@@ -109,10 +111,9 @@ namespace CardsUnity.Controllers
         private void CullForCamera(ScriptableRenderContext context, Camera camera)
         {
             if (material == null) return;
-            float distance = material.GetFloat(DistanceId);
             Vector3 position = camera.transform.position;
             foreach (var chunk in chunks)
-                if (chunk != null) chunk.enabled = chunk.bounds.SqrDistance(position) < distance * distance;
+                if (chunk != null) chunk.enabled = chunk.bounds.SqrDistance(position) < drawDistanceSquared;
         }
         private void OnDestroy() => ReleaseGeneratedResources();
 

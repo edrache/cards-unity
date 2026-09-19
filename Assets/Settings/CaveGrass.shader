@@ -4,6 +4,9 @@ Shader "Cards Unity/Cave Grass"
     {
         _BaseColor("Root color", Color) = (0.075, 0.12, 0.035, 1)
         _TipColor("Tip color", Color) = (0.32, 0.40, 0.12, 1)
+        [HideInInspector] _GrassDrawDistance("Grass draw distance", Float) = 32
+        [HideInInspector] _GrassPlayer("Grass player", Vector) = (0, 0, 0, 0)
+        [HideInInspector] _GrassTrail("Grass trail", Vector) = (0, 0, 0, 0)
     }
     SubShader
     {
