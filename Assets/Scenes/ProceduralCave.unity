@@ -1399,6 +1399,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Rendering.CharacterDepthOfField
   target: {fileID: 1870170170}
   volume: {fileID: 1114460751}
+  mode: 1
+  centerOffset: {x: 0, y: 0.03}
+  blurStrength: 1.2
+  sharpRadius: 0.14
+  circleTransition: 0.16
+  tiltAngle: 0
+  upperSharpWidth: 0.08
+  lowerSharpWidth: 0.08
+  upperTransition: 0.18
+  lowerTransition: 0.18
   sharpMargin: 2
   blurRange: 6
 --- !u!1 &1114460750

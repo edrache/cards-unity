@@ -1,5 +1,5 @@
 // Adapted from Unity URP 17 GaussianDepthOfField.shader (Unity Companion License).
-// Keep blur passes aligned with URP when upgrading; only eye-depth conversion differs.
+// Keep blur passes aligned with URP when upgrading; focus masks and eye-depth conversion differ.
 Shader "Hidden/CardsUnity/GaussianDepthOfField"
 {
     HLSLINCLUDE
@@ -20,6 +20,10 @@ Shader "Hidden/CardsUnity/GaussianDepthOfField"
         float4 _DownSampleScaleFactor;
 
         float3 _CoCParams;
+        // Per-camera parameters supplied by CharacterDepthOfField; w=0 keeps normal DoF.
+        float4 _CharacterFocusCenter;
+        float4 _CharacterFocusShape;
+        float4 _CharacterFocusBand;
 
         #define FarStart        _CoCParams.x
         #define FarEnd          _CoCParams.y
@@ -67,6 +71,29 @@ Shader "Hidden/CardsUnity/GaussianDepthOfField"
         {
             UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
             float2 uv = UnityStereoTransformScreenSpaceTex(input.texcoord);
+
+            if (_CharacterFocusCenter.w > 0.5)
+            {
+                // CoC is rendered to a texture: the camera projection already handles
+                // render-target Y orientation. Do not flip this a second time.
+                float2 screenUV = input.positionCS.xy * _SourceSize.zw;
+                float2 delta = screenUV - _CharacterFocusCenter.xy;
+                delta.x *= _CharacterFocusCenter.z;
+                float distanceFromFocus;
+                float transition;
+                if (_CharacterFocusCenter.w < 1.5)
+                {
+                    distanceFromFocus = length(delta) - _CharacterFocusShape.x;
+                    transition = _CharacterFocusShape.y;
+                }
+                else
+                {
+                    float bandDistance = dot(delta, float2(-_CharacterFocusShape.z, _CharacterFocusShape.w));
+                    distanceFromFocus = abs(bandDistance) - (bandDistance >= 0.0 ? _CharacterFocusBand.x : _CharacterFocusBand.y);
+                    transition = bandDistance >= 0.0 ? _CharacterFocusBand.z : _CharacterFocusBand.w;
+                }
+                return smoothstep(0.0, max(transition, 0.001), distanceFromFocus);
+            }
 
             float depth = LOAD_TEXTURE2D_X(_CameraDepthTexture, _SourceSize.xy * uv).x;
             // Orthographic device depth is linear; perspective depth is reciprocal.
