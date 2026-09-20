@@ -43,6 +43,7 @@ namespace CardsUnity.Controllers
         private Rigidbody dropBody;
         private CapsuleCollider dropCollider;
         private bool impactPending;
+        private bool fuelConsumptionSuspended;
         public bool IsHeld => character != null;
         public bool IsSettled => !IsHeld && !impactPending && dropBody != null
             && (dropBody.IsSleeping() || dropBody.linearVelocity.sqrMagnitude < 0.04f);
@@ -52,6 +53,15 @@ namespace CardsUnity.Controllers
         private float Lifetime => FuelBalance?.Lifetime ?? lifetime;
         public float DropLifetimeCost => FuelBalance?.DropLifetimeCost ?? dropLifetimeCost;
         public Vector3 GripOffset => gripOffset;
+        public bool FuelConsumptionSuspended => fuelConsumptionSuspended;
+
+        /// <summary>
+        /// Suspends all time, strike and drop-impact fuel costs without changing flame presentation.
+        /// </summary>
+        public void SetFuelConsumptionSuspended(bool suspended)
+        {
+            fuelConsumptionSuspended = suspended;
+        }
 
         public void Drop()
         {
@@ -87,7 +97,8 @@ namespace CardsUnity.Controllers
         {
             if (!impactPending || IsHeld) return;
             impactPending = false;
-            burnAge = Mathf.Min(Mathf.Max(0.1f, Lifetime), burnAge + Mathf.Max(0f, DropLifetimeCost));
+            if (!fuelConsumptionSuspended)
+                burnAge = Mathf.Min(Mathf.Max(0.1f, Lifetime), burnAge + Mathf.Max(0f, DropLifetimeCost));
         }
 
         public void PickUp(Transform holder, Transform arm, Transform elbow)
@@ -180,6 +191,7 @@ namespace CardsUnity.Controllers
         /// </summary>
         public void ConsumeStrikeFuel()
         {
+            if (fuelConsumptionSuspended) return;
             float cost = StrikeLifetimeCost;
             if (cost <= 0f) return;
             burnAge = Mathf.Min(Mathf.Max(0.1f, Lifetime), burnAge + cost);
@@ -273,7 +285,7 @@ namespace CardsUnity.Controllers
             if (dt <= 0f) return;
             CacheEmissionRates();
             float effectiveLifetime = Mathf.Max(0.1f, Lifetime);
-            burnAge = Mathf.Min(effectiveLifetime, burnAge + dt);
+            if (!fuelConsumptionSuspended) burnAge = Mathf.Min(effectiveLifetime, burnAge + dt);
             float dying = BurnoutProgress;
             float fuel = 1f - Mathf.SmoothStep(0f, 1f, dying);
             Transform motionSource = character != null ? character : transform;

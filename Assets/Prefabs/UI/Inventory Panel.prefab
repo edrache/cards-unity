@@ -133,6 +133,7 @@ GameObject:
   - component: {fileID: 4521934041394685813}
   - component: {fileID: 8657456169161229727}
   - component: {fileID: 8264139892933408350}
+  - component: {fileID: 3146337403789785145}
   m_Layer: 5
   m_Name: Inventory Panel
   m_TagString: Untagged
@@ -200,6 +201,18 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!225 &3146337403789785145
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4821712436083524149}
+  m_Enabled: 1
+  m_Alpha: 0
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &6275519913814065656
 GameObject:
   m_ObjectHideFlags: 0

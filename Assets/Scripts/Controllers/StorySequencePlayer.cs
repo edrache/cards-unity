@@ -14,6 +14,8 @@ namespace CardsUnity.Controllers
         public bool IsPlaying => phase != Phase.Idle;
         public int CurrentLineIndex => IsPlaying ? lineIndex : -1;
         public event Action Completed;
+        public event Action<int> LineStarted;
+        public bool IsLastLine => IsPlaying && lines != null && lineIndex == lines.Length - 1;
 
         private Phase phase;
         private string[] lines;
@@ -164,6 +166,7 @@ namespace CardsUnity.Controllers
             fadeAccelerated = false;
             phase = Phase.Revealing;
             ApplyVertexAlphas(1f);
+            LineStarted?.Invoke(lineIndex);
         }
 
         private void BeginFade()

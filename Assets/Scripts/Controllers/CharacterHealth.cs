@@ -30,6 +30,7 @@ namespace CardsUnity.Controllers
         private CaveExit caveExit;
         private RectTransform hudRoot;
         private bool initialized;
+        private IntroJourneyProtection introProtection;
 
         public bool IsDead { get; private set; }
         public PlayerGameplayBalanceProfile BalanceProfile => balanceProfile;
@@ -82,7 +83,7 @@ namespace CardsUnity.Controllers
         public bool TryTakeDamage()
         {
             InitializeSlots();
-            if (!isActiveAndEnabled || IsDead || IsRunCompleted()) return false;
+            if (!isActiveAndEnabled || IsDead || IsRunCompleted() || IsJourneyProtected()) return false;
 
             int rightmostFull = -1;
             for (int i = slotFills.Length - 1; i >= 0; i--)
@@ -182,11 +183,17 @@ namespace CardsUnity.Controllers
             return caveExit != null && caveExit.IsCompleted;
         }
 
+        private bool IsJourneyProtected()
+        {
+            if (introProtection == null) introProtection = GetComponent<IntroJourneyProtection>();
+            return introProtection != null && introProtection.IsProtectionActive;
+        }
+
         /// <summary>Ends a live run immediately, regardless of remaining health or knockdown immunity.</summary>
         public bool TryKill()
         {
             InitializeSlots();
-            if (!isActiveAndEnabled || IsDead || IsRunCompleted()) return false;
+            if (!isActiveAndEnabled || IsDead || IsRunCompleted() || IsJourneyProtected()) return false;
             for (int i = 0; i < slotFills.Length; i++) slotFills[i] = 0f;
             Die();
             RefreshHud();

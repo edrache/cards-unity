@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using Rewired;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -7,161 +5,251 @@ using UnityEngine.InputSystem.Controls;
 
 namespace CardsUnity.Controllers
 {
-    /// <summary>Owns the one-shot story gate and the unscaled reveal into gameplay.</summary>
+    /// <summary>Walks the entrance during narration; room arrival independently ends journey safety.</summary>
     [DefaultExecutionOrder(-10000)]
     public sealed class StoryIntroController : MonoBehaviour
     {
         [SerializeField] private StorySequencePlayer sequencePlayer;
         [SerializeField] private GameObject playerRoot;
         [SerializeField] private HandheldTorch playerTorch;
+        [Tooltip("Legacy overlay. Kept transparent; an authored disabled Image remains disabled.")]
         [SerializeField] private CanvasGroup blackout;
+        [SerializeField] private ProceduralCave cave;
+        [SerializeField] private IntroJourneyProtection journeyProtection;
+        [SerializeField] private StoryVeilDissolve veil;
+        [Tooltip("Gameplay HUD groups hidden while narration owns movement.")]
+        [SerializeField] private CanvasGroup[] gameplayUI = System.Array.Empty<CanvasGroup>();
 
-        [Header("Reveal")]
-        [SerializeField, Min(0f)] private float transitionDuration = 1.25f;
+        [Header("Entrance walk")]
+        [SerializeField, Min(0.1f)] private float autoWalkSpeed = 1.15f;
+        [Tooltip("Metres of tunnel before the first room reserved for player-controlled movement.")]
+        [SerializeField, Min(2f)] private float manualApproachDistance = 18f;
+        [SerializeField, Range(0.2f, 3f)] private float pathLookAhead = 0.9f;
+
+        [Header("Final line reveal")]
+        [SerializeField, Min(0f)] private float transitionDuration = 2.8f;
         [SerializeField, Range(0.1f, 0.95f)] private float stickPressThreshold = 0.55f;
         [SerializeField] private string rewiredPlayerName = "Player0";
 
-        private readonly List<RendererState> playerRenderers = new();
-        private readonly List<BehaviourState> playerBehaviours = new();
-        private float previousTimeScale;
-        private bool ownsTimeScale;
+        private ProceduralCharacter character;
+        private CardsUnity.Rendering.PlayerOcclusionOutline playerOutline;
+        private bool outlineWasEnabled;
+        private float[] hudAlphas;
+        private bool[] hudRaycasts;
+        private bool[] hudInteractions;
+        private bool initialized;
+        private bool routeReady;
+        private bool controlReleased;
+        private bool narrationCompleted;
+        private bool revealFinished;
+        private bool protectionReleased;
         private bool stickWasPressed;
-        private bool transitionStarted;
-        private bool introInitialized;
-        private Coroutine transition;
+        private float revealElapsed;
+        private float automaticTravelLimit;
+
+        public bool HasReleasedControl => controlReleased;
+        public bool IsAutoWalking => initialized && !controlReleased;
+        public bool IsJourneyProtected => journeyProtection != null && journeyProtection.IsProtectionActive;
+        public float AutomaticTravelLimit => automaticTravelLimit;
 
         private void Awake()
         {
-            if (!enabled) return;
-            InitializeIntro();
-        }
-
-        private void InitializeIntro()
-        {
-            if (introInitialized || transitionStarted) return;
-            CacheAndHidePlayer();
-            ShowBlackout();
-            if (playerTorch != null) playerTorch.SetPresentationMultiplier(0f);
-
-            previousTimeScale = Time.timeScale;
-            Time.timeScale = 0f;
-            ownsTimeScale = true;
-            introInitialized = true;
+            if (!enabled)
+            {
+                veil?.SetProgress(1f);
+                return;
+            }
+            character = playerRoot != null ? playerRoot.GetComponent<ProceduralCharacter>() : null;
+            playerOutline = playerRoot != null
+                ? playerRoot.GetComponent<CardsUnity.Rendering.PlayerOcclusionOutline>() : null;
+            if (playerOutline != null)
+            {
+                outlineWasEnabled = playerOutline.enabled;
+                playerOutline.enabled = false;
+            }
+            if (journeyProtection == null && playerRoot != null)
+                journeyProtection = playerRoot.GetComponent<IntroJourneyProtection>();
+            initialized = true;
+            character?.SetScriptedMove(Vector3.zero, 0f);
+            journeyProtection?.BeginProtection();
+            playerTorch?.SetPresentationMultiplier(1f);
+            veil?.SetProgress(0f);
+            SetLegacyOverlayTransparent();
+            CacheAndHideHud();
         }
 
         private void OnEnable()
         {
-            if (!introInitialized && !transitionStarted) InitializeIntro();
-            if (!introInitialized || transitionStarted || sequencePlayer == null) return;
+            if (sequencePlayer == null) return;
+            sequencePlayer.LineStarted += HandleLineStarted;
             sequencePlayer.Completed += HandleSequenceCompleted;
         }
 
         private void Start()
         {
-            if (!introInitialized) return;
-            // Reassert these after all scene objects have initialized so the first rendered frame
-            // cannot briefly expose the player or an already-lit torch.
-            SetPlayerVisible(false);
-            ShowBlackout();
-            if (playerTorch != null) playerTorch.SetPresentationMultiplier(0f);
-
-            if (sequencePlayer == null)
+            if (!initialized) return;
+            if (character == null || cave == null || journeyProtection == null)
             {
-                HandleSequenceCompleted();
+                Debug.LogWarning("Story intro requires a character, cave and journey protection.", this);
+                enabled = false;
                 return;
             }
-
-            sequencePlayer.Begin();
-            if (!sequencePlayer.IsPlaying) HandleSequenceCompleted();
+            // Cave rebuild normally runs in Update. Build once now so the very first
+            // scripted movement uses the current profile and its actual spawn/route.
+            cave.Rebuild();
+            routeReady = cave.EntranceRouteWorldPoints.Count > 1;
+            if (!routeReady)
+            {
+                Debug.LogWarning("Story intro has no generated entrance route.", this);
+                enabled = false;
+                return;
+            }
+            automaticTravelLimit = FindAutomaticTravelLimit();
+            if (sequencePlayer != null) sequencePlayer.Begin();
+            else HandleSequenceCompleted();
         }
 
         private void Update()
         {
+            if (!initialized || !routeReady) return;
             bool stickPressed = IsStickPressed();
-            bool pressedThisFrame = AnyButtonPressedThisFrame() || RewiredButtonPressedThisFrame()
+            bool pressed = AnyButtonPressedThisFrame() || RewiredButtonPressedThisFrame()
                 || (stickPressed && !stickWasPressed);
             stickWasPressed = stickPressed;
-
-            if (!transitionStarted && sequencePlayer != null && sequencePlayer.IsPlaying && pressedThisFrame)
+            if (!controlReleased && pressed && sequencePlayer != null && sequencePlayer.IsPlaying)
                 sequencePlayer.Advance();
+
+            if (!controlReleased) DriveEntranceWalk();
+            else UpdateReveal();
+
+            if (!protectionReleased && HasEnteredFirstRoom())
+            {
+                journeyProtection.ReleaseProtection();
+                protectionReleased = true;
+            }
+            if (controlReleased && revealFinished && narrationCompleted && protectionReleased)
+                enabled = false;
         }
 
-        private void LateUpdate()
+        private bool HasEnteredFirstRoom()
         {
-            if (!transitionStarted && playerTorch != null)
-                playerTorch.SetPresentationMultiplier(0f);
+            // Normally this is the entrance chamber. A branch intersection can let
+            // the player choose another chamber; it must also end the one-time safety.
+            for (int room = 0; room < cave.RoomCenters.Count; room++)
+                if (cave.IsInRoom(playerRoot.transform.position, room)) return true;
+            return false;
+        }
+
+        private float FindAutomaticTravelLimit()
+        {
+            float length = cave.EntranceRouteLength;
+            float firstRoomDistance = length;
+            for (float distance = 0f; distance <= length; distance += 0.5f)
+            {
+                if (!cave.HasReachedEntranceRoom(cave.SampleEntranceRoute(distance, out _))) continue;
+                firstRoomDistance = distance;
+                break;
+            }
+            return Mathf.Max(0f, firstRoomDistance - manualApproachDistance);
+        }
+
+        private void DriveEntranceWalk()
+        {
+            var points = cave.EntranceRouteWorldPoints;
+            Vector3 position = playerRoot.transform.position;
+            float nearestDistance = float.PositiveInfinity;
+            float along = 0f, cumulative = 0f;
+            for (int index = 1; index < points.Count; index++)
+            {
+                Vector3 segment = points[index] - points[index - 1];
+                float length = segment.magnitude;
+                float t = length > 0.0001f
+                    ? Mathf.Clamp01(Vector3.Dot(position - points[index - 1], segment) / (length * length)) : 0f;
+                float separation = (position - (points[index - 1] + segment * t)).sqrMagnitude;
+                if (separation < nearestDistance)
+                {
+                    nearestDistance = separation;
+                    along = cumulative + length * t;
+                }
+                cumulative += length;
+            }
+            Vector3 target = cave.SampleEntranceRoute(Mathf.Min(automaticTravelLimit, along + pathLookAhead), out _);
+            Vector3 direction = Vector3.ProjectOnPlane(target - position, Vector3.up);
+            bool arrived = along >= automaticTravelLimit - 0.2f && direction.magnitude < 0.3f;
+            character.SetScriptedMove(arrived ? Vector3.zero : direction,
+                arrived ? 0f : Mathf.Min(autoWalkSpeed, direction.magnitude / Mathf.Max(Time.deltaTime, 0.001f)));
+        }
+
+        private void HandleLineStarted(int index)
+        {
+            if (sequencePlayer != null && sequencePlayer.IsLastLine) ReleaseControl();
         }
 
         private void HandleSequenceCompleted()
         {
-            if (transitionStarted) return;
-            transitionStarted = true;
-            transition = StartCoroutine(RevealGameplay());
+            narrationCompleted = true;
+            ReleaseControl();
         }
 
-        private IEnumerator RevealGameplay()
+        private void ReleaseControl()
         {
-            SetPlayerVisible(true);
-            float elapsed = 0f;
-            do
-            {
-                elapsed += Time.unscaledDeltaTime;
-                float t = transitionDuration <= 0f ? 1f : Mathf.Clamp01(elapsed / transitionDuration);
-                float eased = Mathf.SmoothStep(0f, 1f, t);
-                if (blackout != null) blackout.alpha = 1f - eased;
-                if (playerTorch != null) playerTorch.SetPresentationMultiplier(eased);
-                yield return null;
-            }
-            while (elapsed < transitionDuration);
-
-            if (blackout != null)
-            {
-                blackout.alpha = 0f;
-                blackout.blocksRaycasts = false;
-                blackout.interactable = false;
-            }
-            if (playerTorch != null) playerTorch.SetPresentationMultiplier(1f);
-
-            // Do not hand the press that dismissed the final page to attacks, inventory or menus.
-            yield return null;
-            while (AnyControlIsPressed()) yield return null;
-
-            RestorePlayerBehaviours();
-            RestoreTimeScale();
-            playerRenderers.Clear();
-            transition = null;
-            enabled = false;
+            if (controlReleased || !initialized) return;
+            controlReleased = true;
+            character?.ClearScriptedMove();
+            revealElapsed = 0f;
+            if (transitionDuration <= 0f) UpdateReveal();
         }
 
-        private void CacheAndHidePlayer()
+        private void UpdateReveal()
         {
-            if (playerRoot == null) return;
+            if (revealFinished) return;
+            revealElapsed += Time.unscaledDeltaTime;
+            float t = transitionDuration <= 0f ? 1f : Mathf.Clamp01(revealElapsed / transitionDuration);
+            float eased = Mathf.SmoothStep(0f, 1f, t);
+            veil?.SetProgress(eased);
+            RestoreHud(eased);
+            revealFinished = t >= 1f;
+            if (revealFinished && playerOutline != null) playerOutline.enabled = outlineWasEnabled;
+        }
 
-            foreach (Renderer renderer in playerRoot.GetComponentsInChildren<Renderer>(true))
+        private void CacheAndHideHud()
+        {
+            int count = gameplayUI.Length;
+            hudAlphas = new float[count];
+            hudRaycasts = new bool[count];
+            hudInteractions = new bool[count];
+            for (int index = 0; index < count; index++)
             {
-                playerRenderers.Add(new RendererState(renderer, renderer.enabled));
-                renderer.enabled = false;
-            }
-
-            foreach (MonoBehaviour behaviour in playerRoot.GetComponentsInChildren<MonoBehaviour>(true))
-            {
-                if (behaviour == null || behaviour == this || behaviour == playerTorch) continue;
-                playerBehaviours.Add(new BehaviourState(behaviour, behaviour.enabled));
-                behaviour.enabled = false;
+                var group = gameplayUI[index];
+                if (group == null) continue;
+                hudAlphas[index] = group.alpha;
+                hudRaycasts[index] = group.blocksRaycasts;
+                hudInteractions[index] = group.interactable;
+                group.alpha = 0f;
+                group.blocksRaycasts = false;
+                group.interactable = false;
             }
         }
 
-        private void SetPlayerVisible(bool visible)
+        private void RestoreHud(float progress)
         {
-            foreach (RendererState state in playerRenderers)
-                if (state.Renderer != null) state.Renderer.enabled = visible && state.WasEnabled;
+            if (hudAlphas == null) return;
+            for (int index = 0; index < gameplayUI.Length; index++)
+            {
+                var group = gameplayUI[index];
+                if (group == null) continue;
+                group.alpha = hudAlphas[index] * progress;
+                group.blocksRaycasts = progress >= 1f && hudRaycasts[index];
+                group.interactable = progress >= 1f && hudInteractions[index];
+            }
         }
 
-        private void RestorePlayerBehaviours()
+        private void SetLegacyOverlayTransparent()
         {
-            foreach (BehaviourState state in playerBehaviours)
-                if (state.Behaviour != null) state.Behaviour.enabled = state.WasEnabled;
-            playerBehaviours.Clear();
+            if (blackout == null) return;
+            blackout.alpha = 0f;
+            blackout.blocksRaycasts = false;
+            blackout.interactable = false;
         }
 
         private bool AnyButtonPressedThisFrame()
@@ -190,17 +278,6 @@ namespace CardsUnity.Controllers
             return false;
         }
 
-        private bool AnyControlIsPressed()
-        {
-            if (IsStickPressed()) return true;
-            Rewired.Player player = GetRewiredPlayer();
-            if (player != null && player.GetAnyButton()) return true;
-            foreach (InputDevice device in InputSystem.devices)
-                foreach (InputControl control in device.allControls)
-                    if (control is ButtonControl button && button.isPressed) return true;
-            return false;
-        }
-
         private bool RewiredButtonPressedThisFrame()
         {
             Rewired.Player player = GetRewiredPlayer();
@@ -213,62 +290,21 @@ namespace CardsUnity.Controllers
             return ReInput.players.GetPlayer(rewiredPlayerName);
         }
 
-        private void RestoreTimeScale()
-        {
-            if (!ownsTimeScale) return;
-            Time.timeScale = previousTimeScale;
-            ownsTimeScale = false;
-        }
-
-        private void ShowBlackout()
-        {
-            if (blackout == null) return;
-            blackout.alpha = 1f;
-            blackout.blocksRaycasts = true;
-            blackout.interactable = true;
-        }
-
         private void OnDisable()
         {
-            if (sequencePlayer != null) sequencePlayer.Completed -= HandleSequenceCompleted;
-            if (!introInitialized) return;
-            if (sequencePlayer != null) sequencePlayer.Stop();
-            if (transition != null) StopCoroutine(transition);
-            transition = null;
-            SetPlayerVisible(true);
-            RestorePlayerBehaviours();
-            if (playerTorch != null) playerTorch.SetPresentationMultiplier(1f);
-            if (blackout != null)
+            if (sequencePlayer != null)
             {
-                blackout.alpha = 0f;
-                blackout.blocksRaycasts = false;
-                blackout.interactable = false;
+                sequencePlayer.LineStarted -= HandleLineStarted;
+                sequencePlayer.Completed -= HandleSequenceCompleted;
             }
-            RestoreTimeScale();
-        }
-
-        private readonly struct RendererState
-        {
-            public RendererState(Renderer renderer, bool wasEnabled)
-            {
-                Renderer = renderer;
-                WasEnabled = wasEnabled;
-            }
-
-            public Renderer Renderer { get; }
-            public bool WasEnabled { get; }
-        }
-
-        private readonly struct BehaviourState
-        {
-            public BehaviourState(Behaviour behaviour, bool wasEnabled)
-            {
-                Behaviour = behaviour;
-                WasEnabled = wasEnabled;
-            }
-
-            public Behaviour Behaviour { get; }
-            public bool WasEnabled { get; }
+            if (!initialized) return;
+            sequencePlayer?.Stop();
+            if (!controlReleased) character?.ClearScriptedMove();
+            journeyProtection?.ReleaseProtection();
+            veil?.SetProgress(1f);
+            if (playerOutline != null) playerOutline.enabled = outlineWasEnabled;
+            RestoreHud(1f);
+            SetLegacyOverlayTransparent();
         }
     }
 }

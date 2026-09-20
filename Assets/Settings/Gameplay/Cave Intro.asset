@@ -47,8 +47,8 @@ MonoBehaviour:
     consider that an acceptable risk.
 
     <b>These are their stories.</b>'
-  charactersPerSecond: 30
-  characterFadeDuration: 0.08
+  charactersPerSecond: 20
+  characterFadeDuration: 0.1
   lineHoldDuration: 1.5
-  lineFadeDuration: 0.5
+  lineFadeDuration: 1
   acceleratedCharactersPerSecond: 120

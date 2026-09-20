@@ -65,7 +65,8 @@ namespace CardsUnity.Controllers
         [Range(0f, 100f)] public float branchConnectionPercentage = 0f;
         [Tooltip("Maximum straight-line gap bridged between different branch families, in metres. Existing intersections need no extra tunnel.")]
         [Range(2f, 64f)] public float branchConnectionDistance = 16f;
-        [Range(8f, 20f)] public float entranceLength = 12f;
+        [Tooltip("Distance in metres from the first chamber to the outside entrance. Long values create an extended introductory walk without changing the room layout.")]
+        [Range(8f, 160f)] public float entranceLength = 12f;
 
         [Header("Scattered rocks")]
         public GameObject[] rockPrefabs;
@@ -185,7 +186,7 @@ namespace CardsUnity.Controllers
             branchConnectionDistance = Mathf.Clamp(Finite(branchConnectionDistance, 16f), 2f, 64f);
             minimumBranchLength = Mathf.Clamp(Finite(minimumBranchLength, 7f), 2f, 64f);
             maximumBranchLength = Mathf.Clamp(Finite(maximumBranchLength, 12f), minimumBranchLength, 64f);
-            entranceLength = Mathf.Clamp(Finite(entranceLength, 12f), 8f, 20f);
+            entranceLength = Mathf.Clamp(Finite(entranceLength, 12f), 8f, 160f);
             rockDensity = Mathf.Clamp01(Finite(rockDensity, 0.45f));
             minimumRockSize = Mathf.Clamp(Finite(minimumRockSize, 1.2f), 1f, 4f);
             maximumRockSize = Mathf.Clamp(Finite(maximumRockSize, 2.6f), minimumRockSize, 4f);

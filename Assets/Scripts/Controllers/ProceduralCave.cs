@@ -48,7 +48,8 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0f, 100f)] private float branchConnectionPercentage = 0f;
         [Tooltip("Maximum straight-line gap bridged between different branch families, in metres. Existing intersections need no extra tunnel.")]
         [SerializeField, Range(2f, 64f)] private float branchConnectionDistance = 16f;
-        [SerializeField, Range(8f, 20f)] private float entranceLength = 12f;
+        [Tooltip("Distance in metres from the first chamber to the outside entrance. Long values create an extended introductory walk without changing the room layout.")]
+        [SerializeField, Range(8f, 160f)] private float entranceLength = 12f;
         [Header("Scattered rocks")]
         [SerializeField] private GameObject[] rockPrefabs;
         [Tooltip("Zero disables rocks; one fills available space while keeping routes clear.")]
@@ -116,9 +117,13 @@ namespace CardsUnity.Controllers
         private readonly List<float> radii = new List<float>();
         private readonly List<Vector2[]> corridors = new List<Vector2[]>();
         private readonly List<Rect> corridorBounds = new List<Rect>();
+        private readonly List<Vector3> entranceRouteLocalPoints = new List<Vector3>();
+        private readonly List<Vector3> entranceRouteWorldPoints = new List<Vector3>();
         private Vector2 entrance;
         private Vector2 entranceForward;
         private Vector2 exit;
+        private int entranceCorridorIndex = -1;
+        private int entranceRoomIndex = -1;
         private GameObject generated;
         private Mesh floorMesh, wallMesh, wallCollisionMesh, entranceGrottoMesh;
         private Material generatedRockfallMaterial;
@@ -128,6 +133,27 @@ namespace CardsUnity.Controllers
         public IReadOnlyList<Vector2> RoomCenters => rooms;
         public IReadOnlyList<Vector2[]> Corridors => corridors;
         public IReadOnlyList<float> RoomRadii => radii;
+        /// <summary>World-space route from the spawn point to the centre of the first chamber.</summary>
+        public IReadOnlyList<Vector3> EntranceRouteWorldPoints
+        {
+            get
+            {
+                RefreshEntranceRouteWorldPoints();
+                return entranceRouteWorldPoints;
+            }
+        }
+        public int EntranceRoomIndex => entranceRoomIndex;
+        public float EntranceRouteLength
+        {
+            get
+            {
+                RefreshEntranceRouteWorldPoints();
+                float length = 0f;
+                for (int i = 1; i < entranceRouteWorldPoints.Count; i++)
+                    length += Vector3.Distance(entranceRouteWorldPoints[i - 1], entranceRouteWorldPoints[i]);
+                return length;
+            }
+        }
         public Vector3 SpawnPosition => transform.TransformPoint(Surface(entrance, 0.1f));
         public Vector3 ExitPosition => transform.TransformPoint(Surface(exit, 0.1f));
         public float ExitInteractionRadius
@@ -163,7 +189,7 @@ namespace CardsUnity.Controllers
             branchConnectionDistance = Mathf.Clamp(branchConnectionDistance, 2f, 64f);
             minimumBranchLength = Mathf.Clamp(minimumBranchLength, 2f, 64f);
             maximumBranchLength = Mathf.Clamp(maximumBranchLength, minimumBranchLength, 64f);
-            entranceLength = Mathf.Clamp(entranceLength, 8f, 20f);
+            entranceLength = Mathf.Clamp(entranceLength, 8f, 160f);
             rockDensity = Mathf.Clamp01(rockDensity);
             coinsPerRoom = Mathf.Clamp(coinsPerRoom, 0, 8);
             treasureRoomPercentage = Mathf.Clamp(treasureRoomPercentage, 0f, 100f);
@@ -216,6 +242,7 @@ namespace CardsUnity.Controllers
             rebuildPending = false;
             RefreshActiveSettings();
             Clear(); rockFootprints.Clear(); treasurePositions.Clear(); rooms.Clear(); radii.Clear(); corridors.Clear(); corridorBounds.Clear();
+            entranceRouteLocalPoints.Clear(); entranceRouteWorldPoints.Clear(); entranceCorridorIndex = -1; entranceRoomIndex = -1;
             occupiedContentFootprints.Clear();
             var random = new System.Random(Settings.seed);
             noiseOffset = (float)random.NextDouble() * 1000f;
@@ -291,8 +318,9 @@ namespace CardsUnity.Controllers
             // Selection and debris have their own stream; trap tuning cannot rearrange the cave.
             var random = new System.Random(unchecked(Settings.seed * 397 ^ 91827361));
             var eligible = new List<(int corridor, Vector3[] path)>();
-            for (int c = 0; c < corridors.Count - 1; c++)
+            for (int c = 0; c < corridors.Count; c++)
             {
+                if (c == entranceCorridorIndex) continue;
                 var route = corridors[c];
                 var distances = new float[route.Length];
                 for (int i = 1; i < route.Length; i++)
@@ -600,6 +628,51 @@ namespace CardsUnity.Controllers
                 && Mathf.Abs(local.y - FloorHeight(new Vector2(local.x, local.z))) < 3f;
         }
 
+        /// <summary>True once a world-space position has entered the chamber served by the entrance route.</summary>
+        public bool HasReachedEntranceRoom(Vector3 worldPoint) => IsInRoom(worldPoint, entranceRoomIndex);
+
+        /// <summary>Samples the generated entrance route by world-space distance from SpawnPosition.</summary>
+        public Vector3 SampleEntranceRoute(float distance, out Vector3 forward)
+        {
+            RefreshEntranceRouteWorldPoints();
+            if (entranceRouteWorldPoints.Count == 0)
+            {
+                forward = transform.forward;
+                return transform.position;
+            }
+            if (entranceRouteWorldPoints.Count == 1)
+            {
+                forward = transform.forward;
+                return entranceRouteWorldPoints[0];
+            }
+
+            float remaining = Mathf.Max(0f, distance);
+            for (int i = 1; i < entranceRouteWorldPoints.Count; i++)
+            {
+                Vector3 a = entranceRouteWorldPoints[i - 1];
+                Vector3 b = entranceRouteWorldPoints[i];
+                float segmentLength = Vector3.Distance(a, b);
+                if (remaining <= segmentLength)
+                {
+                    forward = segmentLength > 0.0001f ? (b - a) / segmentLength : transform.forward;
+                    return Vector3.Lerp(a, b, segmentLength > 0.0001f ? remaining / segmentLength : 0f);
+                }
+                remaining -= segmentLength;
+            }
+
+            Vector3 last = entranceRouteWorldPoints[entranceRouteWorldPoints.Count - 1];
+            Vector3 previous = entranceRouteWorldPoints[entranceRouteWorldPoints.Count - 2];
+            forward = (last - previous).normalized;
+            return last;
+        }
+
+        private void RefreshEntranceRouteWorldPoints()
+        {
+            entranceRouteWorldPoints.Clear();
+            foreach (Vector3 point in entranceRouteLocalPoints)
+                entranceRouteWorldPoints.Add(transform.TransformPoint(point));
+        }
+
         public bool IsInteriorCrawlSurface(Vector3 point, Vector3 normal, out bool boundaryWall)
         {
             Vector3 local = transform.InverseTransformPoint(point);
@@ -648,13 +721,17 @@ namespace CardsUnity.Controllers
                     foreach (var centre in rooms)
                         if (Vector2.Distance(p, centre) < radius + 2.1f) { blocked = true; break; }
 
-                foreach (var route in corridors)
+                for (int corridor = 0; corridor < corridors.Count; corridor++)
                 {
+                    Vector2[] route = corridors[corridor];
+                    float routeClearance = corridor == entranceCorridorIndex
+                        ? Mathf.Max(1.25f, Settings.corridorWidth * 0.35f)
+                        : 0.9f;
                     for (int j = 1; j < route.Length; j++)
                     {
                         Vector2 ab = route[j] - route[j - 1];
                         float t = Mathf.Clamp01(Vector2.Dot(p - route[j - 1], ab) / ab.sqrMagnitude);
-                        if (Vector2.Distance(p, route[j - 1] + ab * t) < radius + 0.9f) { blocked = true; break; }
+                        if (Vector2.Distance(p, route[j - 1] + ab * t) < radius + routeClearance) { blocked = true; break; }
                     }
                     if (blocked) break;
                 }
@@ -745,12 +822,17 @@ namespace CardsUnity.Controllers
             // Start beyond the southernmost chamber, so the entrance cannot cut across the maze.
             int first = 0;
             for (int i = 1; i < Settings.roomCount; i++)
-                if (rooms[i].y - radii[i] < rooms[first].y - radii[first]) first = i;
+                if (rooms[i].y - radii[i] * 1.2f < rooms[first].y - radii[first] * 1.2f) first = i;
             Vector2 mouth = rooms[first] - Vector2.up * (radii[first] * 1.2f + Settings.entranceLength);
             AddTunnel(mouth, rooms[first], random);
-            var entryPath = corridors[corridors.Count - 1];
+            entranceCorridorIndex = corridors.Count - 1;
+            entranceRoomIndex = first;
+            var entryPath = corridors[entranceCorridorIndex];
             entrance = entryPath[2];
             entranceForward = (entryPath[3] - entryPath[2]).normalized;
+            entranceRouteLocalPoints.Clear();
+            for (int i = 2; i < entryPath.Length; i++)
+                entranceRouteLocalPoints.Add(Surface(entryPath[i], 0.1f));
             // The existing spawn becomes a small first chamber. Its rear arch is close enough
             // to return to, while the clear centre continues to point into the generated cave.
             Vector2 portal = entrance - entranceForward * 2.55f;

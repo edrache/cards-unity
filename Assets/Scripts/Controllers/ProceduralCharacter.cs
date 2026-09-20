@@ -49,8 +49,13 @@ namespace CardsUnity.Controllers
         private Vector3 previousActualVelocity;
         private bool sneaking;
         private bool analogMovement;
+        private bool scriptedMoveActive;
+        private Vector3 scriptedMoveDirection;
+        private float scriptedMoveSpeed;
+        private bool suppressActionsUntilReleased;
 
         public bool IsRunning => isActiveAndEnabled && runningWithMovement;
+        public bool IsScriptedMoveActive => scriptedMoveActive;
         private bool runningWithMovement;
 
         public PlayerGameplayBalanceProfile BalanceProfile => balanceProfile;
@@ -87,7 +92,8 @@ namespace CardsUnity.Controllers
                 bool hasInteractAction = ReInput.mapping.GetActionId("TorchInteract") >= 0;
                 interactPressed = hasInteractAction && player.GetButtonDown("TorchInteract");
                 interactHeld = hasInteractAction && player.GetButton("TorchInteract");
-                if (player.GetButtonDown("Sneak") && player.IsCurrentInputSource("Sneak", ControllerType.Keyboard))
+                if (!scriptedMoveActive && player.GetButtonDown("Sneak")
+                    && player.IsCurrentInputSource("Sneak", ControllerType.Keyboard))
                 {
                     sneaking = !sneaking;
                     analogMovement = false;
@@ -97,7 +103,8 @@ namespace CardsUnity.Controllers
             {
                 // Keep the daytime playground usable without a Rewired manager.
                 ReadLegacyInput(out input, out running, out analogMovement);
-                if (UnityEngine.InputSystem.Keyboard.current?.cKey.wasPressedThisFrame == true) sneaking = !sneaking;
+                if (!scriptedMoveActive
+                    && UnityEngine.InputSystem.Keyboard.current?.cKey.wasPressedThisFrame == true) sneaking = !sneaking;
                 attackHeld = UnityEngine.InputSystem.Keyboard.current?.spaceKey.isPressed == true;
                 interactPressed = UnityEngine.InputSystem.Keyboard.current?.eKey.wasPressedThisFrame == true;
                 interactHeld = UnityEngine.InputSystem.Keyboard.current?.eKey.isPressed == true;
@@ -106,6 +113,16 @@ namespace CardsUnity.Controllers
             if (knockdown != null && knockdown.IsDown)
             {
                 running = attackHeld = interactPressed = interactHeld = false;
+            }
+            if (scriptedMoveActive)
+            {
+                input = Vector2.zero;
+                running = attackHeld = interactPressed = interactHeld = false;
+            }
+            else if (suppressActionsUntilReleased)
+            {
+                if (!attackHeld && !interactHeld) suppressActionsUntilReleased = false;
+                attackHeld = interactPressed = interactHeld = false;
             }
             if (torchInteraction != null) torchInteraction.SetInteractHeld(interactHeld);
             if (interactPressed && torchInteraction != null) torchInteraction.TryInteract();
@@ -126,9 +143,9 @@ namespace CardsUnity.Controllers
                 stickMagnitude = 0f;
             }
 
-            bool activeSneak = sneaking;
-            bool activeWalk = false;
-            if (analogMovement)
+            bool activeSneak = scriptedMoveActive ? false : sneaking;
+            bool activeWalk = scriptedMoveActive;
+            if (!scriptedMoveActive && analogMovement)
             {
                 // Stick deflection only chooses between Sneak and Walk; Run overrides both.
                 activeSneak = !running && stickMagnitude < effectiveWalkThreshold;
@@ -137,16 +154,19 @@ namespace CardsUnity.Controllers
             // The input vector still carries the stick magnitude, so speed scales with deflection.
             float walkSpeed = MovementBalance?.WalkSpeed ?? speed;
             float sprintSpeed = MovementBalance?.RunSpeed ?? runSpeed;
-            float movementSpeed = running ? sprintSpeed : walkSpeed;
+            float movementSpeed = scriptedMoveActive ? scriptedMoveSpeed
+                : running ? sprintSpeed : walkSpeed;
             if (knockdown != null && knockdown.IsDown)
                 movementSpeed *= MovementBalance?.KnockedDownSpeedMultiplier ?? 0.4f;
 
             Vector3 forward = movementCamera != null
                 ? Vector3.ProjectOnPlane(movementCamera.forward, Vector3.up).normalized : Vector3.forward;
             Vector3 right = Vector3.Cross(Vector3.up, forward);
-            Vector3 desired = (forward * input.y + right * input.x) * movementSpeed;
+            Vector3 desired = scriptedMoveActive
+                ? scriptedMoveDirection * movementSpeed
+                : (forward * input.y + right * input.x) * movementSpeed;
             velocity = Vector3.MoveTowards(velocity, desired,
-                (input.sqrMagnitude > 0.001f
+                (desired.sqrMagnitude > 0.001f
                     ? MovementBalance?.Acceleration ?? acceleration
                     : MovementBalance?.Braking ?? braking) * Time.deltaTime);
             if (controller.isGrounded && verticalSpeed < 0f) verticalSpeed = -2f;
@@ -186,6 +206,37 @@ namespace CardsUnity.Controllers
                 body.localPosition = bodyOrigin + Vector3.up * (Mathf.Cos(phase * 2f) * 0.035f * blend);
                 body.localRotation = Quaternion.Euler(blend * 5f, 0f, -swing * 3f);
             }
+        }
+
+        /// <summary>
+        /// Drives collision-aware world-space locomotion while suppressing player actions.
+        /// Gait phase still advances from the distance the CharacterController actually covers.
+        /// </summary>
+        public void SetScriptedMove(Vector3 worldDirection, float worldSpeed)
+        {
+            bool wasActive = scriptedMoveActive;
+            scriptedMoveDirection = Vector3.ProjectOnPlane(worldDirection, Vector3.up).normalized;
+            scriptedMoveSpeed = Mathf.Max(0f, worldSpeed);
+            scriptedMoveActive = true;
+            suppressActionsUntilReleased = true;
+            if (wasActive) return;
+            torchAttack?.CancelAttack();
+            torchInteraction?.CancelInteraction();
+            torchInteraction?.SetInteractHeld(false);
+        }
+
+        /// <summary>
+        /// Returns locomotion to the player. Attack and interaction stay suppressed until their
+        /// physical buttons are released, preventing a held story-skip input from becoming an action.
+        /// </summary>
+        public void ClearScriptedMove()
+        {
+            scriptedMoveActive = false;
+            scriptedMoveDirection = Vector3.zero;
+            scriptedMoveSpeed = 0f;
+            suppressActionsUntilReleased = true;
+            torchAttack?.CancelAttack();
+            torchInteraction?.SetInteractHeld(false);
         }
 
         // Unity's rounded capsule can climb higher than stepOffset. Check the riser
@@ -248,6 +299,9 @@ namespace CardsUnity.Controllers
 
         private void OnDisable()
         {
+            scriptedMoveActive = false;
+            scriptedMoveDirection = Vector3.zero;
+            scriptedMoveSpeed = 0f;
             torchInteraction?.SetInteractHeld(false);
         }
 

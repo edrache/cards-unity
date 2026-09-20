@@ -1,4 +1,6 @@
-# Story intro verification — 2026-09-20
+# Initial story intro verification — 2026-09-20
+
+Historical checks for the original stationary intro. The entrance journey supersedes its pause, blackout and torch-ignition behavior; see `entrance-journey-verification.md` for the current implementation.
 
 Verified in the open Unity 6000.3.10f1 editor using the relay; all temporary test objects and runtime clones were discarded by returning to Edit Mode.
 
