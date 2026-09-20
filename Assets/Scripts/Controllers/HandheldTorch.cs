@@ -188,6 +188,22 @@ namespace CardsUnity.Controllers
         private float burnAge;
         private float smokeEmission;
         private bool emissionCached;
+        private float presentationMultiplier = 1f;
+        private float lastLightVariation = 1f;
+
+        /// <summary>
+        /// Visual-only multiplier used by presentations such as the story intro. It affects the
+        /// light, flame and smoke without changing fuel, balance values or remaining lifetime.
+        /// </summary>
+        public float PresentationMultiplier => presentationMultiplier;
+
+        public void SetPresentationMultiplier(float multiplier)
+        {
+            presentationMultiplier = Mathf.Clamp01(multiplier);
+            CacheEmissionRates();
+            ApplyLight(lastLightVariation);
+            ApplyParticlePresentation();
+        }
 
         [Header("Grip and inertia")]
         [SerializeField, Range(0f, 1f)] private float holdingPose = 0.9f;
@@ -231,6 +247,7 @@ namespace CardsUnity.Controllers
         private void Awake()
         {
             restLocalRotation = transform.localRotation;
+            CacheEmissionRates();
         }
 
         private void OnEnable()
@@ -254,11 +271,7 @@ namespace CardsUnity.Controllers
         public void Tick(float dt, float time)
         {
             if (dt <= 0f) return;
-            if (!emissionCached)
-            {
-                smokeEmission = smoke != null ? smoke.emission.rateOverTimeMultiplier : 0f;
-                emissionCached = true;
-            }
+            CacheEmissionRates();
             float effectiveLifetime = Mathf.Max(0.1f, Lifetime);
             burnAge = Mathf.Min(effectiveLifetime, burnAge + dt);
             float dying = BurnoutProgress;
@@ -310,18 +323,15 @@ namespace CardsUnity.Controllers
             flicker = Mathf.Lerp(flicker, targetFlicker, 1f - Mathf.Exp(-14f * dt));
             ApplyLight(flicker * fuel);
 
+            ApplyParticlePresentation();
             if (fire != null)
             {
-                var emission = fire.emission;
-                emission.rateOverTime = 42f * flicker * fuel;
                 var wind = fire.velocityOverLifetime;
                 wind.x = -filteredVelocity.x * 0.12f;
                 wind.z = -filteredVelocity.z * 0.12f;
             }
             if (smoke != null)
             {
-                var emission = smoke.emission;
-                emission.rateOverTimeMultiplier = smokeEmission * fuel;
                 var wind = smoke.velocityOverLifetime;
                 wind.x = -filteredVelocity.x * smokeTrail;
                 wind.z = -filteredVelocity.z * smokeTrail;
@@ -330,10 +340,33 @@ namespace CardsUnity.Controllers
 
         private void ApplyLight(float variation)
         {
+            lastLightVariation = variation;
             if (flameLight == null) return;
-            flameLight.intensity = (IlluminationBalance?.Brightness ?? brightness) * variation;
+            flameLight.intensity = (IlluminationBalance?.Brightness ?? brightness) * variation * presentationMultiplier;
             flameLight.range = IlluminationBalance?.LightRange ?? lightRange;
             flameLight.color = lightColor;
+        }
+
+        private void CacheEmissionRates()
+        {
+            if (emissionCached) return;
+            smokeEmission = smoke != null ? smoke.emission.rateOverTimeMultiplier : 0f;
+            emissionCached = true;
+        }
+
+        private void ApplyParticlePresentation()
+        {
+            float fuel = 1f - Mathf.SmoothStep(0f, 1f, BurnoutProgress);
+            if (fire != null)
+            {
+                var emission = fire.emission;
+                emission.rateOverTime = 42f * flicker * fuel * presentationMultiplier;
+            }
+            if (smoke != null)
+            {
+                var emission = smoke.emission;
+                emission.rateOverTimeMultiplier = smokeEmission * fuel * presentationMultiplier;
+            }
         }
 
 #if UNITY_EDITOR

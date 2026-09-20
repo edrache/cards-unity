@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc3860fca4c46434cbffd4ce092f617e, type: 3}
+  m_Name: Cave Intro
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.StorySequence
+  text: 'This is not a story about heroes.
+
+    There is no evil here to defeat.
+
+    No
+    kingdom to save.
+
+    No prophecy waiting to be fulfilled.
+
+    The people who
+    descend into the earth are not adventurers.
+
+    They are debtors.
+
+    Widows.
+
+    Criminals.
+
+    The
+    sick.
+
+    The abandoned.
+
+    People who have already lost more than they can
+    afford to lose.
+
+    Somewhere below, there are things worth more than a lifetime
+    of honest work.
+
+    Most who go looking for them never return.
+
+    Some people
+    consider that an acceptable risk.
+
+    <b>These are their stories.</b>'
+  charactersPerSecond: 30
+  characterFadeDuration: 0.08
+  lineHoldDuration: 1.5
+  lineFadeDuration: 0.5
+  acceleratedCharactersPerSecond: 120
