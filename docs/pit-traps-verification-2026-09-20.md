@@ -17,6 +17,7 @@ The cover is eight deterministic Voronoi fragments. Support is removed at 25% of
 - Temporary player-state object completed a run through `CaveExit.TryExit`; `CharacterHealth.TryKill` then returned false and preserved life. Temporary object removed.
 - Camera inspections of both variants; cracked cover inspected again after replacing radial triangles with Voronoi fragments. Temporary inspection cameras/lights removed.
 - Runtime background ticking was temporarily enabled to allow natural simulation while Unity lacked focus, then restored to false. Tests ended in Edit Mode; no test poses were saved.
+- Rebuilt twice with identical settings: pit names, durations and every generated vertex matched. The live pit-mesh count remained constant across rebuilds. Final editor state: Edit Mode, clean scene, time scale 1, runtime background ticking false.
 - Handbook regenerated from source; local navigation/file links and `git diff --check` checked.
 
 ## Limits
