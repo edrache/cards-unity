@@ -23,7 +23,7 @@ MonoBehaviour:
     knockedDownSpeedMultiplier: 0.4
   health:
     slotCount: 2
-    refillSecondsPerSlot: 20
+    refillSecondsPerSlot: 60
   stress:
     initialStress: 0
     encounterStress: 8
@@ -32,6 +32,7 @@ MonoBehaviour:
     encounterResetTime: 10
     recoveryPerSecond: 0
     recoveryDelay: 10
+    darknessStressPerSecond: 5
   knockdown:
     fallDuration: 0.25
     kneelDuration: 1.4

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CaveGenerationProfile
   settings:
     roomCount: 20
-    seed: 5
+    seed: 50
     roomRadius: 23.4
     roomSizeVariation: 1
     useRoomRadiusRange: 1
@@ -66,7 +66,7 @@ MonoBehaviour:
     maximumRockfallBoulderRadius: 1
     rockfallMaterial: {fileID: 0}
     centipedePrefab: {fileID: 8402668057444636402, guid: b4f4b46d9a579409ba14a9d3563f22e8, type: 3}
-    centipedeRoomPercentage: 0
+    centipedeRoomPercentage: 69.2
     treasurePrefab: {fileID: 5334899008198995573, guid: b931fd32a89184c268b6ab0154d103e4, type: 3}
     treasureVariants:
     - {fileID: 7716414664649281885, guid: 48db3a9e2c0604f53b79acda53dba4f4, type: 3}
@@ -98,6 +98,74 @@ MonoBehaviour:
     grassMaterial: {fileID: 2100000, guid: 728c514ae5d184917acda80a39b95c4e, type: 2}
     grassRulesMigrated: 1
     roomContentRules:
+    - label: Open Pits
+      enabled: 1
+      contentType: 0
+      grass:
+        grassBladesPerSquareMetre: 18
+        grassHeight: 1.2
+        grassHeightVariation: 0.55
+        grassWidth: 0.1
+        grassWidthVariation: 0.65
+        grassMaximumBlades: 60000
+        grassDrawDistance: 32
+        grassBendRadius: 1.1
+        grassMaterial: {fileID: 0}
+      water:
+        material: {fileID: 0}
+        width: 0.8
+        height: 2.5
+        depth: 0.35
+      seedSalt: 672804213
+      prefabs:
+      - {fileID: 75847166442750330, guid: df194148d78c545de84eddfa02e84b8b, type: 3}
+      roomPercentage: 63.5
+      minimumPerSelectedRoom: 1
+      maximumPerSelectedRoom: 3
+      footprintRadius: 2.3
+      wallClearance: 0.6
+      routeClearance: 1
+      surfaceOffset: 0
+      wallPlacementPercentage: 0
+      minimumWallHeight: 0.25
+      maximumWallHeight: 0.8
+      wallEmbedDepth: 0.12
+      alignToFloor: 0
+      randomYaw: 1
+    - label: Cracked Pits
+      enabled: 1
+      contentType: 0
+      grass:
+        grassBladesPerSquareMetre: 18
+        grassHeight: 1.2
+        grassHeightVariation: 0.55
+        grassWidth: 0.1
+        grassWidthVariation: 0.65
+        grassMaximumBlades: 60000
+        grassDrawDistance: 32
+        grassBendRadius: 1.1
+        grassMaterial: {fileID: 0}
+      water:
+        material: {fileID: 0}
+        width: 0.8
+        height: 2.5
+        depth: 0.35
+      seedSalt: 715827883
+      prefabs:
+      - {fileID: 7233866442378915406, guid: 9ec8c2de23e304bf6809289b268a6030, type: 3}
+      roomPercentage: 55.9
+      minimumPerSelectedRoom: 1
+      maximumPerSelectedRoom: 1
+      footprintRadius: 2.3
+      wallClearance: 0.6
+      routeClearance: 1
+      surfaceOffset: 0
+      wallPlacementPercentage: 0
+      minimumWallHeight: 0.25
+      maximumWallHeight: 0.8
+      wallEmbedDepth: 0.12
+      alignToFloor: 0
+      randomYaw: 1
     - label: Stone Pillars
       enabled: 1
       contentType: 0
@@ -157,7 +225,7 @@ MonoBehaviour:
       - {fileID: 6307854898323304001, guid: f5ac47f09d16a4340b38cbe6f07edea3, type: 3}
       - {fileID: 3944237365202134501, guid: 7c6ccabf653464abea69c239ec92e006, type: 3}
       - {fileID: 5098021573500757134, guid: 2dc91656b92e745148e69e94b3bb7e92, type: 3}
-      roomPercentage: 78.5
+      roomPercentage: 60.2
       minimumPerSelectedRoom: 4
       maximumPerSelectedRoom: 42
       footprintRadius: 2.2
@@ -190,7 +258,7 @@ MonoBehaviour:
         depth: 0.35
       seedSalt: 982451653
       prefabs: []
-      roomPercentage: 35
+      roomPercentage: 51.5
       minimumPerSelectedRoom: 1
       maximumPerSelectedRoom: 1
       footprintRadius: 0.5
@@ -224,80 +292,12 @@ MonoBehaviour:
       seedSalt: 47023
       prefabs:
       - {fileID: 274222535509208919, guid: c7a9b060b8f374285a63c838edc18ad7, type: 3}
-      roomPercentage: 35
+      roomPercentage: 57.7
       minimumPerSelectedRoom: 1
       maximumPerSelectedRoom: 2
       footprintRadius: 0.6
       wallClearance: 0.35
       routeClearance: 0
-      surfaceOffset: 0
-      wallPlacementPercentage: 0
-      minimumWallHeight: 0.25
-      maximumWallHeight: 0.8
-      wallEmbedDepth: 0.12
-      alignToFloor: 0
-      randomYaw: 1
-    - label: Open Pits
-      enabled: 1
-      contentType: 0
-      grass:
-        grassBladesPerSquareMetre: 18
-        grassHeight: 1.2
-        grassHeightVariation: 0.55
-        grassWidth: 0.1
-        grassWidthVariation: 0.65
-        grassMaximumBlades: 60000
-        grassDrawDistance: 32
-        grassBendRadius: 1.1
-        grassMaterial: {fileID: 0}
-      water:
-        material: {fileID: 0}
-        width: 0.8
-        height: 2.5
-        depth: 0.35
-      seedSalt: 672804213
-      prefabs:
-      - {fileID: 75847166442750330, guid: df194148d78c545de84eddfa02e84b8b, type: 3}
-      roomPercentage: 25
-      minimumPerSelectedRoom: 1
-      maximumPerSelectedRoom: 1
-      footprintRadius: 2.3
-      wallClearance: 0.6
-      routeClearance: 1
-      surfaceOffset: 0
-      wallPlacementPercentage: 0
-      minimumWallHeight: 0.25
-      maximumWallHeight: 0.8
-      wallEmbedDepth: 0.12
-      alignToFloor: 0
-      randomYaw: 1
-    - label: Cracked Pits
-      enabled: 1
-      contentType: 0
-      grass:
-        grassBladesPerSquareMetre: 18
-        grassHeight: 1.2
-        grassHeightVariation: 0.55
-        grassWidth: 0.1
-        grassWidthVariation: 0.65
-        grassMaximumBlades: 60000
-        grassDrawDistance: 32
-        grassBendRadius: 1.1
-        grassMaterial: {fileID: 0}
-      water:
-        material: {fileID: 0}
-        width: 0.8
-        height: 2.5
-        depth: 0.35
-      seedSalt: 715827883
-      prefabs:
-      - {fileID: 7233866442378915406, guid: 9ec8c2de23e304bf6809289b268a6030, type: 3}
-      roomPercentage: 25
-      minimumPerSelectedRoom: 1
-      maximumPerSelectedRoom: 1
-      footprintRadius: 2.3
-      wallClearance: 0.6
-      routeClearance: 1
       surfaceOffset: 0
       wallPlacementPercentage: 0
       minimumWallHeight: 0.25
