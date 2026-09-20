@@ -50,8 +50,8 @@ MonoBehaviour:
     crackedRoomPercentage: 0
     minimumSize: 2.5
     maximumSize: 4
-    irregularity: 0.75
-    depth: 7
+    irregularity: 0.843
+    depth: 20
     collapseSeconds:
     - 0.8
     - 1.2

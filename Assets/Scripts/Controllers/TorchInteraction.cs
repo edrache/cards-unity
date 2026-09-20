@@ -356,8 +356,8 @@ namespace CardsUnity.Controllers
 
             if (!recovering && !carryingBoulder && elapsed >= PickupDuration)
             {
-                // Gameplay collection is independent of visual IK accuracy. Keep the selected
-                // treasure locked, but recheck availability, range and obstruction at transfer.
+                // All pickups are independent of visual IK accuracy. Keep the selected
+                // item locked, but recheck availability, range and obstruction at transfer.
                 if (liftingBoulder)
                 {
                     if (HasValidTarget() && boulder.TryCarry(transform))
@@ -370,12 +370,10 @@ namespace CardsUnity.Controllers
                 }
                 else if (collecting)
                 {
-                    if (treasure != null && treasure.isActiveAndEnabled
-                        && Vector3.Distance(transform.position, treasure.transform.position) <= PickupRange
-                        && HasClearReach(treasure.transform))
+                    if (HasValidTarget())
                         inventory.Collect(treasure);
                 }
-                else if (HasEligiblePickupTorch() && Vector3.Distance(elbow.TransformPoint(gripOffset), reachTarget) < 0.08f)
+                else if (HasValidTarget())
                 {
                     groundRotation = torch.transform.rotation;
                     torch.SetGripOffset(gripOffset);
