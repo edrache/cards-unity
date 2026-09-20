@@ -182,6 +182,17 @@ namespace CardsUnity.Controllers
             return caveExit != null && caveExit.IsCompleted;
         }
 
+        /// <summary>Ends a live run immediately, regardless of remaining health or knockdown immunity.</summary>
+        public bool TryKill()
+        {
+            InitializeSlots();
+            if (!isActiveAndEnabled || IsDead || IsRunCompleted()) return false;
+            for (int i = 0; i < slotFills.Length; i++) slotFills[i] = 0f;
+            Die();
+            RefreshHud();
+            return true;
+        }
+
         private void Die()
         {
             if (IsDead) return;

@@ -40,6 +40,17 @@ MonoBehaviour:
     rockDensity: 0.744
     minimumRockSize: 1.2
     maximumRockSize: 1.64
+    pits:
+      openRoomPercentage: 25
+      crackedRoomPercentage: 25
+      minimumSize: 2.5
+      maximumSize: 4
+      irregularity: 0.75
+      depth: 7
+      collapseSeconds:
+      - 0.8
+      - 1.2
+      - 1.8
     rockfallCorridorPercentage: 50
     minimumRockfallLength: 2
     maximumRockfallLength: 10

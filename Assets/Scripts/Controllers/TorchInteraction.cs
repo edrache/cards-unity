@@ -177,12 +177,12 @@ namespace CardsUnity.Controllers
         {
             get
             {
-                if (carryingBoulder) return "Puść, aby upuścić głaz";
+                if (carryingBoulder) return "Release to drop boulder";
                 RefreshPickupTarget();
-                if (PickupTarget == null) return CanUseExit() ? "Wyjdź z jaskini" : string.Empty;
-                if (treasure != null) return "Podnieś: " + treasure.DisplayName;
+                if (PickupTarget == null) return CanUseExit() ? "Leave the cave" : string.Empty;
+                if (treasure != null) return "Pick up: " + treasure.DisplayName;
                 return boulder != null && PickupTarget == boulder.transform
-                    ? "Przytrzymaj, aby podnieść głaz" : "Podnieś: pochodnię";
+                    ? "Hold to pick up boulder" : "Pick up: torch";
             }
         }
 

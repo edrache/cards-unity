@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d71d3cfc12014809a8e546a52e5287c, type: 3}
   m_Name: Royal Orb
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.TreasureDefinition
-  displayName: "Kr\xF3lewskie jab\u0142ko"
+  displayName: Royal Orb
   value: 240
   isCoin: 0

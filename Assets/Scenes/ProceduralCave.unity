@@ -199,7 +199,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Brak zebranych skarb\xF3w"
+  m_text: No treasures collected
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: cad8997411fae417790cbf3a30e0d087, type: 2}
   m_sharedMaterial: {fileID: -3876152362152193355, guid: cad8997411fae417790cbf3a30e0d087, type: 2}
@@ -1401,9 +1401,9 @@ MonoBehaviour:
   volume: {fileID: 1114460751}
   mode: 1
   centerOffset: {x: 0, y: 0.03}
-  blurStrength: 1.2
-  sharpRadius: 0.14
-  circleTransition: 0.16
+  blurStrength: 1.5
+  sharpRadius: 0.1
+  circleTransition: 0.155
   tiltAngle: 0
   upperSharpWidth: 0.08
   lowerSharpWidth: 0.08
@@ -1525,7 +1525,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Ekwipunek \xB7 0"
+  m_text: "INVENTORY \xB7 0"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: cad8997411fae417790cbf3a30e0d087, type: 2}
   m_sharedMaterial: {fileID: -3876152362152193355, guid: cad8997411fae417790cbf3a30e0d087, type: 2}
@@ -1662,7 +1662,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Warto\u015B\u0107 skarb\xF3w: 0"
+  m_text: "Treasure value: 0"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: cad8997411fae417790cbf3a30e0d087, type: 2}
   m_sharedMaterial: {fileID: -3876152362152193355, guid: cad8997411fae417790cbf3a30e0d087, type: 2}
@@ -2016,6 +2016,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.ProceduralCave
   generationProfile: {fileID: 11400000, guid: 846ab6ed0319d479ea9424fb22f317a6, type: 2}
+  pits:
+    openRoomPercentage: 0
+    crackedRoomPercentage: 0
+    minimumSize: 2.5
+    maximumSize: 4
+    irregularity: 0.75
+    depth: 7
+    collapseSeconds:
+    - 0.8
+    - 1.2
+    - 1.8
   roomCount: 16
   seed: 1
   roomRadius: 6.65

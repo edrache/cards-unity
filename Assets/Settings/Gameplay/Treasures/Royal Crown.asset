@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d71d3cfc12014809a8e546a52e5287c, type: 3}
   m_Name: Royal Crown
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.TreasureDefinition
-  displayName: "Kr\xF3lewska korona"
+  displayName: Royal Crown
   value: 300
   isCoin: 0

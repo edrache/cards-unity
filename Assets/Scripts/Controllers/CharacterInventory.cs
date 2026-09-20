@@ -116,16 +116,16 @@ namespace CardsUnity.Controllers
         /// <summary>Shows the final collection totals on an undithered screen overlay.</summary>
         public void ShowCaveSummary()
         {
-            ShowEndSummary("WYPRAWA ZAKOŃCZONA", "Zebrane skarby: " + TreasureCount
-                + "\nZebrane monety: " + CoinCount
-                + "\nŁącznie przedmiotów: " + TotalCount
-                + "\nWartość skarbów: " + TotalValue, 0.96f);
+            ShowEndSummary("EXPEDITION COMPLETE", "Treasures collected: " + TreasureCount
+                + "\nCoins collected: " + CoinCount
+                + "\nTotal items: " + TotalCount
+                + "\nTreasure value: " + TotalValue, 0.96f);
         }
 
         /// <summary>Shows the final defeat message without revealing the collected treasure totals.</summary>
         public void ShowDefeatSummary()
         {
-            ShowEndSummary("PORAŻKA", "Nie udało ci się wydostać z jaskini.", 1f);
+            ShowEndSummary("DEFEAT", "You failed to escape the cave.", 1f);
         }
 
         private void ShowEndSummary(string titleText, string resultText, float backdropAlpha)
@@ -252,10 +252,10 @@ namespace CardsUnity.Controllers
         private void RefreshView()
         {
             if (heading == null) return;
-            heading.text = "EKWIPUNEK · " + TotalCount;
-            total.text = "Wartość skarbów: " + TotalValue;
+            heading.text = "INVENTORY · " + TotalCount;
+            total.text = "Treasure value: " + TotalValue;
             text.Clear();
-            if (items.Count == 0) text.Append("Brak zebranych skarbów");
+            if (items.Count == 0) text.Append("No treasures collected");
             foreach (var item in items)
             {
                 if (text.Length > 0) text.Append('\n');

@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d71d3cfc12014809a8e546a52e5287c, type: 3}
   m_Name: Golden Idol
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.TreasureDefinition
-  displayName: "Z\u0142oty bo\u017Cek"
+  displayName: Golden Idol
   value: 180
   isCoin: 0

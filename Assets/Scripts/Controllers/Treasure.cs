@@ -36,17 +36,7 @@ namespace CardsUnity.Controllers
             get
             {
                 if (definition != null) return definition.DisplayName;
-                string itemName = LegacyName;
-                switch (itemName)
-                {
-                    case "Golden Chalice": return "Złoty kielich";
-                    case "Royal Crown": return "Królewska korona";
-                    case "Royal Orb": return "Królewskie jabłko";
-                    case "Golden Idol": return "Złoty bożek";
-                    case "Silver Flask": return "Srebrna flasza";
-                    case "Gold Coin": return "Złota moneta";
-                    default: return itemName;
-                }
+                return LegacyName;
             }
         }
         public float Exposure { get; private set; }

@@ -31,6 +31,7 @@ namespace CardsUnity.Controllers
         {
             return new CaveGenerationSettings
             {
+                pits = pits != null ? pits.Clone() : new CavePitSettings(),
                 roomCount = roomCount,
                 seed = seed,
                 roomRadius = roomRadius,

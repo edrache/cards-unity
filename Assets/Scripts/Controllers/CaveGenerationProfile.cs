@@ -74,6 +74,9 @@ namespace CardsUnity.Controllers
         [Range(1f, 4f)] public float minimumRockSize = 1.2f;
         [Range(1f, 4f)] public float maximumRockSize = 2.6f;
 
+        [Header("Pit traps")]
+        public CavePitSettings pits = new CavePitSettings();
+
         [Header("Corridor rockfall traps")]
         [Tooltip("Percentage of eligible corridors with one rockfall stretch. The entrance and rooms stay clear. Zero disables traps.")]
         [Range(0f, 100f)] public float rockfallCorridorPercentage = 25f;
@@ -153,6 +156,7 @@ namespace CardsUnity.Controllers
         public CaveGenerationSettings Clone()
         {
             var clone = (CaveGenerationSettings)MemberwiseClone();
+            clone.pits = pits != null ? pits.Clone() : new CavePitSettings();
             clone.rockPrefabs = rockPrefabs != null ? (GameObject[])rockPrefabs.Clone() : null;
             clone.treasureVariants = treasureVariants != null ? (Treasure[])treasureVariants.Clone() : null;
             clone.roomContentRules = new List<CaveRoomContentRule>();
@@ -164,6 +168,8 @@ namespace CardsUnity.Controllers
 
         public void Validate()
         {
+            if (pits == null) pits = new CavePitSettings();
+            pits.Validate();
             roomCount = Mathf.Clamp(roomCount, 1, 24);
             roomRadius = Mathf.Clamp(Finite(roomRadius, 5.5f), 4f, 32f);
             roomSizeVariation = Mathf.Clamp01(Finite(roomSizeVariation, 0.85f));
