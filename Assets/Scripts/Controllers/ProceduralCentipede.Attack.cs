@@ -149,7 +149,7 @@ namespace CardsUnity.Controllers
             // Only an accepted centipede impact spends health; knockdown immunity still applies.
             if (target == null || target.GetComponent<CharacterHealth>()?.IsDead == true
                 || target.GetComponent<CaveExit>()?.IsCompleted == true) return;
-            if (target.GetComponent<CharacterKnockdown>()?.TryKnockDown() != true) return;
+            if (target.GetComponent<CharacterKnockdown>()?.TryKnockDown(target.position - transform.position) != true) return;
             target.GetComponent<CharacterStress>()?.RegisterHit();
             target.GetComponent<CharacterHealth>()?.TryTakeDamage();
         }
