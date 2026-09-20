@@ -139,11 +139,9 @@ The generator combines opaque, double-sided broad blades with short bevelled cap
 
 ## Pit traps
 
-- `CavePitSettings` is cloned with generation settings and supports independent open/cracked room percentages, independently sampled ellipse axes, irregular vertex spacing, shaft depth and a discrete seeded list of collapse durations. Existing profiles default to disabled; the playable profile enables 25% of rooms for each variant.
-- `ProceduralCave.Pits` runs after room content and before grass. Independent random streams preserve prior layout and population sampling. Placement reserves footprints, preserves corridor routes and excludes entrance/exit and existing content; failed placements are skipped.
-- `CavePitGeometry` subtracts convex clockwise rim polygons from floor triangles, interpolating original heights; both renderer and collider use the result. `CavePitTrap` supplies shaft walls and optional cracked cover.
-- Cover entry starts an irreversible collapse. Each pit samples its total duration once on generation; fragments lose support and fall during that interval. Stepping off can avoid falling, but does not reset the trap.
-- Falling below the rim invokes `CharacterHealth.TryKill` (all health removed, one death event, no knockdown immunity). Completed runs remain protected. Existing `CharacterDeath` handles defeat delay and summary; the pit continues the visible fall after locomotion stops.
+- `CavePitTrap` is an `ICaveSpawnParticipant` prefab component. Configure `Assets/Prefabs/Open Pit.prefab` and `Assets/Prefabs/Cracked Pit.prefab` through existing `CaveRoomContentRule` entries with `contentType = Prefabs`; the playable profile uses one rule at 25% for each variant. Rule frequency, count and `seedSalt` control seeded room selection and placement.
+- The component owns appearance and behavior: `minimumSize`, `maximumSize`, `irregularity`, `depth` and `collapseSeconds`. The placement footprint is automatically at least `maximumSize / 2 + 0.3 m`; wall placement and surface offset are ignored, the prefab stays upright, and placement requires at least `routeClearance = 1 m` and `wallClearance = 0.6 m`. Entrance and exit rooms are excluded.
+- Pits remain physical holes: floor rendering and collision use the cutout, and falling below the rim calls `CharacterHealth.TryKill` (lethal at 0.8 m below the rim, bypassing remaining health and knockdown immunity). Cracked cover releases at 25% of its selected collapse duration; leaving does not reset it. Completed runs remain protected and the existing defeat delay/summary continues to apply.
 
 ## Corridor rockfall traps
 

@@ -54,6 +54,7 @@ Playable procedural 3D cave prototype: articulated knight, distance-driven gait/
 Designer entry point: **Tools > Cards Unity > Designer Hub**. Shared tuning lives in `Assets/Settings/Gameplay/`; the offline handbook is [docs/designer-guide/index.html](docs/designer-guide/index.html). Refresh its source-derived catalog with `python3 docs/designer-guide/generate_inventory.py` after serialized configuration changes. Run the focused Edit Mode configuration checks from **Tools > Cards Unity > Run Configuration Checks**.
 
 - `CaveGenerationProfile` owns reusable generation settings; `ProceduralCave.player` remains a scene binding. Settings are snapshotted on rebuild. `CaveRoomContentRule` and `ICaveSpawnParticipant` extend room populations without changing built-in random streams.
+- New traps and other cave elements should use `CaveRoomContentRule` prefab entries whenever feasible, using `ICaveSpawnParticipant` when cave-specific initialization is needed; tune the source prefab and rule rather than generated children or standalone generator settings.
 - `PlayerGameplayBalanceProfile`, `TorchBalanceProfile`, `CentipedeBalanceProfile` and `TreasureDefinition` supply shared tuning/identity. Components retain original serialized values as fallback when no profile is assigned. Keep mutable health, fuel, stress and encounter state on instances; preserve profile assignments and variant-specific tuning.
 
 Gameplay entry points (filenames below are under `Assets/Scripts/Controllers/`):

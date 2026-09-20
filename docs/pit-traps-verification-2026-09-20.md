@@ -23,3 +23,16 @@ The cover is eight deterministic Voronoi fragments. Support is removed at 25% of
 ## Limits
 
 No physical keyboard/gamepad traversal was automated. Terrain edits apply to the procedural cave floor, not arbitrary terrain meshes. The rim is an irregular convex polygon, not a hand-authored concave spline. Seeded placement can skip crowded rooms; percentages are requests, not guaranteed counts.
+
+## Room Content Rules migration
+
+The standalone profile controls above were superseded by `Open Pits` and `Cracked Pits` prefab rules. Both retain 25% room requests and the previous shape/duration tuning in `Assets/Prefabs/Open Pit.prefab` and `Assets/Prefabs/Cracked Pit.prefab`. Placement now uses each rule's standard seed streams, so positions change: the current profile generates the open pit in room 4 and the cracked pit in room 15. Legacy profile fields remain hidden for data preservation and do not spawn pits.
+
+Verification after migration:
+
+- Both prefab assets and profile references were created/saved through the editor.
+- Geometry checks passed. Raycasts at each prefab's polygon centre verified open-floor absence and intact cracked support; world positions matched the hole boundaries.
+- Temporarily disabled both prefab rules on an in-memory profile copy: no pits were generated. Restoring the original profile restored both variants; the copy was destroyed.
+- Inspected the cracked prefab through a temporary camera to verify transformed geometry and continuous UV placement. Removed the camera/light.
+- In Play Mode, positioned the real player on the generated cracked prefab. Normal frame updates collapsed the cover, gravity dropped the player and the defeat summary appeared. Restored runtime background ticking to false and returned to Edit Mode. No physical input automation was performed.
+- Handbook source catalog regenerated; links/anchors and whitespace checked. AGENTS.md and CLAUDE.md now prefer prefab Room Content Rules for new traps and cave elements.

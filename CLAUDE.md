@@ -21,3 +21,5 @@ Use only TextMeshPro for project-owned game UI text (`TextMeshProUGUI` / `TMP_Te
 5. Report changes, verification/limitations and commit ID in Polish. Do not push unless requested.
 
 Keep shared project rules in AGENTS.md rather than duplicating them here.
+
+New traps and cave elements should use Room Content Rules prefab entries whenever feasible; edit the source prefab and rule instead of generated children.

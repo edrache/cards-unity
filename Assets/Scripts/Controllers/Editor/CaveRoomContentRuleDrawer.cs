@@ -10,6 +10,13 @@ namespace CardsUnity.Controllers.Editor
         private static IEnumerable<SerializedProperty> VisibleFields(SerializedProperty property)
         {
             bool water = property.FindPropertyRelative("contentType").enumValueIndex == (int)CaveRoomContentType.Water;
+            bool pit = false;
+            var prefabs = property.FindPropertyRelative("prefabs");
+            for (int i = 0; i < prefabs.arraySize; i++)
+            {
+                var prefab = prefabs.GetArrayElementAtIndex(i).objectReferenceValue as GameObject;
+                if (prefab != null && prefab.GetComponent<CavePitTrap>() != null) { pit = true; break; }
+            }
             bool grass = property.FindPropertyRelative("contentType").enumValueIndex == (int)CaveRoomContentType.Grass;
             foreach (string name in new[] { "label", "enabled", "contentType", "seedSalt", "roomPercentage" })
                 yield return property.FindPropertyRelative(name);
@@ -23,6 +30,8 @@ namespace CardsUnity.Controllers.Editor
                 "footprintRadius", "wallClearance", "routeClearance", "surfaceOffset", "wallPlacementPercentage",
                 "minimumWallHeight", "maximumWallHeight", "wallEmbedDepth", "alignToFloor", "randomYaw" })
             {
+                if (pit && (name == "surfaceOffset" || name == "wallPlacementPercentage" || name == "minimumWallHeight"
+                    || name == "maximumWallHeight" || name == "wallEmbedDepth" || name == "alignToFloor")) continue;
                 if (water && (name == "prefabs" || name == "wallPlacementPercentage" || name == "minimumWallHeight"
                     || name == "maximumWallHeight" || name == "wallEmbedDepth" || name == "alignToFloor")) continue;
                 yield return property.FindPropertyRelative(name);

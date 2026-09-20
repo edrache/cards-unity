@@ -7,9 +7,9 @@ namespace CardsUnity.Controllers
     public sealed class CavePitSettings
     {
         [Tooltip("Percentage of rooms requesting one open pit. Zero disables this variant; crowded rooms may be skipped.")]
-        [Range(0f, 100f)] public float openRoomPercentage;
+        [HideInInspector] public float openRoomPercentage;
         [Tooltip("Percentage of rooms requesting one cracked, collapsing pit. Placement keeps existing content and routes clear.")]
-        [Range(0f, 100f)] public float crackedRoomPercentage;
+        [HideInInspector] public float crackedRoomPercentage;
         [Tooltip("Minimum full extent of each independently sampled ellipse axis, before irregular polygon shaping.")]
         [Range(2f, 12f)] public float minimumSize = 2.5f;
         [Range(2f, 12f)] public float maximumSize = 4f;

@@ -1662,7 +1662,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Treasure value: 0"
+  m_text: 'Treasure value: 0'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: cad8997411fae417790cbf3a30e0d087, type: 2}
   m_sharedMaterial: {fileID: -3876152362152193355, guid: cad8997411fae417790cbf3a30e0d087, type: 2}

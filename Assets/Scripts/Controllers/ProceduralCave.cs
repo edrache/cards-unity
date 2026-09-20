@@ -12,8 +12,8 @@ namespace CardsUnity.Controllers
         [Tooltip("Optional reusable settings. When assigned, the profile is read at the start of each rebuild; the fields below remain the legacy fallback.")]
         [SerializeField] private CaveGenerationProfile generationProfile;
 
-        [Header("Pit traps")]
-        [SerializeField] private CavePitSettings pits = new CavePitSettings();
+        // Retained for migration of the original standalone pit settings.
+        [SerializeField, HideInInspector] private CavePitSettings pits = new CavePitSettings();
 
         [Header("Layout")]
         [SerializeField, Range(1, 24)] private int roomCount = 6;
@@ -281,7 +281,7 @@ namespace CardsUnity.Controllers
             SpawnBodies();
             SpawnRockfallTraps();
             SpawnRoomContent();
-            SpawnPitTraps();
+            ApplyPitCutouts();
             SpawnGrass();
         }
 

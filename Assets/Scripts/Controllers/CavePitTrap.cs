@@ -5,8 +5,65 @@ namespace CardsUnity.Controllers
 {
     /// <summary>An irregular cave-local pit, optionally hidden beneath a one-shot collapsing floor.</summary>
     [ExecuteAlways, DisallowMultipleComponent]
-    public sealed class CavePitTrap : MonoBehaviour
+    public sealed class CavePitTrap : MonoBehaviour, ICaveSpawnParticipant
     {
+        [Tooltip("Enable for cracked ground that collapses on entry; disable for an open shaft.")]
+        [SerializeField] private bool covered;
+        [Tooltip("Pit dimensions and collapse durations. Frequency and count belong to the prefab's Room Content Rule.")]
+        [SerializeField] private CavePitSettings shape = new CavePitSettings();
+
+        public float RequiredFootprint
+        {
+            get
+            {
+                var tuning = shape != null ? shape.Clone() : new CavePitSettings();
+                tuning.Validate();
+                return tuning.maximumSize * 0.5f + 0.3f;
+            }
+        }
+        public IReadOnlyList<Vector2> Boundary => boundary;
+        public bool IsConfigured => configured;
+
+        /// <summary>Copies authored tuning, primarily for prefab creation and migration.</summary>
+        public void Configure(bool cracked, CavePitSettings tuning)
+        {
+            covered = cracked;
+            shape = tuning != null ? tuning.Clone() : new CavePitSettings();
+            shape.Validate();
+        }
+
+        public void OnCaveSpawned(CaveSpawnContext context)
+        {
+            var tuning = shape != null ? shape.Clone() : new CavePitSettings();
+            tuning.Validate();
+            var random = new System.Random(context.Seed);
+            float width = Mathf.Lerp(tuning.minimumSize, tuning.maximumSize, (float)random.NextDouble());
+            float length = Mathf.Lerp(tuning.minimumSize, tuning.maximumSize, (float)random.NextDouble());
+            Vector3 position = context.Cave.transform.InverseTransformPoint(transform.position);
+            // Size is authored in cave metres; prefab scale and tilt must not enlarge the reserved footprint.
+            transform.localScale = Vector3.one;
+            transform.localRotation = Quaternion.Euler(0f, transform.localEulerAngles.y, 0f);
+            var polygon = new Vector2[10];
+            float yaw = transform.localEulerAngles.y * Mathf.Deg2Rad;
+            for (int i = 0; i < polygon.Length; i++)
+            {
+                float angle = -(i + ((float)random.NextDouble() - 0.5f) * tuning.irregularity * 0.7f)
+                    * Mathf.PI * 2f / polygon.Length;
+                Vector2 p = new Vector2(Mathf.Cos(angle) * width, Mathf.Sin(angle) * length) * 0.5f;
+                polygon[i] = new Vector2(position.x + p.x * Mathf.Cos(yaw) - p.y * Mathf.Sin(yaw),
+                    position.z + p.x * Mathf.Sin(yaw) + p.y * Mathf.Cos(yaw));
+            }
+            Initialize(context.Cave, polygon, context.Player, covered,
+                tuning.collapseSeconds[random.Next(tuning.collapseSeconds.Length)],
+                context.Cave.PitFloorMaterial, context.Cave.PitWallMaterial, tuning.depth);
+        }
+
+        private void OnValidate()
+        {
+            if (shape == null) shape = new CavePitSettings();
+            shape.Validate();
+        }
+
         private const float MinimumCollapseSeconds = 0.05f;
         private const float CoverReleaseFraction = 0.25f;
         private const float TriggerHeightTolerance = 1.35f;
@@ -309,7 +366,7 @@ namespace CardsUnity.Controllers
             var uv = new List<Vector2>(vertices.Count);
             for (int i = 0; i < vertices.Count; i++)
             {
-                Vector3 point = vertices[i] + uvPositionOffset;
+                Vector3 point = cave.transform.InverseTransformPoint(transform.TransformPoint(vertices[i] + uvPositionOffset));
                 uv.Add(new Vector2(point.x + point.y, point.z + point.y) * 0.25f);
             }
             mesh.SetUVs(0, uv);
@@ -346,7 +403,8 @@ namespace CardsUnity.Controllers
 
         private Vector3 Surface(Vector2 point, float verticalOffset)
         {
-            return new Vector3(point.x, cave.FloorHeight(point) + verticalOffset, point.y);
+            return transform.InverseTransformPoint(cave.transform.TransformPoint(
+                new Vector3(point.x, cave.FloorHeight(point) + verticalOffset, point.y)));
         }
 
         private Vector3 CaveLocalPosition(Vector3 worldPosition)

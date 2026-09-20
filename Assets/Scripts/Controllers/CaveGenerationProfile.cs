@@ -74,8 +74,8 @@ namespace CardsUnity.Controllers
         [Range(1f, 4f)] public float minimumRockSize = 1.2f;
         [Range(1f, 4f)] public float maximumRockSize = 2.6f;
 
-        [Header("Pit traps")]
-        public CavePitSettings pits = new CavePitSettings();
+        // Retained for migration; pit prefabs in roomContentRules now own this tuning.
+        [HideInInspector] public CavePitSettings pits = new CavePitSettings();
 
         [Header("Corridor rockfall traps")]
         [Tooltip("Percentage of eligible corridors with one rockfall stretch. The entrance and rooms stay clear. Zero disables traps.")]

@@ -26,6 +26,24 @@ namespace CardsUnity.Controllers
                     foreach (GameObject prefab in rule.prefabs)
                         if (prefab != null && !prefabs.Contains(prefab)) prefabs.Add(prefab);
                 if (!water && prefabs.Count == 0) continue;
+                // Pit rules use the normal prefab pipeline with a conservative reservation for every variant.
+                bool hasPits = false;
+                foreach (GameObject prefab in prefabs)
+                    if (prefab.GetComponent<CavePitTrap>() != null) { hasPits = true; break; }
+                if (hasPits)
+                {
+                    rule = rule.Clone();
+                    foreach (GameObject prefab in prefabs)
+                    {
+                        var pit = prefab.GetComponent<CavePitTrap>();
+                        if (pit != null) rule.footprintRadius = Mathf.Max(rule.footprintRadius, pit.RequiredFootprint);
+                    }
+                    rule.routeClearance = Mathf.Max(rule.routeClearance, 1f);
+                    rule.wallClearance = Mathf.Max(rule.wallClearance, 0.6f);
+                    rule.wallPlacementPercentage = 0f;
+                    rule.surfaceOffset = 0f;
+                    rule.alignToFloor = false;
+                }
 
                 int selectedRoomCount = Mathf.Clamp(
                     Mathf.FloorToInt(rooms.Count * rule.roomPercentage / 100f + 0.5f), 0, rooms.Count);
@@ -60,6 +78,8 @@ namespace CardsUnity.Controllers
                             && wallRandom.NextDouble() * 100d < rule.wallPlacementPercentage
                             && TryFindWallContentPosition(rule, room, wallRandom, out point, out inward);
                         if (!onWall && !TryFindRoomContentPosition(rule, room, placementRandom, out point)) continue;
+                        if (hasPits && (Vector2.Distance(point, entrance) < rule.footprintRadius + 3f
+                            || Vector2.Distance(point, exit) < rule.footprintRadius + 3f)) continue;
                         if (population == null)
                         {
                             population = new GameObject("Generated Room Content") { hideFlags = HideFlags.DontSave };

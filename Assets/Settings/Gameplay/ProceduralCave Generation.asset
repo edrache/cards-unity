@@ -41,8 +41,8 @@ MonoBehaviour:
     minimumRockSize: 1.2
     maximumRockSize: 1.64
     pits:
-      openRoomPercentage: 25
-      crackedRoomPercentage: 25
+      openRoomPercentage: 0
+      crackedRoomPercentage: 0
       minimumSize: 2.5
       maximumSize: 4
       irregularity: 0.75
@@ -230,6 +230,74 @@ MonoBehaviour:
       footprintRadius: 0.6
       wallClearance: 0.35
       routeClearance: 0
+      surfaceOffset: 0
+      wallPlacementPercentage: 0
+      minimumWallHeight: 0.25
+      maximumWallHeight: 0.8
+      wallEmbedDepth: 0.12
+      alignToFloor: 0
+      randomYaw: 1
+    - label: Open Pits
+      enabled: 1
+      contentType: 0
+      grass:
+        grassBladesPerSquareMetre: 18
+        grassHeight: 1.2
+        grassHeightVariation: 0.55
+        grassWidth: 0.1
+        grassWidthVariation: 0.65
+        grassMaximumBlades: 60000
+        grassDrawDistance: 32
+        grassBendRadius: 1.1
+        grassMaterial: {fileID: 0}
+      water:
+        material: {fileID: 0}
+        width: 0.8
+        height: 2.5
+        depth: 0.35
+      seedSalt: 672804213
+      prefabs:
+      - {fileID: 75847166442750330, guid: df194148d78c545de84eddfa02e84b8b, type: 3}
+      roomPercentage: 25
+      minimumPerSelectedRoom: 1
+      maximumPerSelectedRoom: 1
+      footprintRadius: 2.3
+      wallClearance: 0.6
+      routeClearance: 1
+      surfaceOffset: 0
+      wallPlacementPercentage: 0
+      minimumWallHeight: 0.25
+      maximumWallHeight: 0.8
+      wallEmbedDepth: 0.12
+      alignToFloor: 0
+      randomYaw: 1
+    - label: Cracked Pits
+      enabled: 1
+      contentType: 0
+      grass:
+        grassBladesPerSquareMetre: 18
+        grassHeight: 1.2
+        grassHeightVariation: 0.55
+        grassWidth: 0.1
+        grassWidthVariation: 0.65
+        grassMaximumBlades: 60000
+        grassDrawDistance: 32
+        grassBendRadius: 1.1
+        grassMaterial: {fileID: 0}
+      water:
+        material: {fileID: 0}
+        width: 0.8
+        height: 2.5
+        depth: 0.35
+      seedSalt: 715827883
+      prefabs:
+      - {fileID: 7233866442378915406, guid: 9ec8c2de23e304bf6809289b268a6030, type: 3}
+      roomPercentage: 25
+      minimumPerSelectedRoom: 1
+      maximumPerSelectedRoom: 1
+      footprintRadius: 2.3
+      wallClearance: 0.6
+      routeClearance: 1
       surfaceOffset: 0
       wallPlacementPercentage: 0
       minimumWallHeight: 0.25
