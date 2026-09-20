@@ -54,6 +54,16 @@ namespace CardsUnity.Controllers
 
         private void OnEnable() => BindTargetHealth();
 
+        /// <summary>Snaps only the camera following this character after its initial spawn is relocated.</summary>
+        public void SnapToTarget(Transform character)
+        {
+            if (target == null || (target != character && !target.IsChildOf(character))) return;
+            Vector3 rotatedOffset = Quaternion.AngleAxis(orbitAngle + shakeOrbitOffset, Vector3.up) * offset;
+            transform.position = target.position + rotatedOffset;
+            transform.rotation = Quaternion.LookRotation(-rotatedOffset + Vector3.up);
+            appliedShake = Vector3.zero;
+        }
+
         private void BindTargetHealth()
         {
             if (subscribedTarget == target && targetHealth != null) return;

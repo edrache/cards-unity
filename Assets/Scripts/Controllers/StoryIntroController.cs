@@ -9,6 +9,8 @@ namespace CardsUnity.Controllers
     [DefaultExecutionOrder(-10000)]
     public sealed class StoryIntroController : MonoBehaviour
     {
+        [Tooltip("When disabled, skip narration and start in the entrance chamber while the veil opens. The entrance tunnel is still generated.")]
+        [SerializeField] private bool playIntro = true;
         [SerializeField] private StorySequencePlayer sequencePlayer;
         [SerializeField] private GameObject playerRoot;
         [SerializeField] private HandheldTorch playerTorch;
@@ -105,8 +107,33 @@ namespace CardsUnity.Controllers
                 return;
             }
             automaticTravelLimit = FindAutomaticTravelLimit();
+            if (!playIntro)
+            {
+                StartInFirstRoom();
+                return;
+            }
             if (sequencePlayer != null) sequencePlayer.Begin();
             else HandleSequenceCompleted();
+        }
+
+        private void StartInFirstRoom()
+        {
+            Vector3 position = cave.SampleEntranceRoute(cave.EntranceRouteLength, out Vector3 forward);
+            var controller = playerRoot.GetComponent<CharacterController>();
+            bool wasEnabled = controller != null && controller.enabled;
+            if (wasEnabled) controller.enabled = false;
+            playerRoot.transform.position = position;
+            forward = Vector3.ProjectOnPlane(forward, Vector3.up);
+            if (forward.sqrMagnitude > 0.0001f)
+                playerRoot.transform.rotation = Quaternion.LookRotation(forward);
+            if (wasEnabled) controller.enabled = true;
+            foreach (var follow in FindObjectsByType<CharacterFollowCamera>(FindObjectsSortMode.None))
+                follow.SnapToTarget(playerRoot.transform);
+            sequencePlayer?.Stop();
+            journeyProtection.ReleaseProtection();
+            protectionReleased = true;
+            narrationCompleted = true;
+            ReleaseControl();
         }
 
         private void Update()
