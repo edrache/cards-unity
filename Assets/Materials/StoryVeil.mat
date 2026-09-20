@@ -25,9 +25,9 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _EdgeWidth: 0.055
-    - _NoiseScale: 5
-    - _Progress: 0
+    - _EdgeWidth: 0.144
+    - _NoiseScale: 1.5
+    - _Progress: 0.335
     m_Colors:
     - _BaseColor: {r: 0.008, g: 0.006, b: 0.009, a: 1}
     - _EdgeColor: {r: 0.37999994, g: 0.089999996, b: 0.025, a: 1}

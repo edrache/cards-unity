@@ -2280,6 +2280,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: 1eb0921b29e894e69b2f58fb2f3deff6, type: 2}
     - target: {fileID: 8051805571557914312, guid: de83ee1d70753470db50e0696e996398, type: 3}
+      propertyPath: deathVeil
+      value: 
+      objectReference: {fileID: 1759543297}
+    - target: {fileID: 8051805571557914312, guid: de83ee1d70753470db50e0696e996398, type: 3}
       propertyPath: balanceProfile
       value: 
       objectReference: {fileID: 11400000, guid: 1eb0921b29e894e69b2f58fb2f3deff6, type: 2}

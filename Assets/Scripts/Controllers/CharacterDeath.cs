@@ -12,11 +12,16 @@ namespace CardsUnity.Controllers
         [Header("Local fallback — Defeat")]
         [SerializeField, Min(0f)] private float defeatDelay = 3f;
 
+        [Header("Death veil")]
+        [SerializeField] private StoryVeilDissolve deathVeil;
+        [SerializeField, Min(0f)] private float veilDuration = 2.8f;
+
         private CharacterHealth health;
         private CharacterInventory inventory;
         private float elapsed;
         private float previousTimeScale = 1f;
         private bool ownsTimePause;
+        private float veilStartProgress;
 
         public bool IsGameOver { get; private set; }
         public bool IsDefeatVisible { get; private set; }
@@ -44,8 +49,14 @@ namespace CardsUnity.Controllers
         /// <summary>Advances the unscaled delay before the defeat screen appears.</summary>
         public void Tick(float unscaledDeltaTime)
         {
-            if (!IsGameOver || IsDefeatVisible) return;
+            if (!IsGameOver) return;
             elapsed += Mathf.Max(0f, unscaledDeltaTime);
+            if (deathVeil != null)
+            {
+                float t = veilDuration <= 0f ? 1f : Mathf.Clamp01(elapsed / veilDuration);
+                deathVeil.SetProgress(Mathf.Lerp(veilStartProgress, 0f, Mathf.SmoothStep(0f, 1f, t)));
+            }
+            if (IsDefeatVisible) return;
             if (elapsed < (balanceProfile != null ? balanceProfile.Death.DefeatDelay : defeatDelay)) return;
 
             if (inventory == null) inventory = GetComponent<CharacterInventory>();
@@ -61,6 +72,17 @@ namespace CardsUnity.Controllers
             if (IsGameOver) return;
             IsGameOver = true;
             elapsed = 0f;
+
+            if (deathVeil != null)
+            {
+                // End any remaining narrative ownership before taking over the same veil.
+                foreach (var intro in FindObjectsByType<StoryIntroController>(FindObjectsSortMode.None))
+                    if (intro.isActiveAndEnabled) intro.enabled = false;
+                veilStartProgress = deathVeil.Progress;
+                var outline = GetComponent<CardsUnity.Rendering.PlayerOcclusionOutline>();
+                if (outline != null) outline.enabled = false;
+                if (veilDuration <= 0f) deathVeil.SetProgress(0f);
+            }
 
             GetComponent<TorchAttack>()?.CancelAttack();
             GetComponent<TorchInteraction>()?.CancelInteraction();
