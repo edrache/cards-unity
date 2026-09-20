@@ -27,9 +27,9 @@ namespace CardsUnity.Controllers
         [SerializeField] private TMP_Text heading, contents, total;
         private bool ownsCanvas;
         private GameObject ownedEventSystem;
-        private Canvas summaryCanvas;
-        private Image summaryBackdrop;
-        private TMP_Text summaryTitle, summaryResult;
+        [Header("End summary UI")]
+        [SerializeField] private CaveSummaryView summaryPrefab;
+        private CaveSummaryView summaryView;
         private readonly System.Text.StringBuilder text = new System.Text.StringBuilder();
         public IReadOnlyList<Entry> Items => items;
         public Canvas UiCanvas => inventoryCanvas;
@@ -38,7 +38,7 @@ namespace CardsUnity.Controllers
         public int TotalCount { get; private set; }
         public int CoinCount { get; private set; }
         public int TreasureCount => TotalCount - CoinCount;
-        public bool IsSummaryVisible => summaryCanvas != null && summaryCanvas.gameObject.activeInHierarchy;
+        public bool IsSummaryVisible => summaryView != null && summaryView.gameObject.activeInHierarchy;
 
         public bool Collect(Treasure treasure)
         {
@@ -109,7 +109,7 @@ namespace CardsUnity.Controllers
         private void OnDestroy()
         {
             if (ownsCanvas && inventoryCanvas != null) Destroy(inventoryCanvas.gameObject);
-            if (summaryCanvas != null) Destroy(summaryCanvas.gameObject);
+            if (summaryView != null) Destroy(summaryView.gameObject);
             if (ownedEventSystem != null) Destroy(ownedEventSystem);
         }
 
@@ -119,54 +119,29 @@ namespace CardsUnity.Controllers
             ShowEndSummary("EXPEDITION COMPLETE", "Treasures collected: " + TreasureCount
                 + "\nCoins collected: " + CoinCount
                 + "\nTotal items: " + TotalCount
-                + "\nTreasure value: " + TotalValue, 0.96f);
+                + "\nTreasure value: " + TotalValue);
         }
 
         /// <summary>Shows the final defeat message without revealing the collected treasure totals.</summary>
         public void ShowDefeatSummary()
         {
-            ShowEndSummary("DEFEAT", "You failed to escape the cave.", 1f);
+            ShowEndSummary("DEFEAT", "You failed to escape the cave.");
         }
 
-        private void ShowEndSummary(string titleText, string resultText, float backdropAlpha)
+        private void ShowEndSummary(string titleText, string resultText)
         {
-            if (summaryCanvas != null)
+            if (summaryView == null)
             {
-                summaryCanvas.gameObject.SetActive(true);
-                summaryBackdrop.color = new Color(0.015f, 0.012f, 0.01f, backdropAlpha);
-                summaryTitle.text = titleText;
-                summaryResult.text = resultText;
-                return;
+                if (summaryPrefab == null)
+                {
+                    Debug.LogError("Assign a Cave Summary View prefab to CharacterInventory.", this);
+                    return;
+                }
+                summaryView = Instantiate(summaryPrefab);
+                summaryView.name = summaryPrefab.name;
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(summaryView.gameObject, gameObject.scene);
             }
-
-            var root = new GameObject("Cave Summary Canvas", typeof(RectTransform), typeof(Canvas),
-                typeof(CanvasScaler), typeof(GraphicRaycaster));
-            root.layer = LayerMask.NameToLayer("UI");
-            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(root, gameObject.scene);
-            summaryCanvas = root.GetComponent<Canvas>();
-            summaryCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            summaryCanvas.sortingOrder = 1000;
-            var scaler = root.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1280, 720);
-            scaler.matchWidthOrHeight = 0.5f;
-
-            var backdrop = Rect("Backdrop", root.transform, Vector2.zero, Vector2.one,
-                Vector2.zero, Vector2.zero);
-            summaryBackdrop = backdrop.gameObject.AddComponent<Image>();
-            summaryBackdrop.color = new Color(0.015f, 0.012f, 0.01f, backdropAlpha);
-            var panel = Rect("Summary", backdrop, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(-260f, -180f), new Vector2(260f, 180f));
-            panel.gameObject.AddComponent<Image>().color = new Color(0.08f, 0.065f, 0.045f, 1f);
-
-            summaryTitle = Label(Rect("Title", panel, new Vector2(0, 1), Vector2.one,
-                new Vector2(28, -76), new Vector2(-28, -24)), 32, UiFont);
-            summaryTitle.alignment = TextAlignmentOptions.Center;
-            summaryTitle.text = titleText;
-            summaryResult = Label(Rect("Result", panel, Vector2.zero, Vector2.one,
-                new Vector2(36, 36), new Vector2(-36, -92)), 25, UiFont);
-            summaryResult.alignment = TextAlignmentOptions.Center;
-            summaryResult.text = resultText;
+            summaryView.Show(titleText, resultText);
         }
 
         private static RectTransform Rect(string name, Transform parent, Vector2 min, Vector2 max,

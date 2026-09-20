@@ -2333,6 +2333,7 @@ MonoBehaviour:
   heading: {fileID: 1246992372}
   contents: {fileID: 7161437}
   total: {fileID: 1314669545}
+  summaryPrefab: {fileID: 2417189625414275830, guid: 60dfd3b9111e04a869b090e0910e2a4e, type: 3}
 --- !u!114 &1870170192
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2825,7 +2826,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1029427643174581882, guid: 58e1efb0b4bdf423880a3e9ec0d5be5b, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 0
+      value: 26.64
       objectReference: {fileID: 0}
     - target: {fileID: 4521934041394685813, guid: 58e1efb0b4bdf423880a3e9ec0d5be5b, type: 3}
       propertyPath: m_Pivot.x

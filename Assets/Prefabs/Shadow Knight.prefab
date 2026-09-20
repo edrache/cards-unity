@@ -411,6 +411,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.CharacterDeath
   balanceProfile: {fileID: 11400000, guid: 3138c25bbcaf14370aa4f273785dff96, type: 2}
   defeatDelay: 3
+  deathVeil: {fileID: 0}
+  veilDuration: 2.8
 --- !u!1 &689539237441915602
 GameObject:
   m_ObjectHideFlags: 0
