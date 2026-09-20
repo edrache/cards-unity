@@ -162,7 +162,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2554804ca7df84e6f870c6cece8da1b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.StoryIntroController
-  playIntro: 1
+  playIntro: 0
   sequencePlayer: {fileID: 748710579}
   playerRoot: {fileID: 569035154}
   playerTorch: {fileID: 1149009116}
