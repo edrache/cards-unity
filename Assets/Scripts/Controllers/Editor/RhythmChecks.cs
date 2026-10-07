@@ -38,7 +38,7 @@ namespace CardsUnity.Controllers.Editor
             bool grid = beats.Count == 3;
             for (int i = 0; grid && i < beats.Count; i++)
                 grid = beats[i].Index == i && Math.Abs(beats[i].Time - (i + 1) * walkInterval) < 1e-6
-                    && beats[i].Accent == (i % 2 == 0) && Mathf.Approximately(beats[i].Bpm, 90f);
+                    && beats[i].IsDownbeat == (i == 0) && beats[i].StepIndex == i && Mathf.Approximately(beats[i].Bpm, 90f);
             Check(grid, "Walk 90 BPM free-run, got " + beats.Count + " beats", ref assertions);
             Check(Math.Abs(clock.StepPosition - 2.075d) < 1e-6 && Mathf.Approximately(clock.StepsPerSecond, 1.5f),
                 "Step position follows the beats, got " + clock.StepPosition, ref assertions);
@@ -108,24 +108,67 @@ namespace CardsUnity.Controllers.Editor
                 && Math.Abs(clock.BeatPosition - 15.5d) < 1e-6 && Math.Abs(clock.StepPosition - 15.5d) < 1e-6,
                 "Skip keeps alignment, beat " + clock.BeatPosition + " step " + clock.StepPosition, ref assertions);
             clock.Advance(11.4d, beats);
-            Check(beats.Count == 1 && beats[0].Index == 16 && beats[0].Accent && Math.Abs(beats[0].Time - 17d * walkInterval) < 1e-6,
+            Check(beats.Count == 1 && beats[0].Index == 16 && beats[0].IsPhraseStart && beats[0].StepIndex == 16
+                && Math.Abs(beats[0].Time - 17d * walkInterval) < 1e-6,
                 "Grid continues after the skip", ref assertions);
 
-            // Accented (even) beats fall on even steps, i.e. the left foot, at one step per beat.
+            // Downbeats (beat 1 of each 4/4 bar) fall on the left foot at one step per beat, and the
+            // clock reports exactly that step as the downbeat step in the frame the beat lands.
             clock = new RhythmClock(new RhythmSettings());
             clock.Initialize(0d);
             beats.Clear();
             bool parity = true;
-            for (int frame = 1; frame <= 350; frame++)
+            int downbeatSteps = 0, phraseSteps = 0;
+            for (int frame = 1; frame <= 714; frame++)
             {
                 int before = beats.Count;
                 clock.Advance(frame / 60d, beats);
                 if (beats.Count == before) continue;
                 RhythmBeat beat = beats[beats.Count - 1];
-                bool leftFoot = ((long)Math.Floor(clock.StepPosition) & 1L) == 0L;
-                parity &= beats.Count == before + 1 && beat.Accent == ((beat.Index & 1L) == 0L) && leftFoot == beat.Accent;
+                long step = (long)Math.Floor(clock.StepPosition);
+                bool leftFoot = (step & 1L) == 0L;
+                bool downbeat = clock.IsDownbeatStep(step, out bool phraseStart);
+                parity &= beats.Count == before + 1 && beat.StepIndex == step && downbeat == beat.IsDownbeat
+                    && phraseStart == beat.IsPhraseStart && (!beat.IsDownbeat || leftFoot)
+                    && !clock.IsDownbeatStep(step + 1, out _);
+                if (downbeat) downbeatSteps++;
+                if (phraseStart) phraseSteps++;
             }
-            Check(parity && beats.Count == 8, "Accent on the left foot, " + beats.Count + " beats", ref assertions);
+            Check(parity && beats.Count == 17 && downbeatSteps == 5 && phraseSteps == 2,
+                "Downbeat steps on the left foot, " + beats.Count + " beats, " + downbeatSteps + " downbeats", ref assertions);
+
+            // Bar and phrase numbering, including a 3/4 meter and negative positions before beat 0.
+            var waltz = new RhythmSettings { beatsPerBar = 3, barsPerPhrase = 2 };
+            var b7 = new RhythmBeat(7, 7, 0d, 90f, waltz.beatsPerBar, waltz.barsPerPhrase);
+            Check(b7.BeatInBar == 1 && b7.Bar == 2 && b7.BarInPhrase == 0 && !b7.IsDownbeat, "3/4 beat 7", ref assertions);
+            var b9 = new RhythmBeat(9, 9, 0d, 90f, 3, 2);
+            Check(b9.IsDownbeat && b9.Bar == 3 && b9.BarInPhrase == 1 && !b9.IsPhraseStart, "3/4 beat 9", ref assertions);
+            var b12 = new RhythmBeat(12, 12, 0d, 90f, 4, 4);
+            Check(b12.IsDownbeat && b12.Bar == 3 && b12.BarInPhrase == 3, "4/4 beat 12 is bar 4", ref assertions);
+            Check(new RhythmBeat(16, 16, 0d, 90f, 4, 4).IsPhraseStart, "4/4 beat 16 starts phrase 2", ref assertions);
+            var early = new RhythmBeat(-1, -1, 0d, 90f, 4, 4);
+            Check(early.BeatInBar == 3 && early.Bar == -1 && early.BarInPhrase == 3, "Negative beat wraps", ref assertions);
+
+            // Phrase position wraps every 16 beats and keeps running at any tempo.
+            clock = new RhythmClock(new RhythmSettings());
+            clock.Initialize(0d);
+            Check(Math.Abs(clock.PhrasePosition - 15d) < 1e-6, "Before beat 0 the phrase sits at its end", ref assertions);
+            clock.Advance(17.5d * walkInterval, null);
+            Check(Math.Abs(clock.PhrasePosition - 0.5d) < 1e-6, "Phrase wraps after 16 beats, got " + clock.PhrasePosition, ref assertions);
+            clock.SetTempo(settings.Get(RhythmLocomotionMode.Run));
+            clock.Advance(18d * walkInterval + 3.25d * 0.5d, null);
+            Check(Math.Abs(clock.PhrasePosition - 4.25d) < 1e-6, "Phrase continues across tempo change, got " + clock.PhrasePosition, ref assertions);
+
+            // At two steps per beat only the step on the beat itself is accented, not the off-beat step.
+            clock = new RhythmClock(new RhythmSettings());
+            clock.Initialize(0d);
+            clock.SetTempo(settings.Get(RhythmLocomotionMode.Run));
+            clock.Advance(0.5d, null);
+            Check(clock.IsDownbeatStep(0, out bool runPhrase) && runPhrase, "Run beat 0 is step 0", ref assertions);
+            clock.Advance(0.75d, null);
+            Check(!clock.IsDownbeatStep(1, out _), "Off-beat run step is not accented", ref assertions);
+            clock.Advance(2.6d, null);
+            Check(clock.IsDownbeatStep(8, out runPhrase) && !runPhrase, "Run bar 2 downbeat is step 8", ref assertions);
 
             // Direction sectors relative to the view forward (+Y). Right of forward is +X.
             var selector = new StepDirectionSelector();

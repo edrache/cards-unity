@@ -36,6 +36,10 @@ namespace CardsUnity.Controllers
             : Time.timeScale <= 0f ? double.PositiveInfinity
             : AudioSettings.dspTime + (clock.NextBeatTime - Time.timeAsDouble) / Time.timeScale;
         public float BeatPhase => clock != null ? clock.BeatPhase : 0f;
+        public int BeatsPerBar => clock != null ? clock.BeatsPerBar : 4;
+        public int BarsPerPhrase => clock != null ? clock.BarsPerPhrase : 4;
+        // Continuous position inside the current phrase: 0..beats per bar x bars per phrase.
+        public double PhrasePosition => clock != null ? clock.PhrasePosition : 0d;
         public RhythmBeat LastBeat { get; private set; }
         public RhythmLocomotionMode Mode { get; private set; } = RhythmLocomotionMode.Walk;
         public bool IsMoving { get; private set; }
@@ -92,6 +96,13 @@ namespace CardsUnity.Controllers
             Mode = mode;
             candidateTime = 0f;
             clock.SetTempo(Settings.Get(mode));
+        }
+
+        // True when gait footstep `stepIndex` lands on beat 1 of a bar (see RhythmClock.IsDownbeatStep).
+        public bool IsDownbeatStep(long stepIndex, out bool phraseStart)
+        {
+            phraseStart = false;
+            return clock != null && clock.IsDownbeatStep(stepIndex, out phraseStart);
         }
 
         private void Update()

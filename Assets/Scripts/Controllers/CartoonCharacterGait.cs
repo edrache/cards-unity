@@ -10,9 +10,13 @@ namespace CardsUnity.Controllers
         public readonly float SneakAmount;
         public readonly float RunAmount;
         public readonly Vector3 Position;
+        // Half-cycle count of the gait. With a RhythmConductor it is the clock's footstep index.
+        public readonly long StepIndex;
 
-        public GaitFootstep(bool leftFoot, float intensity, float sneakAmount, float runAmount, Vector3 position)
+        public GaitFootstep(bool leftFoot, float intensity, float sneakAmount, float runAmount, Vector3 position,
+            long stepIndex = 0)
         {
+            StepIndex = stepIndex;
             LeftFoot = leftFoot;
             Intensity = intensity;
             SneakAmount = sneakAmount;
@@ -281,7 +285,7 @@ namespace CardsUnity.Controllers
             Transform contact = isLeft ? leftFoot : rightFoot;
             Footstep.Invoke(new GaitFootstep(isLeft, Mathf.Clamp01(intensity),
                 styleWeights[4] + styleWeights[8], styleWeights[5] + styleWeights[7],
-                contact != null ? contact.position : transform.position));
+                contact != null ? contact.position : transform.position, step));
         }
 
         private void UpdateStyleWeights(float dt)

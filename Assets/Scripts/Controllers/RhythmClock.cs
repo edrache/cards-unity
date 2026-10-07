@@ -50,6 +50,14 @@ namespace CardsUnity.Controllers
         [Tooltip("Tempo while running. Two steps per beat keeps running strides long at a musical tempo.")]
         public RhythmTempo run = new RhythmTempo(120f, 2);
 
+        [Header("Meter")]
+        [Tooltip("Beats in one bar. 4 is 4/4 time; beat 1 of every bar is the downbeat that accents the step.")]
+        [Range(1, 16)] public int beatsPerBar = 4;
+        [Tooltip("Bars in one phrase. The phrase is the repeating section later music layers are arranged on.")]
+        [Range(1, 16)] public int barsPerPhrase = 4;
+
+        public int BeatsPerPhrase => beatsPerBar * barsPerPhrase;
+
         public RhythmTempo Get(RhythmLocomotionMode mode)
         {
             switch (mode)
@@ -65,25 +73,43 @@ namespace CardsUnity.Controllers
             sneak = sneak.Validated();
             walk = walk.Validated();
             run = run.Validated();
+            beatsPerBar = Mathf.Clamp(beatsPerBar, 1, 16);
+            barsPerPhrase = Mathf.Clamp(barsPerPhrase, 1, 16);
         }
     }
 
+    // One beat of the grid with its place in the musical structure: beats form bars (4/4 by
+    // default) and bars form phrases. Positions count from the clock start, so the structure keeps
+    // running while the knight stands still and movement joins the bar already in progress.
     public readonly struct RhythmBeat
     {
         public readonly long Index;
-        public readonly bool Accent;
         public readonly int BeatInBar;
+        public readonly long Bar;
+        public readonly int BarInPhrase;
+        // Footstep landing on this beat; whole beats always fall on whole steps.
+        public readonly long StepIndex;
         public readonly double Time;
         public readonly float Bpm;
 
-        public RhythmBeat(long index, double time, float bpm)
+        public RhythmBeat(long index, long stepIndex, double time, float bpm, int beatsPerBar, int barsPerPhrase)
         {
             Index = index;
-            Accent = (index & 1L) == 0L;
-            BeatInBar = (int)(((index % 4L) + 4L) % 4L);
+            beatsPerBar = Mathf.Max(1, beatsPerBar);
+            BeatInBar = (int)Mod(index, beatsPerBar);
+            Bar = (index - BeatInBar) / beatsPerBar;
+            BarInPhrase = (int)Mod(Bar, Mathf.Max(1, barsPerPhrase));
+            StepIndex = stepIndex;
             Time = time;
             Bpm = bpm;
         }
+
+        // Beat 1 of a bar.
+        public bool IsDownbeat => BeatInBar == 0;
+        // Beat 1 of the first bar of a phrase.
+        public bool IsPhraseStart => BeatInBar == 0 && BarInPhrase == 0;
+
+        public static long Mod(long value, long divisor) => ((value % divisor) + divisor) % divisor;
     }
 
     // Tempo-led beat grid. The locomotion mode picks the tempo; changes wait for the next beat so
@@ -123,6 +149,30 @@ namespace CardsUnity.Controllers
         // Continuous footsteps: step N lands when this reaches N. Even steps are the left foot.
         public double StepPosition => stepsAtLastBeat + beatFraction * tempo.stepsPerBeat;
         public double NextBeatTime => lastTime + (1d - beatFraction) * tempo.BeatInterval;
+        public int BeatsPerBar => settings.beatsPerBar;
+        public int BarsPerPhrase => settings.barsPerPhrase;
+        // Continuous position inside the current phrase, 0..beats per phrase.
+        public double PhrasePosition
+        {
+            get
+            {
+                double length = settings.BeatsPerPhrase;
+                double position = BeatPosition % length;
+                return position < 0d ? position + length : position;
+            }
+        }
+        public RhythmBeat LastBeat { get; private set; }
+
+        // True when footstep `stepIndex` is the one that landed on the most recent beat and that
+        // beat is a downbeat. Gait steps fire in the frame their beat is crossed, so this is read
+        // in the same frame. `phraseStart` reports beat 1 of the first bar of a phrase.
+        public bool IsDownbeatStep(long stepIndex, out bool phraseStart)
+        {
+            RhythmBeat beat = LastBeat;
+            bool downbeat = HasBeaten && beat.StepIndex == stepIndex && beat.IsDownbeat;
+            phraseStart = downbeat && beat.IsPhraseStart;
+            return downbeat;
+        }
 
         // Starts at the Walk tempo; beat 0 (on step 0) sounds one beat interval after `now`.
         public void Initialize(double now)
@@ -133,6 +183,7 @@ namespace CardsUnity.Controllers
             beatFraction = 0d;
             NextBeatIndex = 0;
             stepsAtLastBeat = -tempo.stepsPerBeat;
+            LastBeat = default;
         }
 
         // Queues a tempo for the next beat. Before the first beat it applies immediately.
@@ -188,7 +239,8 @@ namespace CardsUnity.Controllers
                 tempo = pendingTempo;
                 hasPendingTempo = false;
             }
-            output?.Add(new RhythmBeat(index, time, tempo.bpm));
+            LastBeat = new RhythmBeat(index, stepsAtLastBeat, time, tempo.bpm, settings.beatsPerBar, settings.barsPerPhrase);
+            output?.Add(LastBeat);
         }
     }
 }

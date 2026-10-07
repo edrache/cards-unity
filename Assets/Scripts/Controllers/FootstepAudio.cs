@@ -6,7 +6,8 @@ namespace CardsUnity.Controllers
     // Tonal footsteps on the gait's foot contacts. The camera-relative movement direction picks the
     // note from a StepSoundSet, the foot picks the weight, and speed only darkens or brightens the
     // sound: pitch is never changed so steps stay in tune with the cave drone. Overlapping tails
-    // play on a small round-robin voice pool. Slow turns in place play a toneless shuffle.
+    // play on a small round-robin voice pool. Slow turns in place play a toneless shuffle. With a
+    // RhythmConductor the step on beat 1 of each bar is accented, more strongly at a phrase start.
     [RequireComponent(typeof(CartoonCharacterGait))]
     public sealed class FootstepAudio : MonoBehaviour
     {
@@ -29,6 +30,15 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0f, 1f)] private float runVolume = 1f;
         [Tooltip("How much the current movement speed scales the step volume. Zero keeps the style volume exactly.")]
         [SerializeField, Range(0f, 1f)] private float speedInfluence = 0.25f;
+
+        [Header("Bar accent (needs a Rhythm Conductor)")]
+        [Tooltip("Volume multiplier of the step on beat 1 of every bar. Above 1 a second voice layers the same "
+            + "clip, so even a full-volume run step can be accented. 1 disables the bar accent.")]
+        [SerializeField, Range(1f, 2f)] private float downbeatAccent = 1.5f;
+        [Tooltip("Volume multiplier of the step on beat 1 of the first bar of a phrase. Replaces the bar accent.")]
+        [SerializeField, Range(1f, 2f)] private float phraseAccent = 1.8f;
+        [Tooltip("How far an accented step opens the low-pass filter toward its full brightness (22 kHz).")]
+        [SerializeField, Range(0f, 1f)] private float accentBrightness = 0.4f;
 
         [Header("Speed colour (never pitch)")]
         [Tooltip("Horizontal speed in m/s treated as full speed for brightness.")]
@@ -67,6 +77,7 @@ namespace CardsUnity.Controllers
         public StepDirection LastDirection => selector.Current;
 
         private CartoonCharacterGait gait;
+        private RhythmConductor rhythm;
         private AudioSource[] voices;
         private AudioLowPassFilter[] filters;
         private int nextVoice;
@@ -80,6 +91,7 @@ namespace CardsUnity.Controllers
         private void Awake()
         {
             gait = GetComponent<CartoonCharacterGait>();
+            rhythm = GetComponent<RhythmConductor>();
             for (int i = 0; i < lastVariant.Length; i++) lastVariant[i] = -1;
             voices = new AudioSource[voiceCount];
             filters = new AudioLowPassFilter[voiceCount];
@@ -179,6 +191,11 @@ namespace CardsUnity.Controllers
             Vector3 viewRight = Vector3.Cross(Vector3.up, forward3.normalized);
             float side = move3.sqrMagnitude > 1e-6f ? Vector3.Dot(move3.normalized, viewRight) : 0f;
             float cutoff = Mathf.Lerp(slowCutoff, fastCutoff, speed01);
+            if (rhythm != null && rhythm.isActiveAndEnabled && rhythm.IsDownbeatStep(step.StepIndex, out bool phraseStart))
+            {
+                volume *= phraseStart ? phraseAccent : downbeatAccent;
+                cutoff = Mathf.Lerp(cutoff, 22000f, accentBrightness);
+            }
             Play(clip, step.Position, volume, side * sidewaysPan, cutoff);
         }
 
@@ -190,7 +207,14 @@ namespace CardsUnity.Controllers
             return index >= 0 ? clips[index] : null;
         }
 
+        // A volume above 1 is an accent: the remainder layers the same clip on a second voice.
         private void Play(AudioClip clip, Vector3 position, float volume, float pan, float cutoff)
+        {
+            PlayVoice(clip, position, Mathf.Min(volume, 1f), pan, cutoff);
+            if (volume > 1f && voices.Length > 1) PlayVoice(clip, position, volume - 1f, pan, cutoff);
+        }
+
+        private void PlayVoice(AudioClip clip, Vector3 position, float volume, float pan, float cutoff)
         {
             // Prefer a voice that has finished; only when all are still ringing is the oldest one reused.
             int index = nextVoice;

@@ -27,6 +27,18 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0.1f, 8f)] private float flickerSpeed = 2.5f;
         [SerializeField, Range(0f, 1f)] private float movementFlicker = 0.3f;
 
+        [Header("Beat pulse (needs a Rhythm Conductor)")]
+        [Tooltip("Chance that a plain quarter-note beat flashes this torch. Each torch rolls on its own.")]
+        [SerializeField, Range(0f, 1f)] private float beatPulseChance = 0.4f;
+        [Tooltip("Extra brightness of a plain beat flash: 0.25 is +25 %.")]
+        [SerializeField, Range(0f, 2f)] private float beatPulse = 0.25f;
+        [Tooltip("Extra brightness on beat 1 of every bar. Always flashes.")]
+        [SerializeField, Range(0f, 2f)] private float downbeatPulse = 0.6f;
+        [Tooltip("Extra brightness on beat 1 of the first bar of a phrase. Replaces the bar flash.")]
+        [SerializeField, Range(0f, 2f)] private float phrasePulse = 0.9f;
+        [Tooltip("Seconds for a flash to fade to about a third.")]
+        [SerializeField, Range(0.02f, 1f)] private float pulseDecay = 0.15f;
+
         [Header("Local fallback — Burn lifetime")]
         [Tooltip("Burn duration in seconds of active gameplay.")]
         [SerializeField, Min(0.1f)] private float lifetime = 180f;
@@ -228,6 +240,8 @@ namespace CardsUnity.Controllers
 
         private Vector3 previousPosition, filteredVelocity, sway, swayVelocity;
         private float flicker = 1f;
+        private float pulse;
+        private long pulseBeat = long.MinValue;
         private bool initialized;
         private float poseSuppression;
         private Quaternion restLocalRotation = Quaternion.identity;
@@ -267,6 +281,8 @@ namespace CardsUnity.Controllers
             if (!activeTorches.Contains(this)) activeTorches.Add(this);
             initialized = false;
             previousWaterFrame = -2;
+            pulse = 0f;
+            pulseBeat = long.MinValue;
             ApplyLight(IsBurnedOut ? 0f : 1f);
         }
 
@@ -333,7 +349,8 @@ namespace CardsUnity.Controllers
             float strength = Mathf.Lerp(flickerAmount, dyingFlickerAmount, dying) * (1f + movementFlicker * motion);
             float targetFlicker = Mathf.Clamp(1f + (slow * 0.75f + fast * 0.25f) * strength, 0.02f, 1.7f);
             flicker = Mathf.Lerp(flicker, targetFlicker, 1f - Mathf.Exp(-14f * dt));
-            ApplyLight(flicker * fuel);
+            UpdateBeatPulse(dt);
+            ApplyLight(flicker * (1f + pulse) * fuel);
 
             ApplyParticlePresentation();
             if (fire != null)
@@ -347,6 +364,40 @@ namespace CardsUnity.Controllers
                 var wind = smoke.velocityOverLifetime;
                 wind.x = -filteredVelocity.x * smokeTrail;
                 wind.z = -filteredVelocity.z * smokeTrail;
+            }
+        }
+
+        // Visual only: a flash on the rhythm clock's beats, added on top of the smoothed flicker so it
+        // stays crisp. Downbeats and phrase starts always flash; plain beats roll a per-torch chance,
+        // so the cave's torches scatter on quarters and line up on the bar. Gameplay light exposure
+        // is collider-based and does not see this.
+        private void UpdateBeatPulse(float dt)
+        {
+            pulse *= Mathf.Exp(-dt / pulseDecay);
+            RhythmConductor conductor = RhythmConductor.Current;
+            if (conductor == null || !conductor.IsReady || conductor.NextBeatIndex == 0) return;
+            RhythmBeat beat = conductor.LastBeat;
+            if (beat.Index == pulseBeat) return;
+            // The first beat seen after enabling may be old: remember it without flashing.
+            bool fresh = pulseBeat != long.MinValue;
+            pulseBeat = beat.Index;
+            if (!fresh) return;
+            float strength = beat.IsPhraseStart ? phrasePulse
+                : beat.IsDownbeat ? downbeatPulse
+                : BeatRoll(beat.Index) < beatPulseChance ? beatPulse : 0f;
+            pulse = Mathf.Max(pulse, strength);
+        }
+
+        // Stable 0..1 roll per torch and beat that leaves Unity's shared Random untouched.
+        private float BeatRoll(long beatIndex)
+        {
+            unchecked
+            {
+                uint h = (uint)GetInstanceID() * 0x9E3779B9u ^ (uint)beatIndex * 0x85EBCA6Bu;
+                h ^= h >> 16;
+                h *= 0x7FEB352Du;
+                h ^= h >> 15;
+                return (h & 0xFFFFFF) / 16777216f;
             }
         }
 
@@ -372,7 +423,7 @@ namespace CardsUnity.Controllers
             if (fire != null)
             {
                 var emission = fire.emission;
-                emission.rateOverTime = 42f * flicker * fuel * presentationMultiplier;
+                emission.rateOverTime = 42f * flicker * (1f + pulse) * fuel * presentationMultiplier;
             }
             if (smoke != null)
             {

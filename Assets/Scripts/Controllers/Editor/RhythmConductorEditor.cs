@@ -20,7 +20,9 @@ namespace CardsUnity.Controllers.Editor
             EditorGUILayout.LabelField("Tempo", conductor.Bpm.ToString("0") + " BPM x " + conductor.StepsPerBeat
                 + " = " + conductor.StepsPerSecond.ToString("0.00") + " steps/s"
                 + (conductor.HasPendingTempo ? "  (change on next beat)" : ""));
-            EditorGUILayout.LabelField("Next beat", conductor.NextBeatIndex + "  (bar beat " + (conductor.NextBeatIndex % 4 + 1) + ")");
+            RhythmBeat last = conductor.LastBeat;
+            EditorGUILayout.LabelField("Last beat", conductor.NextBeatIndex == 0 ? "-" : last.Index + "  (bar " + (last.BarInPhrase + 1)
+                + "/" + conductor.BarsPerPhrase + ", beat " + (last.BeatInBar + 1) + "/" + conductor.BeatsPerBar + ")");
             EditorGUILayout.LabelField("Step position", conductor.StepPosition.ToString("0.00")
                 + "  (" + (((long)System.Math.Floor(conductor.StepPosition) & 1L) == 0L ? "left" : "right") + " foot)");
             Rect bar = EditorGUILayout.GetControlRect(false, 16f);

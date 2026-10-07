@@ -23,6 +23,7 @@ GameObject:
   - component: {fileID: 8051805571557914312}
   - component: {fileID: 4249744734063843022}
   - component: {fileID: 3215232859790577072}
+  - component: {fileID: 7003395627284325526}
   m_Layer: 0
   m_Name: Shadow Knight
   m_TagString: Untagged
@@ -286,6 +287,9 @@ MonoBehaviour:
   walkVolume: 0.511
   runVolume: 1
   speedInfluence: 0.25
+  downbeatAccent: 1.5
+  phraseAccent: 1.8
+  accentBrightness: 0.4
   fullSpeed: 3
   slowCutoff: 1200
   fastCutoff: 9000
@@ -447,6 +451,8 @@ MonoBehaviour:
     run:
       bpm: 120
       stepsPerBeat: 2
+    beatsPerBar: 4
+    barsPerPhrase: 4
   modeChangeDelay: 0.2
 --- !u!114 &3215232859790577072
 MonoBehaviour:
@@ -465,6 +471,31 @@ MonoBehaviour:
   lightStepShare: 0.35
   accentMultiplier: 1.6
   contactOffset: {x: 0, y: 0.03, z: 0}
+--- !u!114 &7003395627284325526
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90125876250897346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9643c5511c42e4f0e8e15305bc377de6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.RhythmPhraseDebugView
+  conductor: {fileID: 4249744734063843022}
+  canvas: {fileID: 0}
+  visible: 1
+  panelSize: {x: 640, y: 92}
+  panelOffset: {x: 0, y: 24}
+  barGap: 10
+  beatGap: 3
+  panelColor: {r: 0, g: 0, b: 0, a: 0.7}
+  beatColor: {r: 1, g: 1, b: 1, a: 0.12}
+  downbeatColor: {r: 1, g: 0.75, b: 0.3, a: 0.3}
+  activeColor: {r: 1, g: 0.85, b: 0.45, a: 1}
+  playheadColor: {r: 1, g: 1, b: 1, a: 1}
+  flashFade: 0.35
 --- !u!1 &689539237441915602
 GameObject:
   m_ObjectHideFlags: 0
