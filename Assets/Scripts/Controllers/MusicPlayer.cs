@@ -31,6 +31,8 @@ namespace CardsUnity.Controllers
             // Music is not part of the world, so keep it out of the 3D panning and rolloff.
             source.spatialBlend = 0f;
             source.dopplerLevel = 0f;
+            // The ambient bed must never be the voice Unity silences when too many sounds play at once.
+            source.priority = 0;
             if (output != null) source.outputAudioMixerGroup = output;
             source.volume = 0f;
         }

@@ -39,6 +39,9 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(1, 32)] private int voiceCount = 16;
         [Tooltip("Maximum clicks started in one frame. A long frame drops the surplus instead of stacking it.")]
         [SerializeField, Range(1, 64)] private int maximumStepsPerFrame = 12;
+        [Tooltip("Unity voice priority, 0 = most important, 256 = least. Leg clicks are numerous, so they "
+            + "default below the player's steps and yield first when the real voice limit is reached.")]
+        [SerializeField, Range(0, 256)] private int priority = 160;
         [SerializeField, Range(0f, 1f)] private float spatialBlend = 0.7f;
 
         private ProceduralCentipede centipede;
@@ -72,6 +75,7 @@ namespace CardsUnity.Controllers
             source.loop = false;
             source.spatialBlend = spatialBlend;
             source.dopplerLevel = 0f;
+            source.priority = priority;
             // The hearing range below does the audible falloff; the 3D curve only keeps the panning,
             // because the listener rides an overhead camera rather than the player itself.
             source.rolloffMode = AudioRolloffMode.Linear;

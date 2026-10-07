@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06fb38d412ee14da99d60f4b3ebc3c1a, type: 3}
+  m_Name: Step Sounds Synth
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.StepSoundSet
+  forward:
+    leftFoot:
+    - {fileID: 8300000, guid: 19ba8e2847f6242deaa590142c05f1d4, type: 3}
+    - {fileID: 8300000, guid: 86bbfb0d63c9a422b8a0dab614878a97, type: 3}
+    - {fileID: 8300000, guid: 54354fc8d88204d50b39dde9ad099a21, type: 3}
+    - {fileID: 8300000, guid: cda0c270615434d86891ee18614d0bcf, type: 3}
+    rightFoot:
+    - {fileID: 8300000, guid: f710cca6525da456296e860d71d4b492, type: 3}
+    - {fileID: 8300000, guid: b17540cc6d95740eb80fdc688fe99486, type: 3}
+    - {fileID: 8300000, guid: d1d57ea7e364343a6966aaf6050f803a, type: 3}
+    - {fileID: 8300000, guid: 5ca0e79284bbe460cbd1a4054787ad25, type: 3}
+  right:
+    leftFoot:
+    - {fileID: 8300000, guid: 286fa20cc6f444f92a144e51d6ba7caa, type: 3}
+    - {fileID: 8300000, guid: 938474120daca45c19fcd1cecd2d9c56, type: 3}
+    - {fileID: 8300000, guid: 7ecc05ce33d3b4ad2bdc8646732f251e, type: 3}
+    - {fileID: 8300000, guid: 8a1614ef224084837b27861fb6e2a2e0, type: 3}
+    rightFoot:
+    - {fileID: 8300000, guid: 2f44170fb82284688959fab67bbde9ae, type: 3}
+    - {fileID: 8300000, guid: 9a4c4260659e5410dae0d2040cab4137, type: 3}
+    - {fileID: 8300000, guid: 093b006b660574e14827146e41066905, type: 3}
+    - {fileID: 8300000, guid: 3b68dd33c09004ce888ac450f21f5977, type: 3}
+  back:
+    leftFoot:
+    - {fileID: 8300000, guid: 18fb8ac08d7cb4904bf288a51e260656, type: 3}
+    - {fileID: 8300000, guid: 3ad0c7e7a8ae14a2bb927582552dfd4f, type: 3}
+    - {fileID: 8300000, guid: 6277379087f5a4306a5785463083e3c0, type: 3}
+    - {fileID: 8300000, guid: d9a2156b5b8ac4908b1cbbf1503dc0b8, type: 3}
+    rightFoot:
+    - {fileID: 8300000, guid: c65c7b7115b44491fa61caabfc50c7f4, type: 3}
+    - {fileID: 8300000, guid: f8e385dd949cf4ffe80570edc3cf415e, type: 3}
+    - {fileID: 8300000, guid: f54078bcf1e474bdeb0c1561a6131248, type: 3}
+    - {fileID: 8300000, guid: 4dfe8e5eeb6264d718ed28d38641ea3a, type: 3}
+  left:
+    leftFoot:
+    - {fileID: 8300000, guid: 2fd1ea2e720254442bcdf36211ecef08, type: 3}
+    - {fileID: 8300000, guid: 1c2294fedcbd54ea68338b84a42020b2, type: 3}
+    - {fileID: 8300000, guid: c6b4547e8623b45b68f5253c3f830599, type: 3}
+    - {fileID: 8300000, guid: 4074ee828223440df90ef4d06bd967c5, type: 3}
+    rightFoot:
+    - {fileID: 8300000, guid: 8bba785f3ea4342cda8141bd82add3b2, type: 3}
+    - {fileID: 8300000, guid: 55fb3c4136222437db939326b221448b, type: 3}
+    - {fileID: 8300000, guid: 269898490595f40d08815c479a87e4bc, type: 3}
+    - {fileID: 8300000, guid: 04f2dde18c4784ac9b622269b0f08cb3, type: 3}
+  turnLeft:
+  - {fileID: 8300000, guid: 4c126f305dbcb4e43b1b80d871a18688, type: 3}
+  - {fileID: 8300000, guid: b2e344a1abb95436a9fcb42b8304aafe, type: 3}
+  - {fileID: 8300000, guid: 88db62a1e2b544696aa9c1fb4d10799b, type: 3}
+  - {fileID: 8300000, guid: 37c7ee9b16c1347bca72b2f571e197c1, type: 3}
+  turnRight:
+  - {fileID: 8300000, guid: b1e2e62eb9dfa427793739500185ba9c, type: 3}
+  - {fileID: 8300000, guid: 263c62c9a38764951b406fb5a1230b48, type: 3}
+  - {fileID: 8300000, guid: a7cd55b8a4d584bafb46ba4271002ba1, type: 3}
+  - {fileID: 8300000, guid: df7f235bc3b484972aa9f6f478738c80, type: 3}

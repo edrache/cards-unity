@@ -21,6 +21,8 @@ GameObject:
   - component: {fileID: 7236042496580281235}
   - component: {fileID: 2488595432638457083}
   - component: {fileID: 8051805571557914312}
+  - component: {fileID: 4249744734063843022}
+  - component: {fileID: 3215232859790577072}
   m_Layer: 0
   m_Name: Shadow Knight
   m_TagString: Untagged
@@ -273,18 +275,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5474c9cc902074650976dc06e369f19a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.FootstepAudio
-  leftStep: {fileID: 8300000, guid: 843f76ff6379146548a1a4c030d74593, type: 3}
-  rightStep: {fileID: 8300000, guid: 773fbb8860873490cac03b817a0b425f, type: 3}
+  soundSet: {fileID: 11400000, guid: 9467a296bad124de5b38d38e2700e4ca, type: 2}
   output: {fileID: 24300002, guid: 58454d56805704896af1bdf2fd0e570f, type: 2}
+  directionReference: {fileID: 0}
+  sectorHysteresis: 12
   masterVolume: 1
   sneakVolume: 0.133
   walkVolume: 0.511
   runVolume: 1
   speedInfluence: 0.25
-  sneakPitch: 0.5
-  walkPitch: 0.7
-  runPitch: 0.9
-  pitchJitter: 0.248
+  fullSpeed: 3
+  slowCutoff: 1200
+  fastCutoff: 9000
+  sidewaysPan: 0.2
+  turnIdleSpeed: 0.25
+  turnShuffleAngle: 75
+  turnVolume: 0.5
+  turnPan: 0.35
+  voiceCount: 4
   spatialBlend: 0.85
   minDistance: 1.5
   maxDistance: 25
@@ -413,6 +421,50 @@ MonoBehaviour:
   defeatDelay: 3
   deathVeil: {fileID: 0}
   veilDuration: 2.8
+--- !u!114 &4249744734063843022
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90125876250897346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f06cec73fb75145d5a23c8dfce7eb0a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.RhythmConductor
+  profile: {fileID: 11400000, guid: 26a7b4b61f7ec4368b7a1515edf4b85d, type: 2}
+  localSettings:
+    defaultBpm: 60
+    tempoTiers:
+    - 48
+    - 60
+    - 72
+    - 90
+    - 120
+    - 144
+    tierHysteresis: 0.1
+    tierConfirmSteps: 2
+    tempoSmoothing: 0.35
+    phaseCorrection: 0.35
+    maxStepGap: 2.5
+--- !u!114 &3215232859790577072
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90125876250897346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e167f80484f224e4ba516b7171bd639b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.FootstepDust
+  dustPrefab: {fileID: 2187223384374896493, guid: 5bc6b2747d6e94e9491133c82fc341dc, type: 3}
+  particlesPerStep: 8
+  lightStepShare: 0.35
+  accentMultiplier: 1.6
+  contactOffset: {x: 0, y: 0.03, z: 0}
 --- !u!1 &689539237441915602
 GameObject:
   m_ObjectHideFlags: 0

@@ -405,7 +405,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2509fc830b7ad46508343fc89b629fc6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.MusicPlayer
-  track: {fileID: 8300000, guid: 9fe626a236a9f4b65b53fdb74451dbc0, type: 3}
+  track: {fileID: 8300000, guid: 32b54078b1ee44594ac9b78e53569536, type: 3}
   output: {fileID: 24300002, guid: 58454d56805704896af1bdf2fd0e570f, type: 2}
   volume: 0.1
   fadeInDuration: 4

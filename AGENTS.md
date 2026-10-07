@@ -62,7 +62,7 @@ Gameplay entry points (filenames below are under `Assets/Scripts/Controllers/`):
 - Movement/animation: `ProceduralCharacter.cs`, `CharacterFollowCamera.cs`, `CartoonCharacterGait.cs`, `GaitStylePose.cs`, `ProceduralSpine.cs`, `ShadowKnightProportions.cs`.
 - Torch/combat/player state: `HandheldTorch.cs`, `TorchAttack.cs`, `TorchInteraction.cs`, `CharacterKnockdown.cs`, `CharacterStress.cs`.
 - Cave/creatures: `ProceduralCave.cs`, `CrawlSurfaceMesh.cs`, `ProceduralCentipede.cs`, `ProceduralCentipede.Attack.cs`, `CaveBody.cs`.
-- Collection/audio: `Treasure.cs`, `CharacterInventory.cs`, `FootstepAudio.cs`, `CentipedeLegAudio.cs`, `MusicPlayer.cs`.
+- Collection/audio: `Treasure.cs`, `CharacterInventory.cs`, `FootstepAudio.cs`, `StepSoundSet.cs`, `RhythmClock.cs`, `RhythmConductor.cs`, `FootstepDust.cs`, `CentipedeLegAudio.cs`, `MusicPlayer.cs`.
 
 ## UI text
 

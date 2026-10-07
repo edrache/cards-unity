@@ -192,6 +192,7 @@ namespace CardsUnity.Controllers.Editor
                 treasure.SetValue(42);
                 Check(treasure.Value == 42 && definition.Value == 37,
                     "Per-instance treasure value preserves definition", ref assertions);
+                RhythmChecks.RunAll(ref assertions);
                 Debug.Log("Configuration checks passed: " + assertions + " assertions. Edit Mode direct calls; no physical input test.");
             }
             finally
