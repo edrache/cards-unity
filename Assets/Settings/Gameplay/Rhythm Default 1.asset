@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d814b7305d67c49a1921a9dc64f09dd0, type: 3}
+  m_Name: Rhythm Default 1
+  m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.RhythmProfile
+  settings:
+    sneak:
+      bpm: 60
+      stepsPerBeat: 1
+    walk:
+      bpm: 90
+      stepsPerBeat: 1
+    run:
+      bpm: 120
+      stepsPerBeat: 2

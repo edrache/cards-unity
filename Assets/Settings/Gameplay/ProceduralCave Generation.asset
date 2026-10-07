@@ -66,7 +66,7 @@ MonoBehaviour:
     maximumRockfallBoulderRadius: 1
     rockfallMaterial: {fileID: 0}
     centipedePrefab: {fileID: 8402668057444636402, guid: b4f4b46d9a579409ba14a9d3563f22e8, type: 3}
-    centipedeRoomPercentage: 69.2
+    centipedeRoomPercentage: 0
     treasurePrefab: {fileID: 5334899008198995573, guid: b931fd32a89184c268b6ab0154d103e4, type: 3}
     treasureVariants:
     - {fileID: 7716414664649281885, guid: 48db3a9e2c0604f53b79acda53dba4f4, type: 3}
@@ -153,7 +153,7 @@ MonoBehaviour:
       seedSalt: 715827883
       prefabs:
       - {fileID: 7233866442378915406, guid: 9ec8c2de23e304bf6809289b268a6030, type: 3}
-      roomPercentage: 55.9
+      roomPercentage: 29.2
       minimumPerSelectedRoom: 1
       maximumPerSelectedRoom: 1
       footprintRadius: 2.3
@@ -292,7 +292,7 @@ MonoBehaviour:
       seedSalt: 47023
       prefabs:
       - {fileID: 274222535509208919, guid: c7a9b060b8f374285a63c838edc18ad7, type: 3}
-      roomPercentage: 57.7
+      roomPercentage: 15
       minimumPerSelectedRoom: 1
       maximumPerSelectedRoom: 2
       footprintRadius: 0.6
