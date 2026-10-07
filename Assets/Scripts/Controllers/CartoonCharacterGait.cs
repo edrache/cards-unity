@@ -97,6 +97,12 @@ namespace CardsUnity.Controllers
         [SerializeField, Range(0.1f, 4f)] private float noiseFrequency = 1.3f;
         [SerializeField, Range(0f, 100f)] private float noiseSeed = 17f;
 
+        [Header("Rhythm (with a Rhythm Conductor)")]
+        [Tooltip("Longest step the clock-driven gait takes, in metres. Faster movement than this step length times the step rate slides the feet.")]
+        [SerializeField, Range(0.3f, 3f)] private float maximumRhythmStepLength = 1.8f;
+        [Tooltip("Minimum gait activity while the player pushes to move, so the legs keep stepping in rhythm against a wall or with a tiny stick push.")]
+        [SerializeField, Range(0f, 1f)] private float rhythmMarchActivity = 0.35f;
+
         private ProceduralSpine spine;
         private CharacterController characterController;
         private bool terrainGrounded;
@@ -121,14 +127,22 @@ namespace CardsUnity.Controllers
         public float CrawlWeight => styleWeights[11];
         private double continuousCycle;
         private int lastStepIndex = int.MinValue;
+        private RhythmConductor rhythm;
+        private float marchFloor, marchFloorVelocity;
+        private float rhythmStepLength, rhythmStepLengthVelocity;
 
-        // Raised once per foot contact, driven by travelled distance rather than by time.
+        // Set each frame by the character controller: the player is asking to move, even if blocked.
+        public bool MovementIntent { get; set; }
+
+        // Raised once per foot contact. With a Rhythm Conductor contacts follow its step grid;
+        // without one they are driven by travelled distance.
         public event System.Action<GaitFootstep> Footstep;
 
         private void Awake()
         {
             spine = GetComponent<ProceduralSpine>();
             characterController = GetComponent<CharacterController>();
+            rhythm = GetComponent<RhythmConductor>();
             if (body != null) bodyOrigin = body.localPosition;
             UpdateStyleWeights(100f);
         }
@@ -156,6 +170,11 @@ namespace CardsUnity.Controllers
             intensity = Mathf.SmoothDamp(intensity, grounded ? Mathf.Clamp01(speed / Mathf.Max(maximumSpeed, 0.1f)) : 0f,
                 ref intensityVelocity, 0.12f, Mathf.Infinity, dt);
             float activity = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(intensity * 5f));
+            bool rhythmDriven = rhythm != null && rhythm.isActiveAndEnabled && rhythm.IsReady;
+            // Movement intent keeps the legs marching in rhythm even when the body cannot move.
+            marchFloor = Mathf.SmoothDamp(marchFloor, rhythmDriven && MovementIntent && grounded ? rhythmMarchActivity : 0f,
+                ref marchFloorVelocity, 0.12f, Mathf.Infinity, dt);
+            activity = Mathf.Max(activity, marchFloor);
             UpdateStyleWeights(dt);
             System.Array.Copy(styleWeights, locomotionWeights, styleWeights.Length);
             for (int i = 0; i < styleWeights.Length; i++)
@@ -163,11 +182,32 @@ namespace CardsUnity.Controllers
             style = GaitStylePose.Blend(styleWeights, cycle);
             poseActivity = activity;
             float runBlend = style.RunAmount;
-            float stride = 2f * Mathf.Lerp(walkStepLength, runStepLength, runBlend);
-            stride = Mathf.Max(0.1f, stride * style.StrideScale);
-            float advance = distance / stride;
-            cycle = Mathf.Repeat(cycle + advance, 1f);
-            ReportFootsteps(advance, grounded, activity);
+            float travel;
+            if (rhythmDriven)
+            {
+                // The clock sets the cadence: two steps per cycle, contacts on whole steps. The step
+                // length follows the real speed, so one stance sweep covers exactly the distance
+                // travelled during one step (no foot slip) and is zero when stepping in place.
+                float stepLength = Mathf.Min(speed / Mathf.Max(0.1f, rhythm.StepsPerSecond), maximumRhythmStepLength);
+                rhythmStepLength = Mathf.SmoothDamp(rhythmStepLength, stepLength,
+                    ref rhythmStepLengthVelocity, 0.06f, Mathf.Infinity, dt);
+                travel = rhythmStepLength * 0.5f;
+                double clockCycle = rhythm.StepPosition * 0.5d;
+                cycle = (float)(clockCycle - System.Math.Floor(clockCycle));
+                ReportFootsteps(clockCycle, grounded, activity);
+            }
+            else
+            {
+                float stride = 2f * Mathf.Lerp(walkStepLength, runStepLength, runBlend);
+                stride = Mathf.Max(0.1f, stride * style.StrideScale);
+                float advance = distance / stride;
+                cycle = Mathf.Repeat(cycle + advance, 1f);
+                ReportFootsteps(continuousCycle + advance, grounded, activity);
+                // Foot travel shrinks with activity, so the stance sweep is stride / 2 at full activity.
+                travel = stride * 0.25f * activity;
+                rhythmStepLength = 0f;
+                rhythmStepLengthVelocity = 0f;
+            }
             style = GaitStylePose.Blend(styleWeights, cycle);
             float wave = Mathf.Sin(cycle * Mathf.PI * 2f);
             var stressState = GetComponent<CharacterStress>();
@@ -214,8 +254,8 @@ namespace CardsUnity.Controllers
             if (head != null && spine == null)
                 head.rotation = transform.rotation;
 
-            Leg(leftThigh, leftCalf, leftFoot, -1f, cycle, stride, activity);
-            Leg(rightThigh, rightCalf, rightFoot, 1f, Mathf.Repeat(cycle + 0.5f, 1f), stride, activity);
+            Leg(leftThigh, leftCalf, leftFoot, -1f, cycle, travel, activity);
+            Leg(rightThigh, rightCalf, rightFoot, 1f, Mathf.Repeat(cycle + 0.5f, 1f), travel, activity);
             float amplitude = Mathf.Lerp(12f, 62f, intensity) * activity * style.ArmSwingScale;
             leftSwing = Mathf.SmoothDamp(leftSwing, -wave * amplitude + leftArmNoise, ref leftSwingVelocity, armLag, Mathf.Infinity, dt);
             rightSwing = Mathf.SmoothDamp(rightSwing, wave * amplitude + rightArmNoise, ref rightSwingVelocity, armLag, Mathf.Infinity, dt);
@@ -229,9 +269,9 @@ namespace CardsUnity.Controllers
         // The left leg runs on `cycle` and the right one half a cycle later, and each leg plants its
         // foot as its own phase wraps to zero. One step therefore happens every half cycle: even
         // half-cycle indices belong to the left foot, odd ones to the right.
-        private void ReportFootsteps(float advance, bool grounded, float activity)
+        private void ReportFootsteps(double nextContinuousCycle, bool grounded, float activity)
         {
-            continuousCycle += advance;
+            continuousCycle = nextContinuousCycle;
             int step = (int)System.Math.Floor(continuousCycle * 2.0);
             if (step == lastStepIndex) return;
             bool firstEvaluation = lastStepIndex == int.MinValue;
@@ -409,11 +449,11 @@ namespace CardsUnity.Controllers
         }
 
         private void Leg(Transform thigh, Transform calf, Transform foot, float side, float phase,
-            float stride, float activity)
+            float travel, float activity)
         {
             if (thigh == null || calf == null || foot == null) return;
-            // First half: foot travels backward on the floor. Second half: lifted recovery.
-            float travel = stride * 0.25f * activity;
+            // First half: foot travels backward on the floor from +travel to -travel, so the
+            // stance sweep (one step length) is 2 * travel. Second half: lifted recovery.
             float z, lift;
             if (phase < 0.5f)
             {

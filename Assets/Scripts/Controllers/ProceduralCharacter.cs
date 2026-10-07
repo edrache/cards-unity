@@ -44,6 +44,7 @@ namespace CardsUnity.Controllers
         private float phase;
         private float blend;
         private CartoonCharacterGait gait;
+        private RhythmConductor rhythm;
         private TorchAttack torchAttack;
         private TorchInteraction torchInteraction;
         private Vector3 previousActualVelocity;
@@ -65,6 +66,7 @@ namespace CardsUnity.Controllers
         {
             controller = GetComponent<CharacterController>();
             gait = GetComponent<CartoonCharacterGait>();
+            rhythm = GetComponent<RhythmConductor>();
             torchAttack = GetComponent<TorchAttack>();
             torchInteraction = GetComponent<TorchInteraction>();
             if (body != null) bodyOrigin = body.localPosition;
@@ -151,6 +153,12 @@ namespace CardsUnity.Controllers
                 activeSneak = !running && stickMagnitude < effectiveWalkThreshold;
                 activeWalk = !running && !activeSneak;
             }
+            // The controller state picks the step tempo: Run overrides, then Sneak (keyboard toggle or
+            // light stick push), otherwise Walk. Scripted moves walk. Without intent the tempo is kept.
+            bool movementIntent = scriptedMoveActive || stickMagnitude > 0f;
+            if (rhythm != null)
+                rhythm.SetLocomotionMode(running ? RhythmLocomotionMode.Run
+                    : activeSneak ? RhythmLocomotionMode.Sneak : RhythmLocomotionMode.Walk, movementIntent);
             // The input vector still carries the stick magnitude, so speed scales with deflection.
             float walkSpeed = MovementBalance?.WalkSpeed ?? speed;
             float sprintSpeed = MovementBalance?.RunSpeed ?? runSpeed;
@@ -187,6 +195,7 @@ namespace CardsUnity.Controllers
             if (gait != null)
             {
                 gait.SetLocomotionStyle(running, activeSneak, activeWalk);
+                gait.MovementIntent = movementIntent;
                 gait.Animate(actualVelocity, (actualVelocity - previousActualVelocity) / dt,
                     displacement.magnitude, controller.isGrounded, sprintSpeed);
                 previousActualVelocity = actualVelocity;
@@ -303,6 +312,7 @@ namespace CardsUnity.Controllers
             scriptedMoveDirection = Vector3.zero;
             scriptedMoveSpeed = 0f;
             torchInteraction?.SetInteractHeld(false);
+            if (gait != null) gait.MovementIntent = false;
         }
 
         private void OnApplicationFocus(bool hasFocus)

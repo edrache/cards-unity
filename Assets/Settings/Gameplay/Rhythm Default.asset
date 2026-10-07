@@ -13,16 +13,12 @@ MonoBehaviour:
   m_Name: Rhythm Default
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.RhythmProfile
   settings:
-    defaultBpm: 60
-    tempoTiers:
-    - 48
-    - 60
-    - 72
-    - 90
-    - 120
-    - 144
-    tierHysteresis: 0.1
-    tierConfirmSteps: 2
-    tempoSmoothing: 0.35
-    phaseCorrection: 0.35
-    maxStepGap: 2.5
+    sneak:
+      bpm: 60
+      stepsPerBeat: 1
+    walk:
+      bpm: 90
+      stepsPerBeat: 1
+    run:
+      bpm: 120
+      stepsPerBeat: 2

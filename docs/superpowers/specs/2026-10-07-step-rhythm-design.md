@@ -112,3 +112,74 @@ Subscribes to `Footstep` and emits from one world-space `ParticleSystem` (instan
   watch conductor inspector, listen, check dust.
 - Update designer handbook (`docs/designer-guide/index.html`, `system-notes.json`, regenerate
   catalog).
+
+---
+
+## Revision 2026-10-07 (b): input-driven tempo, clock-driven gait
+
+Playtest feedback: obstacles slow the knight, so measured step tempo drops. The user wants the
+**tempo chosen by the controller state** and the **legs to move in that rhythm** regardless of
+the physical speed. This replaces the step-led hybrid above (tier snapping from measured steps,
+phase correction, restart re-anchoring are removed).
+
+Decisions taken with the user:
+
+- Tempo per locomotion mode, editable in `Rhythm Default.asset`: Sneak 60 BPM × 1 step per beat,
+  Walk 90 × 1, Run 120 × 2 (steps on eighths so running strides stay ~1.75 m at 7 m/s).
+- Keyboard: Run held → Run, Sneak toggle → Sneak, otherwise Walk. Gamepad: stick deflection picks
+  Sneak/Walk exactly as today (`activeSneak`/`activeWalk`), Run button → Run. Speed still follows
+  stick deflection; only the cadence is fixed per mode, so a lighter push makes **shorter steps in
+  the same tempo**. Scripted moves (intro) use Walk.
+- Standing still keeps the last mode's tempo; the mode only updates while there is movement intent.
+- Mode changes take effect on the next beat so the pulse never breaks.
+- **1a:** pushing into a wall or barely deflecting the stick keeps stepping in place in rhythm
+  (steps, sound and dust continue).
+- **2b:** rhythm is perfectly continuous. The gait phase always follows the clock, so when the
+  player starts moving the legs pick up the running phase immediately and the first foot contact
+  lands on the step grid (never later than one step interval).
+- This deliberately replaces the AGENTS.md rule "gait phase/footsteps use actual distance,
+  including stopping at walls" for the knight when a `RhythmConductor` is present; without one the
+  gait keeps the distance-driven behaviour.
+
+### Clock
+
+`RhythmClock` becomes a tempo-led clock (time base: `Time.timeAsDouble`, smooth per frame; dsp
+time only for `NextBeatDspTime`):
+
+- `RhythmTempo { float bpm; int stepsPerBeat; }`; `RhythmSettings { RhythmTempo sneak, walk, run; }`.
+- `SetTempo(RhythmTempo)` queues a change applied at the next beat boundary (immediately before
+  the first beat).
+- `Advance(double now, List<RhythmBeat>)` integrates `BeatPosition` (continuous beats) and
+  `StepPosition` (continuous steps, `+= dBeats × stepsPerBeat` with the multiplier switching only on
+  beat boundaries, so whole steps stay aligned to the grid). More than 4 beats behind skips ahead
+  silently, keeping alignment.
+- Beat accent: even beat index. Step parity: even step index = left foot, so with 1 step per beat
+  the accented beat is the left foot.
+
+### Conductor
+
+`RhythmConductor` (execution order before `ProceduralCharacter`) advances the clock every frame and
+exposes `StepPosition`, `StepsPerSecond`, `Bpm`, `BeatPhase`, `NextBeatDspTime`, `Beat` event, and
+`SetLocomotionMode(RhythmLocomotionMode mode, bool moving)` called by `ProceduralCharacter` each
+frame (`Sneak`, `Walk`, `Run`).
+
+### Gait
+
+`CartoonCharacterGait` uses the conductor when present (`GetComponent`):
+
+- Cycle: `continuousCycle = StepPosition / 2`, `cycle = frac(continuousCycle)`; footstep reporting
+  unchanged (half-cycle index parity), so contacts fall exactly on the step grid.
+- No-slip stride: stance sweep (step length) = actual horizontal speed / `StepsPerSecond`, clamped
+  to `maximumRhythmStepLength` (default 1.8 m); stride = 2 × step length. At zero speed the foot
+  sweep is zero: stepping in place.
+- Movement intent sets an activity floor (`rhythmMarchActivity`, default 0.35) so the legs keep
+  lifting at a wall or with a tiny stick push; without intent activity decays as today and the
+  steps stop.
+- Distance-driven behaviour remains the fallback without a conductor.
+
+### Verification
+
+Rewrite `RhythmChecks` for the new clock: default Walk tempo free-runs; tempo change waits for the
+next beat; step position stays integer-aligned across a 1→2 steps-per-beat change; hitch skip keeps
+alignment; accent/parity. Play Mode: walk into a wall (steps continue, BPM unchanged), sneak/walk/
+run tempos, stop (tempo kept), start (first contact on the grid).

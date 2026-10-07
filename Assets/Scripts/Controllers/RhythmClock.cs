@@ -4,35 +4,67 @@ using UnityEngine;
 
 namespace CardsUnity.Controllers
 {
+    public enum RhythmLocomotionMode
+    {
+        Sneak,
+        Walk,
+        Run
+    }
+
+    // Tempo of one locomotion mode: the beat rate and how many footsteps fall on each beat.
+    [Serializable]
+    public struct RhythmTempo
+    {
+        [Tooltip("Beats per minute of this mode.")]
+        [Min(20f)] public float bpm;
+        [Tooltip("Footsteps per beat. 1 steps on quarters, 2 on eighths.")]
+        [Range(1, 4)] public int stepsPerBeat;
+
+        public RhythmTempo(float bpm, int stepsPerBeat)
+        {
+            this.bpm = bpm;
+            this.stepsPerBeat = stepsPerBeat;
+        }
+
+        public double BeatInterval => 60d / bpm;
+        public float StepsPerSecond => bpm / 60f * stepsPerBeat;
+
+        public RhythmTempo Validated()
+        {
+            return new RhythmTempo(Mathf.Max(20f, bpm), Mathf.Clamp(stepsPerBeat, 1, 4));
+        }
+
+        public bool SameAs(RhythmTempo other)
+        {
+            return Mathf.Approximately(bpm, other.bpm) && stepsPerBeat == other.stepsPerBeat;
+        }
+    }
+
     [Serializable]
     public sealed class RhythmSettings
     {
-        [Tooltip("Tempo used before the first step, in beats per minute.")]
-        [Min(20f)] public float defaultBpm = 60f;
-        [Tooltip("Musical tempos the measured step rate snaps to, ascending, in BPM.")]
-        public float[] tempoTiers = { 48f, 60f, 72f, 90f, 120f, 144f };
-        [Tooltip("Extra margin past the midpoint between two tiers, as a fraction of their gap, before the tempo may change.")]
-        [Range(0f, 0.45f)] public float tierHysteresis = 0.1f;
-        [Tooltip("Consecutive steps that must agree on a new tier before it is used.")]
-        [Range(1, 8)] public int tierConfirmSteps = 2;
-        [Tooltip("Weight of the newest step interval in the smoothed tempo. 1 uses only the last step.")]
-        [Range(0.05f, 1f)] public float tempoSmoothing = 0.35f;
-        [Tooltip("Fraction of a step's timing error applied to the beat grid. 0 ignores steps, 1 snaps the grid to every step.")]
-        [Range(0f, 1f)] public float phaseCorrection = 0.35f;
-        [Tooltip("Seconds without a step after which the next step restarts the grid on itself.")]
-        [Min(0.5f)] public float maxStepGap = 2.5f;
+        [Tooltip("Tempo while sneaking.")]
+        public RhythmTempo sneak = new RhythmTempo(60f, 1);
+        [Tooltip("Tempo while walking. Also used before the first movement.")]
+        public RhythmTempo walk = new RhythmTempo(90f, 1);
+        [Tooltip("Tempo while running. Two steps per beat keeps running strides long at a musical tempo.")]
+        public RhythmTempo run = new RhythmTempo(120f, 2);
+
+        public RhythmTempo Get(RhythmLocomotionMode mode)
+        {
+            switch (mode)
+            {
+                case RhythmLocomotionMode.Sneak: return sneak.Validated();
+                case RhythmLocomotionMode.Run: return run.Validated();
+                default: return walk.Validated();
+            }
+        }
 
         public void Validate()
         {
-            defaultBpm = Mathf.Max(20f, defaultBpm);
-            if (tempoTiers == null || tempoTiers.Length == 0) tempoTiers = new[] { defaultBpm };
-            for (int i = 0; i < tempoTiers.Length; i++) tempoTiers[i] = Mathf.Max(20f, tempoTiers[i]);
-            Array.Sort(tempoTiers);
-            tierHysteresis = Mathf.Clamp(tierHysteresis, 0f, 0.45f);
-            tierConfirmSteps = Mathf.Clamp(tierConfirmSteps, 1, 8);
-            tempoSmoothing = Mathf.Clamp(tempoSmoothing, 0.05f, 1f);
-            phaseCorrection = Mathf.Clamp01(phaseCorrection);
-            maxStepGap = Mathf.Max(0.5f, maxStepGap);
+            sneak = sneak.Validated();
+            walk = walk.Validated();
+            run = run.Validated();
         }
     }
 
@@ -54,145 +86,109 @@ namespace CardsUnity.Controllers
         }
     }
 
-    // Beat grid that follows the knight's steps: one step is one beat, the tempo snaps to musical
-    // tiers and the phase is nudged toward each real step. Pure time math so it can be checked directly.
+    // Tempo-led beat grid. The locomotion mode picks the tempo; changes wait for the next beat so
+    // the pulse never breaks. Besides beats it integrates a continuous step position whose whole
+    // numbers are footsteps, aligned to the beat grid. Pure time math so it can be checked directly.
     public sealed class RhythmClock
     {
+        // More beats than this in one advance is a hitch or a pause: they are skipped silently.
+        public const int MaxCatchUpBeats = 4;
+
         private readonly RhythmSettings settings;
-        private double lastStepTime = double.NaN;
-        private double lastBeatTime = double.NaN;
-        private double smoothedInterval;
-        private int pendingTier = -1, pendingCount;
+        private RhythmTempo tempo, pendingTempo;
+        private bool hasPendingTempo;
+        private double lastTime;
+        private double beatFraction;
+        private long stepsAtLastBeat;
 
         public RhythmClock(RhythmSettings settings)
         {
             this.settings = settings ?? new RhythmSettings();
             this.settings.Validate();
+            tempo = this.settings.Get(RhythmLocomotionMode.Walk);
         }
 
-        public double BeatInterval { get; private set; } = 1d;
-        public double NextBeatTime { get; private set; }
+        public RhythmTempo Tempo => tempo;
+        public bool HasPendingTempo => hasPendingTempo;
+        public double BeatInterval => tempo.BeatInterval;
+        public float Bpm => tempo.bpm;
+        public int StepsPerBeat => tempo.stepsPerBeat;
+        public float StepsPerSecond => tempo.StepsPerSecond;
         public long NextBeatIndex { get; private set; }
-        public int TierIndex { get; private set; }
-        public float MeasuredBpm { get; private set; }
-        public float Bpm => (float)(60d / BeatInterval);
+        public bool HasBeaten => NextBeatIndex > 0;
+        // Progress from the previous beat to the next one, 0..1.
+        public float BeatPhase => Mathf.Clamp01((float)beatFraction);
+        // Continuous beats: beat N sounds when this reaches N.
+        public double BeatPosition => NextBeatIndex - 1L + beatFraction;
+        // Continuous footsteps: step N lands when this reaches N. Even steps are the left foot.
+        public double StepPosition => stepsAtLastBeat + beatFraction * tempo.stepsPerBeat;
+        public double NextBeatTime => lastTime + (1d - beatFraction) * tempo.BeatInterval;
 
+        // Starts at the Walk tempo; beat 0 (on step 0) sounds one beat interval after `now`.
         public void Initialize(double now)
         {
-            TierIndex = NearestTier(settings.defaultBpm);
-            BeatInterval = 60d / settings.defaultBpm;
-            MeasuredBpm = settings.defaultBpm;
-            NextBeatTime = now + BeatInterval;
+            tempo = settings.Get(RhythmLocomotionMode.Walk);
+            hasPendingTempo = false;
+            lastTime = now;
+            beatFraction = 0d;
             NextBeatIndex = 0;
-            lastStepTime = double.NaN;
-            lastBeatTime = double.NaN;
-            smoothedInterval = 0d;
-            pendingTier = -1;
-            pendingCount = 0;
+            stepsAtLastBeat = -tempo.stepsPerBeat;
         }
 
-        public void ReportStep(double time, bool accent)
+        // Queues a tempo for the next beat. Before the first beat it applies immediately.
+        public void SetTempo(RhythmTempo next)
         {
-            bool restart = double.IsNaN(lastStepTime) || time - lastStepTime > settings.maxStepGap;
-            double interval = restart ? 0d : time - lastStepTime;
-            lastStepTime = time;
-            if (restart || interval <= 1e-4)
+            next = next.Validated();
+            if (!HasBeaten)
             {
-                // The player starts moving: the step itself becomes the beat.
-                if (restart)
-                {
-                    if (!double.IsNaN(lastBeatTime) && time - lastBeatTime < BeatInterval * 0.5d)
-                    {
-                        // A free-running beat has just sounded: let it stand for this step instead of
-                        // emitting a second beat a moment later, and continue the grid from the step.
-                        NextBeatTime = time + BeatInterval;
-                        if (((NextBeatIndex - 1L) & 1L) == 0L != accent) NextBeatIndex++;
-                    }
-                    else
-                    {
-                        NextBeatTime = time;
-                        if (((NextBeatIndex & 1L) == 0L) != accent) NextBeatIndex++;
-                    }
-                }
+                tempo = next;
+                hasPendingTempo = false;
+                // Keep beat 0 on step 0, so the accented first beat is a left foot.
+                stepsAtLastBeat = -tempo.stepsPerBeat;
                 return;
             }
-
-            smoothedInterval = smoothedInterval <= 0d
-                ? interval
-                : smoothedInterval + (interval - smoothedInterval) * settings.tempoSmoothing;
-            MeasuredBpm = (float)(60d / smoothedInterval);
-            UpdateTier(MeasuredBpm);
-
-            // Nearest grid beat to the step, then move the grid part of the way toward the step.
-            long k = (long)Math.Round((time - NextBeatTime) / BeatInterval);
-            double nearest = NextBeatTime + k * BeatInterval;
-            double error = time - nearest;
-            NextBeatTime += error * settings.phaseCorrection;
-            if (accent && (((NextBeatIndex + k) & 1L) != 0L)) NextBeatIndex++;
+            hasPendingTempo = !next.SameAs(tempo);
+            pendingTempo = next;
         }
 
         public void Advance(double now, List<RhythmBeat> output)
         {
-            if (now - NextBeatTime > BeatInterval * 2d)
+            double remaining = now - lastTime;
+            if (remaining <= 0d) return;
+            lastTime = now;
+            bool skipping = Math.Floor(beatFraction + remaining / tempo.BeatInterval) > MaxCatchUpBeats;
+            while (true)
             {
-                // A hitch or a long pause: skip silently to the latest beat instead of bursting.
-                long skip = (long)Math.Floor((now - NextBeatTime) / BeatInterval);
-                NextBeatTime += skip * BeatInterval;
-                NextBeatIndex += skip;
-            }
-            while (NextBeatTime <= now)
-            {
-                output?.Add(new RhythmBeat(NextBeatIndex, NextBeatTime, Bpm));
-                lastBeatTime = NextBeatTime;
-                NextBeatIndex++;
-                NextBeatTime += BeatInterval;
+                double toBoundary = (1d - beatFraction) * tempo.BeatInterval;
+                if (remaining < toBoundary)
+                {
+                    beatFraction += remaining / tempo.BeatInterval;
+                    return;
+                }
+                remaining -= toBoundary;
+                CompleteBeat(now - remaining, skipping ? null : output);
+                if (!skipping) continue;
+                // Jump whole beats at once; beat and step counts move together to stay aligned.
+                long whole = (long)Math.Floor(remaining / tempo.BeatInterval);
+                if (whole <= 0L) continue;
+                NextBeatIndex += whole;
+                stepsAtLastBeat += whole * tempo.stepsPerBeat;
+                remaining -= whole * tempo.BeatInterval;
             }
         }
 
-        public float GetPhase(double now)
+        private void CompleteBeat(double time, List<RhythmBeat> output)
         {
-            return Mathf.Clamp01((float)(1d - (NextBeatTime - now) / BeatInterval));
-        }
-
-        private void UpdateTier(float bpm)
-        {
-            int candidate = NearestTier(bpm);
-            if (candidate == TierIndex)
+            long index = NextBeatIndex;
+            NextBeatIndex++;
+            stepsAtLastBeat += tempo.stepsPerBeat;
+            beatFraction = 0d;
+            if (hasPendingTempo)
             {
-                pendingTier = -1;
-                pendingCount = 0;
-                return;
+                tempo = pendingTempo;
+                hasPendingTempo = false;
             }
-            float current = settings.tempoTiers[TierIndex];
-            int neighbour = candidate > TierIndex ? TierIndex + 1 : TierIndex - 1;
-            float next = settings.tempoTiers[neighbour];
-            float threshold = (current + next) * 0.5f + (next - current) * settings.tierHysteresis;
-            bool beyond = next > current ? bpm > threshold : bpm < threshold;
-            if (!beyond)
-            {
-                pendingTier = -1;
-                pendingCount = 0;
-                return;
-            }
-            pendingCount = pendingTier == candidate ? pendingCount + 1 : 1;
-            pendingTier = candidate;
-            if (pendingCount < settings.tierConfirmSteps) return;
-
-            // Keep the last beat where it was and stretch only the coming interval.
-            double previousBeat = NextBeatTime - BeatInterval;
-            TierIndex = candidate;
-            BeatInterval = 60d / settings.tempoTiers[TierIndex];
-            NextBeatTime = previousBeat + BeatInterval;
-            pendingTier = -1;
-            pendingCount = 0;
-        }
-
-        private int NearestTier(float bpm)
-        {
-            int best = 0;
-            for (int i = 1; i < settings.tempoTiers.Length; i++)
-                if (Mathf.Abs(settings.tempoTiers[i] - bpm) < Mathf.Abs(settings.tempoTiers[best] - bpm)) best = i;
-            return best;
+            output?.Add(new RhythmBeat(index, time, tempo.bpm));
         }
     }
 }

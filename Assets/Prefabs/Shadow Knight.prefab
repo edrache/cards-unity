@@ -162,6 +162,8 @@ MonoBehaviour:
   noiseAmount: 0.642
   noiseFrequency: 1.76
   noiseSeed: 35.8
+  maximumRhythmStepLength: 1.8
+  rhythmMarchActivity: 0.35
 --- !u!114 &8566650617304526917
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -293,6 +295,7 @@ MonoBehaviour:
   turnVolume: 0.5
   turnPan: 0.35
   voiceCount: 4
+  priority: 32
   spatialBlend: 0.85
   minDistance: 1.5
   maxDistance: 25
@@ -435,19 +438,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardsUnity.Controllers.RhythmConductor
   profile: {fileID: 11400000, guid: 26a7b4b61f7ec4368b7a1515edf4b85d, type: 2}
   localSettings:
-    defaultBpm: 60
-    tempoTiers:
-    - 48
-    - 60
-    - 72
-    - 90
-    - 120
-    - 144
-    tierHysteresis: 0.1
-    tierConfirmSteps: 2
-    tempoSmoothing: 0.35
-    phaseCorrection: 0.35
-    maxStepGap: 2.5
+    sneak:
+      bpm: 60
+      stepsPerBeat: 1
+    walk:
+      bpm: 90
+      stepsPerBeat: 1
+    run:
+      bpm: 120
+      stepsPerBeat: 2
+  modeChangeDelay: 0.2
 --- !u!114 &3215232859790577072
 MonoBehaviour:
   m_ObjectHideFlags: 0
