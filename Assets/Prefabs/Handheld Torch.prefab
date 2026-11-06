@@ -10041,6 +10041,11 @@ MonoBehaviour:
   flickerAmount: 0.251
   flickerSpeed: 5.15
   movementFlicker: 1
+  beatPulseChance: 0.4
+  beatPulse: 0.25
+  downbeatPulse: 0.6
+  phrasePulse: 0.9
+  pulseDecay: 0.15
   lifetime: 180
   burnoutFraction: 0.4
   dyingFlickerAmount: 1.4
